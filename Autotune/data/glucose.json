@@ -1,0 +1,10 @@
+[
+    {
+        "packet_size": 0,
+        "name": "GlucoseSensorData",
+        "date": "2014-02-03T22:30:00",
+        "date_type": "prevTimestamp",
+        "op": 0,
+        "sgv": 0
+    }
+]
