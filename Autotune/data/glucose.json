@@ -1,8 +1,24 @@
 [
     {
-        "packet_size": 0,
+        "packet_size": 1,
         "name": "GlucoseSensorData",
-        "date": "2014-02-03T22:30:00",
+        "date": "2018-11-26T10:30:00",
+        "date_type": "prevTimestamp",
+        "op": 0,
+        "sgv": 0
+    },
+    {
+        "packet_size": 2,
+        "name": "GlucoseSensorData",
+        "date": "2018-11-26T11:00:00",
+        "date_type": "prevTimestamp",
+        "op": 0,
+        "sgv": 0
+    },
+    {
+        "packet_size": 10,
+        "name": "GlucoseSensorData",
+        "date": "2018-11-26T11:30:00",
         "date_type": "prevTimestamp",
         "op": 0,
         "sgv": 0
