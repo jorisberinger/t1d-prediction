@@ -1,3 +1,11 @@
+# Run Autotune
+### Use Autotune from the OpenAPS Project to determine ISF and CR.
 
-docker build --rm -f "t1d-prediction\Autotune\Dockerfile" -t autotune:latest t1d-prediction\Autotune && docker run --rm -v C:\Users\joris\apps\master\t1d-prediction\Autotune\data\result:/autotune/data/result autotune:latest 
+## Build Docker image
+`docker build --rm -f "Autotune/Dockerfile" -t autotune:latest Autotune`
+
+## Run Docker image
+`docker run --rm -v <absolute path to ./Autotune/data >:/autotune/data autotune:latest`
+
+It depends on files in /data/Input and creates a file output file `autotune-result.json`
 
