@@ -70,11 +70,7 @@ def deltaBG(g, sensf, cratio, camount, ct, bolus, idur):
     return deltaBGI(g, bolus, sensf, idur) + deltaBGC(g, sensf, cratio, camount, ct)
 
 
-
-
-
-
-def reloadGraphData(uevent, udata, n):
+def calculateBG(uevent, udata, n):
 
     simbg = np.array([udata.bginitial] * n)
     simbgc = np.array([0.0] * n)
@@ -96,14 +92,4 @@ def reloadGraphData(uevent, udata, n):
     simbg = simbg + simbgc + simbgi
     x = np.array(range(0, n))
     x = x * dt
-    print(x)
-    plt.plot(x, simbgc)
-    plt.plot(x, simbgi)
-    plt.plot(x, simbg)
-    plt.show()
-
-    print(simbgc)
-    print(simbgi)
-
-
-
+    return (simbg, simbgc, simbgi, x)

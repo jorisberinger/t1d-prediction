@@ -1,4 +1,4 @@
-from Python.Classes import Event
+from Classes import Event
 import pandas as pd
 
 def getEvents(data):
