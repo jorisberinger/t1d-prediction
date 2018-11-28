@@ -1,5 +1,8 @@
-from Python.predict import reloadGraphData
-from Python.Classes import Event, UserData
+from predict import reloadGraphData
+from Classes import Event, UserData
+from readData import read_data
+
+
 def main():
     uevent = [Event.createBolus(time=10, units=3.8),
               Event.createCarb(time=5, grams=18, ctype=180),
@@ -9,7 +12,11 @@ def main():
 
     reloadGraphData(uevent, udata, 500)
 
+def main():
+    data = read_data(filename)
+    data = data[data['date'] == "08.03.18"]
 
+    res = checkCurrent(data)
 
 if __name__ == '__main__':
     main()
