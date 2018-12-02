@@ -23,7 +23,7 @@ def iob(g, idur):
 
 # Simpson rule tot integrate IOB.
 def intIOB(x1, x2, idur, g):
-    nn = 50  # nn needs to be even
+    nn = 200  # nn needs to be even
     ii = 1
 
     # init with first and last terms of simpson series
@@ -80,16 +80,15 @@ def calculateBG(uevent, udata, n):
     dt = simt / n
     print("dt", dt)
     for j in range(0, len(uevent)):
-        if uevent[j] and uevent[j].etype != "":
+        if uevent.etype.values[j] != "":
             for i in range(0, n):
-                if uevent[j].etype == "carb":
-                    simbgc[i] = simbgc[i]+deltaBGC(i * dt - uevent[j].time, udata.sensf, udata.cratio, uevent[j].grams, uevent[j].ctype)
-                elif uevent[j].etype == "bolus":
-                    simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent[j].time, uevent[j].units, udata.sensf, udata.idur)
+                if uevent.etype.values[j] == "carb":
+                    simbgc[i] = simbgc[i]+deltaBGC(i * dt - uevent.time.values[j], udata.sensf, udata.cratio, uevent.grams.values[j], uevent.ctype.values[j])
+                elif uevent.etype.values[j] == "bolus":
+                    simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
                 else:
-                    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent[j].dbdt, udata.sensf, udata.idur, uevent[j].t1, uevent[j].t2)
+                    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t2.values[j])
 
     simbg = simbg + simbgc + simbgi
-    x = np.array(range(0, n))
-    x = x * dt
+    x = np.linspace(0,simt,n)
     return (simbg, simbgc, simbgi, x)
