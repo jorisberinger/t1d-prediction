@@ -19,7 +19,6 @@ def checkCurrent(data, udata):
     df = df[df.time > 0]
     df = df[df.time < udata.simlength * 60]
 
-    print(df)
     #df = df.iloc[[12]]
 
 
