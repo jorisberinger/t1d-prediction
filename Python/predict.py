@@ -78,7 +78,6 @@ def calculateBG(uevent, udata, n):
 
     simt = udata.simlength * 60
     dt = simt / n
-    print("dt", dt)
     for j in range(0, len(uevent)):
         if uevent.etype.values[j] != "":
             for i in range(0, n):

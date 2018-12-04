@@ -7,13 +7,31 @@ from Classes import UserData
 from predict import calculateBG
 from matplotlib import pyplot as plt
 
-timeFormat = "%d.%m.%y,%H:%M"
+timeFormat = "%d.%m.%y,%H:%M%z"
+timeZone = "+0100"
+
+def checkWindow(data, udata, startTime):
+    events = extractor.getEvents(data)
+    converted = events.apply(lambda event: convertTimes(event, startTime))
+    df = pandas.DataFrame([vars(e) for e in converted])
+    udata.bginitial = data['cgmValue'].values[0]
+
+    bg = calculateBG(df, udata, 100)
+
+    simbg = bg[0]
+    values = data[data['cgmValue'].notnull()]['cgmValue'].values
+
+    #print(simbg[len(simbg) - 1])
+    return simbg[len(simbg) - 1] - values[len(values) - 1]
+
+
+
 
 def checkCurrent(data, udata):
 
     events = extractor.getEvents(data)
 
-    converted = events.apply(lambda event: convertTimes(event, "08.03.18,18:00"))
+    converted = events.apply(lambda event: convertTimes(event, "08.03.18,08:00"))
     df = pandas.DataFrame([vars(e) for e in converted])
 
     df = df[df.time > 0]
@@ -51,8 +69,12 @@ def checkCurrent(data, udata):
 
 
 def convertTimes(event, start):
-    startTime = datetime.strptime(start, timeFormat)
-    eventTime = datetime.strptime(event.time, timeFormat)
+    if isinstance(start, datetime):
+        startTime = start
+    else:
+        startTime = datetime.strptime(start + timeZone, timeFormat)
+
+    eventTime = datetime.strptime(event.time + timeZone, timeFormat)
     timeDifference = eventTime - startTime
     if eventTime < startTime:
         timeDifference = startTime - eventTime
@@ -60,12 +82,12 @@ def convertTimes(event, start):
     else:
         event.time = timeDifference.seconds / 60
     if event.etype == "tempbasal":
-        t1 = datetime.strptime(event.t1, timeFormat)
+        t1 = datetime.strptime(event.t1 + timeZone, timeFormat)
         event.t1 = event.time
         #timeDifference = eventTime - t1
         #event.t1 = timeDifference.seconds
         #t2 = datetime.strptime(event.t2, timeFormat)
         #timeDifference = eventTime - t2
-        event.t2 = event.t1 + 2 * 60 # TODO better estimate
+        event.t2 = event.t1 + 30 # TODO better estimate
     #print(event.time, event.t1, event.t2)
     return event
