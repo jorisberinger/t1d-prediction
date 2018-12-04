@@ -1,3 +1,5 @@
+Python/data/input
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -113,3 +115,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+Autotune/data/Input/
