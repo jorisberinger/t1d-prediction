@@ -15,7 +15,7 @@ class Event:
 
     @classmethod
     def createCarb(cls, time, grams, ctype):
-        return Event(time=time, etype="carb", grams=grams, ctype=ctype)
+        return Event(time=time, etype="carb", grams=grams*12, ctype=ctype)
 
     @classmethod
     def createTemp(cls, time, dbdt, t1, t2):
