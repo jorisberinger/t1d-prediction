@@ -22,14 +22,14 @@ def mainplt():
               Event.createCarb(time=5, grams=18, ctype=180),
               Event.createTemp(time=0,dbdt=2,t1=10,t2=20)]
 
-    udata = UserData(bginitial= 0, cratio= 2, idur= 3, inputeeffect= 5, sensf = 10, simlength = 1, stats = None)
+    udata = UserData(bginitial= 0, cratio= 0.2, idur= 3, inputeeffect= 5, sensf = 10, simlength = 1, stats = None)
 
     calculateBG(uevent, udata, 500)
 
 def mainPredict():
     data = read_data(filename)
     data = data[data['date'] == "08.03.18"]
-    udata = UserData(bginitial=0, cratio=0.05, idur=3, inputeeffect=None, sensf=15, simlength=5, stats=None)
+    udata = UserData(bginitial=0, cratio=5, idur=3, inputeeffect=None, sensf=41, simlength=12, stats=None)
     res = checkCurrent(data, udata)
 
 
@@ -65,4 +65,4 @@ def main():
     logger.info("finished")
 
 if __name__ == '__main__':
-    mainFast()
+    mainPredict()

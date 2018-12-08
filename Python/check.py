@@ -31,13 +31,16 @@ def checkCurrent(data, udata):
 
     events = extractor.getEvents(data)
 
-    converted = events.apply(lambda event: convertTimes(event, "08.03.18,08:00"))
+    converted = events.apply(lambda event: convertTimes(event, "08.03.18,00:00"))
     df = pandas.DataFrame([vars(e) for e in converted])
 
     df = df[df.time > 0]
     df = df[df.time < udata.simlength * 60]
 
     #df = df.iloc[[12]]
+
+
+    cgm = data[data['cgmValue'].notnull()]['cgmValue']
 
 
     dataZero = data[data['time'] == "08:58"]
@@ -61,6 +64,8 @@ def checkCurrent(data, udata):
     plt.plot(data[3], data[0])
     plt.plot(data[3], data[1])
     plt.plot(data[3], data[2])
+
+    plt.plot(cgm.values)
 
     plt.plot(basalValues.time, [0] * len(basalValues), "bo")
     plt.plot(carbValues.time, [0] * len(carbValues),"go")
