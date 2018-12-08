@@ -85,8 +85,8 @@ def calculateBG(uevent, udata, n):
                     simbgc[i] = simbgc[i]+deltaBGC(i * dt - uevent.time.values[j], udata.sensf, udata.cratio, uevent.grams.values[j], uevent.ctype.values[j])
                 elif uevent.etype.values[j] == "bolus":
                     simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
-                else:
-                    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t2.values[j])
+                #else:
+                  #  simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t2.values[j])
 
     simbg = simbg + simbgc + simbgi
     x = np.linspace(0,simt,n)
