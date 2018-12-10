@@ -58,11 +58,11 @@ def main():
     logger.debug("Load Data")
     data = read_data(filename17)
     logger.debug("Loaded Data with shape: " + str(data.shape))
-    udata = UserData(bginitial=0, cratio=0.08, idur=4, inputeeffect=None, sensf=5, simlength=4, stats=None)
+    udata = UserData(bginitial=0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=5, stats=None)
     res = predictRolling(data, udata)
 
 
     logger.info("finished")
 
 if __name__ == '__main__':
-    mainPredict()
+    main()

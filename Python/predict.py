@@ -1,5 +1,67 @@
+import math
+from datetime import datetime
+from typing import Any, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
+
+from Classes import Event
+
+"""   _td := 360
+   _tp := 55
+ 
+func initVars(_td int, _tp int) {
+   td = float64(_td)
+   tp = float64(_tp)
+   //Time constant of exp decay
+   tau = tp * (1 - tp/td) / (1 - 2*tp/td)
+   //Rise time factor
+   a = 2 * tau / td
+   //Auxiliary scale factor
+   S = 1 / (1 - a + (1+a)*math.Exp(-td/tau))
+}
+ 
+ func calculateInsulinOnBoard(t float64, ie float64) float64 {
+   //IOB curve IOB(t)
+   IOB := 1 - S*(1-a)*((math.Pow(t, 2)/(tau*td*(1-a))-t/tau-1)*math.Exp(-t/tau)+1)
+
+   return ie * IOB
+}"""
+
+
+# Insulin on Board Advanced
+# g = time in minutes from bolus event
+# idur = insulin duration
+
+def init_vars(sensf, idur):
+    # Time constant of exp decay
+    tau = sensf * (1 - sensf/ idur) / (1 - 2*sensf/ idur)
+    # Rise time factor
+    a = 2 * tau /  idur
+    # Auxiliary scale factor
+    s = 1 / (1 - a + (1 + a) * math.exp(- idur / tau))
+    varobject = {}
+    varobject['tau'] = tau
+    varobject['a'] = a
+    varobject['s'] = s
+    return varobject
+
+
+def iob_adv(t, ie, idur, varsobject):
+    tau = varsobject['tau']
+    a = varsobject['a']
+    s = varsobject['s']
+    # IOB curve IOB(t)
+    IOB = 1 - \
+          s * (1 - a) * (
+                  (math.pow(t, 2) / (tau*idur*(1-a))-t/tau-1)*
+                  math.exp(-t/tau)+1)
+
+    return ie * IOB
+
+
+
+
 # Insulin on Board
 # g = time in minutes from bolus event
 # idur = insulin duration
@@ -91,3 +153,29 @@ def calculateBG(uevent, udata, n):
     simbg = simbg + simbgc + simbgi
     x = np.linspace(0,simt,n)
     return (simbg, simbgc, simbgi, x)
+
+def compareIobs():
+    # create sample event
+    event = Event.createBolus(datetime(year=2018, month=12, day=1,hour=0,minute=0), 1)
+    # init parameters
+    n  = 200
+    simt = 5 * 60
+    dt = simt / n
+    sensf = 41.0
+    idur = 5 * 60
+    x = np.linspace(0, simt, n)
+
+    simbgi_adv = np.array([0.0] * n)
+    simbgi = np.array([0.0] * n)
+
+    varsobject = init_vars(sensf,idur)
+    for i in range(0, n):
+        simbgi[i] = simbgi[i] + deltaBGI(i * dt, event.units, sensf, idur/60)
+        simbgi_adv[i] = simbgi[i] + (1 - iob_adv(i *dt, event.units , idur, varsobject))
+    plt.plot(x, simbgi, label='standard')
+    plt.plot(x, simbgi_adv, label='advanced')
+    plt.show()
+
+if __name__ == '__main__':
+    compareIobs()
+
