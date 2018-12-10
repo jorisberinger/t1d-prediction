@@ -39,8 +39,8 @@ def predictFast(data, userdata):
     median = res_series.median(skipna=True)
     mean_adv = res_adv_series.mean(skipna=True)
     median_adv = res_adv_series.median(skipna=True)
-    jsonobject = {"mean": int(mean), "mean_adv": int(mean_adv),"median": int(median),  "median_adv": int(median_adv), "data": res}
-    file = open('./result.json', 'w')
+    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv),"median": float(median),  "median_adv": int(median_adv), "data": res}
+    file = open('./result-10.json', 'w')
     file.write(json.dumps(jsonobject))
     logger.info("finished")
 

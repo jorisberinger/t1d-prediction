@@ -24,6 +24,7 @@ def predictRolling(inputData, userData):
     logger.debug("data frame ")
     data["datetime"] = data.apply(lambda row: getDateTime(row), axis=1)
     data = data.set_index('datetime')
+    data["datetime"] = data.apply(lambda row: getDateTime(row), axis=1)
     # make sample size smaller
     data = data.loc[data.index > datetime(year=2017,month=12,day=15)]
 
@@ -52,6 +53,7 @@ def predictRollingCached(inputData, userData):
         logger.debug("data frame ")
         data["datetime"] = data.apply(lambda row: getDateTime(row), axis=1)
         data = data.set_index('datetime')
+        data["datetime"] = data.apply(lambda row: getDateTime(row), axis=1)
         logger.debug(data)
         # make sample size smaller
         # user rolling window

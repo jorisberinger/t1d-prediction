@@ -14,17 +14,35 @@ def checkWindow(data, udata, startTime):
     events = extractor.getEvents(data)
     converted = events.apply(lambda event: convertTimes(event, startTime))
     df = pandas.DataFrame([vars(e) for e in converted])
+    cgmData = data[data['cgmValue'].notnull()]
+    cgmData['delta'] = cgmData.apply(lambda row: getTimeDelta(row, startTime), axis=1)
     values = data[data['cgmValue'].notnull()]['cgmValue'].values
     udata.bginitial = values[0]
 
-    bg = calculateBG(df, udata, 100)
+    bg = calculateBG(df, udata, udata.simlength * 60)
 
     simbg = bg[0]
     simbg_adv = bg[5]
 
-    #print(simbg[len(simbg) - 1])
-    return [simbg[len(simbg) - 1] - values[len(values) - 1],
-            simbg_adv[len(simbg_adv) - 1] - values[len(values) - 1]]
+    ## get last cgm value
+    lastValue = cgmData['cgmValue'].values[len(cgmData) -1]
+    lastTime = int(cgmData['delta'].values[len(cgmData) - 1])
+
+    ## get second last
+    secondlastValue = cgmData['cgmValue'].values[len(cgmData) - 10]
+    secondlastTime = int(cgmData['delta'].values[len(cgmData) - 10])
+
+    delta = simbg[secondlastTime] - simbg[lastTime]
+    delta_adv = simbg_adv[secondlastTime] - simbg_adv[lastTime]
+
+    prediction = lastValue + delta
+    prediction_adv = lastValue + delta_adv
+
+    error = lastValue - prediction
+    error_adv = lastValue - prediction_adv
+
+
+    return [error, error_adv]
 
 
 def getTimeDelta(row, start):
@@ -32,8 +50,12 @@ def getTimeDelta(row, start):
         startTime = start
     else:
         startTime = datetime.strptime(start + timeZone, timeFormat)
+    if isinstance(row.datetime, datetime):
+        time = row.datetime
+    else:
+        time = datetime.fromisoformat(row.datetime)
 
-    time = datetime.fromisoformat(row.datetime)
+
     if time < startTime:
         timeDifference = startTime - time
         return - timeDifference.seconds / 60
