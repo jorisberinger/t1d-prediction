@@ -156,7 +156,9 @@ def calculateBG(uevent, udata, n):
 
 def compareIobs():
     # create sample event
-    event = Event.createBolus(datetime(year=2018, month=12, day=1,hour=0,minute=0), 1)
+    uevent = []
+    uevent.append(Event.createBolus(datetime(year=2018, month=12, day=1,hour=0,minute=0), 1))
+    uevent.append(Event.createBolus(datetime(year=2018, month=12, day=1, hour=2, minute=0), 1))
     # init parameters
     n  = 200
     simt = 5 * 60
@@ -169,9 +171,13 @@ def compareIobs():
     simbgi = np.array([0.0] * n)
 
     varsobject = init_vars(sensf,idur)
-    for i in range(0, n):
-        simbgi[i] = simbgi[i] + deltaBGI(i * dt, event.units, sensf, idur/60)
-        simbgi_adv[i] = simbgi[i] + (1 - iob_adv(i *dt, event.units , idur, varsobject))
+
+
+    for j in range(0, len(uevent)):
+        event = uevent[j]
+        for i in range(0, n):
+            simbgi[i] = simbgi[i] + deltaBGI(i * dt, event.units, sensf, idur/60)
+            simbgi_adv[i] = simbgi_adv[i] + iob_adv(i *dt, event.units , idur, varsobject)
     plt.plot(x, simbgi, label='standard')
     plt.plot(x, simbgi_adv, label='advanced')
     plt.show()
