@@ -52,12 +52,14 @@ def iob_adv(t, ie, idur, varsobject):
     a = varsobject['a']
     s = varsobject['s']
     # IOB curve IOB(t)
-    IOB = 1 - \
-          s * (1 - a) * (
-                  (math.pow(t, 2) / (tau*idur*(1-a))-t/tau-1)*
-                  math.exp(-t/tau)+1)
+    IOB = 1 - s * (1 - a) * ((math.pow(t, 2) / (tau*idur*(1-a))-t/tau-1) * math.exp(-t/tau)+1)
 
-    return ie * IOB
+    if t < 0:
+        return 1
+    elif t > idur:
+        return 0
+    else:
+        return  IOB
 
 
 
@@ -127,6 +129,10 @@ def deltaBGC(g, sensf, cratio, camount, ct):
 def deltaBGI(g, bolus, sensf, idur):
     return -bolus*sensf*(1-iob(g, idur)/100.0)
 
+def deltaBGI_adv(g, bolus, sensf, idur, varsobject):
+    return - bolus * sensf*( 1- iob_adv(g, bolus, idur, varsobject))
+
+
 
 def deltaBG(g, sensf, cratio, camount, ct, bolus, idur):
     return deltaBGI(g, bolus, sensf, idur) + deltaBGC(g, sensf, cratio, camount, ct)
@@ -157,14 +163,15 @@ def calculateBG(uevent, udata, n):
 def compareIobs():
     # create sample event
     uevent = []
-    uevent.append(Event.createBolus(datetime(year=2018, month=12, day=1,hour=0,minute=0), 1))
-    uevent.append(Event.createBolus(datetime(year=2018, month=12, day=1, hour=2, minute=0), 1))
+    uevent.append(Event.createBolus(30, 1))
+    uevent.append(Event.createBolus(180, 2))
+#    uevent.append(Event.createBolus(200, 1))
     # init parameters
     n  = 200
     simt = 5 * 60
     dt = simt / n
     sensf = 41.0
-    idur = 5 * 60
+    idur = 4 * 60
     x = np.linspace(0, simt, n)
 
     simbgi_adv = np.array([0.0] * n)
@@ -176,10 +183,13 @@ def compareIobs():
     for j in range(0, len(uevent)):
         event = uevent[j]
         for i in range(0, n):
-            simbgi[i] = simbgi[i] + deltaBGI(i * dt, event.units, sensf, idur/60)
-            simbgi_adv[i] = simbgi_adv[i] + iob_adv(i *dt, event.units , idur, varsobject)
+            simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent[j].time, event.units, sensf, idur/60)
+            simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevent[j].time, event.units, sensf, idur, varsobject)
     plt.plot(x, simbgi, label='standard')
     plt.plot(x, simbgi_adv, label='advanced')
+    for event in uevent:
+        plt.plot(event.time, 0, "o",label="bolus, " + str(event.units) + " units")
+    plt.legend()
     plt.show()
 
 if __name__ == '__main__':
