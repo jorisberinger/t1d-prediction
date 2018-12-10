@@ -14,15 +14,17 @@ def checkWindow(data, udata, startTime):
     events = extractor.getEvents(data)
     converted = events.apply(lambda event: convertTimes(event, startTime))
     df = pandas.DataFrame([vars(e) for e in converted])
-    udata.bginitial = data['cgmValue'].values[0]
+    values = data[data['cgmValue'].notnull()]['cgmValue'].values
+    udata.bginitial = values[0]
 
     bg = calculateBG(df, udata, 100)
 
     simbg = bg[0]
-    values = data[data['cgmValue'].notnull()]['cgmValue'].values
+    simbg_adv = bg[5]
 
     #print(simbg[len(simbg) - 1])
-    return simbg[len(simbg) - 1] - values[len(values) - 1]
+    return [simbg[len(simbg) - 1] - values[len(values) - 1],
+            simbg_adv[len(simbg_adv) - 1] - values[len(values) - 1]]
 
 
 def getTimeDelta(row, start):

@@ -33,11 +33,13 @@ def mainPredict(data, userdata):
 def predictFast(data, userdata):
     res = rolling.predictRollingCached(data, userdata)
 
-    res_series = pandas.Series(res)
+    res_series = pandas.Series(res[0])
+    res_adv_series = pandas.Series(res[1])
     mean = res_series.mean(skipna=True)
     median = res_series.median(skipna=True)
-    numberofna = res_series.isna().sum()
-    jsonobject = {"mean": int(mean), "median": int(median), "number of NA": int(numberofna), "data": res}
+    mean_adv = res_adv_series.mean(skipna=True)
+    median_adv = res_adv_series.median(skipna=True)
+    jsonobject = {"mean": int(mean), "mean_adv": int(mean_adv),"median": int(median),  "median_adv": int(median_adv), "data": res}
     file = open('./result.json', 'w')
     file.write(json.dumps(jsonobject))
     logger.info("finished")
@@ -59,7 +61,8 @@ def main():
     logger.debug("Loaded Data with shape: " + str(data.shape))
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=5, stats=None)
     logger.debug("set user data")
-    mainPredict(data, udata)
+
+    predictFast(data, udata)
     logger.info("finished")
 
 if __name__ == '__main__':
