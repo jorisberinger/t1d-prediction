@@ -4,8 +4,8 @@ from autotune_prep import writeJson
 from check import checkCurrent
 from Classes import Event, UserData
 from readData import read_data
-from predict import calculateBG
-from rolling import predictRolling, predictRollingCached
+import rolling
+import predict
 import json
 import logging
 
@@ -17,31 +17,21 @@ filename17 = "../../Data/data2017.csv"
 filename1217 = "../../Data/data1217.csv"
 filenameDocker = "/t1d/data/data1217.csv"
 
-def mainplt():
+def plt(udata):
     uevent = [Event.createBolus(time=10, units=3.8),
               Event.createCarb(time=5, grams=18, ctype=180),
               Event.createTemp(time=0,dbdt=2,t1=10,t2=20)]
 
-    udata = UserData(bginitial= 0, cratio= 0.2, idur= 3, inputeeffect= 5, sensf = 10, simlength = 1, stats = None)
+    predict.calculateBG(uevent, udata, 500)
 
-    calculateBG(uevent, udata, 500)
-
-def mainPredict():
-    data = read_data(filename)
-    data = data[data['date'] == "08.03.18"]
-    udata = UserData(bginitial=0, cratio=5, idur=3, inputeeffect=None, sensf=41, simlength=12, stats=None)
-    res = checkCurrent(data, udata)
+def mainPredict(data, userdata):
+    data = data[data['date'] == "15.12.17"]
+    start = "15.12.17,11:00"
+    res = checkCurrent(data, userdata, start)
 
 
-def mainFast():
-    # get rolling prediction window
-    logger.info("Start Main")
-    logger.debug("Load Data")
-    data = read_data(filenameDocker)
-    logger.debug("Loaded Data with shape: " + str(data.shape))
-    udata = UserData(bginitial=0, cratio=0.08, idur=4, inputeeffect=None, sensf=5, simlength=4, stats=None)
-    #res = predictRolling(data, udata)
-    res = predictRollingCached(data, udata)
+def predictFast(data, userdata):
+    res = rolling.predictRollingCached(data, userdata)
 
     res_series = pandas.Series(res)
     mean = res_series.mean(skipna=True)
@@ -52,16 +42,24 @@ def mainFast():
     file.write(json.dumps(jsonobject))
     logger.info("finished")
 
+def predictRolling(data, userdata):
+    rolling.predictRolling(data, userdata)
+
+def compareIOBs(userdata):
+    # create sample events
+    uevents = [Event.createBolus(30, 1), Event.createBolus(180, 1)]
+    predict.compareIobs(userdata, uevents, "compare.png")
+
 def main():
     # get rolling prediction window
     logger.info("Start Main")
     logger.debug("Load Data")
-    data = read_data(filename17)
+    #data = read_data(filenameDocker)
+    data = read_data(filename1217)
     logger.debug("Loaded Data with shape: " + str(data.shape))
-    udata = UserData(bginitial=0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=5, stats=None)
-    res = predictRolling(data, udata)
-
-
+    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=5, stats=None)
+    logger.debug("set user data")
+    mainPredict(data, udata)
     logger.info("finished")
 
 if __name__ == '__main__':

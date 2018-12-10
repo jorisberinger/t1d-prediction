@@ -143,9 +143,14 @@ def calculateBG(uevent, udata, n):
     simbg = np.array([udata.bginitial] * n)
     simbgc = np.array([0.0] * n)
     simbgi = np.array([0.0] * n)
+    simbgi_adv = np.array([0.0] * n)
+    simbg_adv = np.array([udata.bginitial] * n)
 
     simt = udata.simlength * 60
     dt = simt / n
+
+    varsobject = init_vars(udata.sensf, udata.idur * 60)
+
     for j in range(0, len(uevent)):
         if uevent.etype.values[j] != "":
             for i in range(0, n):
@@ -153,45 +158,46 @@ def calculateBG(uevent, udata, n):
                     simbgc[i] = simbgc[i]+deltaBGC(i * dt - uevent.time.values[j], udata.sensf, udata.cratio, uevent.grams.values[j], uevent.ctype.values[j])
                 elif uevent.etype.values[j] == "bolus":
                     simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
+                    simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur * 60, varsobject)
+
                 #else:
                   #  simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t2.values[j])
 
-    simbg = simbg + simbgc + simbgi
+    simbg_res = simbg + simbgc + simbgi
+    simbg_adv = simbg_adv + simbgc + simbgi_adv
     x = np.linspace(0,simt,n)
-    return (simbg, simbgc, simbgi, x)
+    return (simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv)
 
-def compareIobs():
-    # create sample event
-    uevent = []
-    uevent.append(Event.createBolus(30, 1))
-    uevent.append(Event.createBolus(180, 2))
-#    uevent.append(Event.createBolus(200, 1))
+# compare two different IOB functions
+def compareIobs(userdata, uevents, filename):
+
     # init parameters
-    n  = 200
-    simt = 5 * 60
-    dt = simt / n
-    sensf = 41.0
-    idur = 4 * 60
+    n = userdata.simlength * 60  # one time step every minute
+    simt = userdata.simlength * 60  # Simulation length in minutes
+    dt = simt / n   # time steps
+    sensf = userdata.sensf  # Insulin sensitivity factor
+    idur = userdata.idur  # insulin durtion in hours
+
+    # init empty arrays for results
     x = np.linspace(0, simt, n)
+    simbgi_adv = np.array([userdata.bginitial] * n)
+    simbgi = np.array([userdata.bginitial] * n)
 
-    simbgi_adv = np.array([0.0] * n)
-    simbgi = np.array([0.0] * n)
+    # initialize vars for advanced iob funtion
+    varsobject = init_vars(sensf, idur*60)
 
-    varsobject = init_vars(sensf,idur)
-
-
-    for j in range(0, len(uevent)):
-        event = uevent[j]
+    # calculate BGI for every timestep
+    for j in range(0, len(uevents)):
+        event = uevents[j]
         for i in range(0, n):
-            simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent[j].time, event.units, sensf, idur/60)
-            simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevent[j].time, event.units, sensf, idur, varsobject)
-    plt.plot(x, simbgi, label='standard')
-    plt.plot(x, simbgi_adv, label='advanced')
-    for event in uevent:
-        plt.plot(event.time, 0, "o",label="bolus, " + str(event.units) + " units")
+            simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevents[j].time, event.units, sensf, idur)
+            simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevents[j].time, event.units, sensf, idur * 60, varsobject)
+
+    # plot results in compare.png
+    plt.plot(x, simbgi, label='standard', alpha=0.7)
+    plt.plot(x, simbgi_adv, label='advanced', alpha=0.7)
+    for event in uevents:
+        plt.plot(event.time, 0, "o", label="bolus, " + str(event.units) + " units")
     plt.legend()
-    plt.show()
-
-if __name__ == '__main__':
-    compareIobs()
-
+    plt.title("Comparison of IOB functions")
+    plt.savefig(filename, dpi=600)

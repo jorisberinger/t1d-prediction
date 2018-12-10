@@ -25,30 +25,42 @@ def checkWindow(data, udata, startTime):
     return simbg[len(simbg) - 1] - values[len(values) - 1]
 
 
+def getTimeDelta(row, start):
+    if isinstance(start, datetime):
+        startTime = start
+    else:
+        startTime = datetime.strptime(start + timeZone, timeFormat)
+
+    time = datetime.fromisoformat(row.datetime)
+    if time < startTime:
+        timeDifference = startTime - time
+        return - timeDifference.seconds / 60
+    else:
+        timeDifference = time - startTime
+        return timeDifference.seconds / 60
 
 
-def checkCurrent(data, udata):
+def checkCurrent(data, udata, startTime):
 
     events = extractor.getEvents(data)
 
-    converted = events.apply(lambda event: convertTimes(event, "08.03.18,00:00"))
+    converted = events.apply(lambda event: convertTimes(event, startTime))
     df = pandas.DataFrame([vars(e) for e in converted])
-
     df = df[df.time > 0]
     df = df[df.time < udata.simlength * 60]
 
-    #df = df.iloc[[12]]
+    cgmtrue = data[data['cgmValue'].notnull()]
+    cgmtrue['delta'] = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
+    cgmtrue = cgmtrue[0 < cgmtrue['delta']]
+    cgmtrue = cgmtrue[cgmtrue['delta'] < udata.simlength * 60]
+    cgmX = cgmtrue['delta'].values
+    cgmY = cgmtrue['cgmValue'].values
 
-
-    cgm = data[data['cgmValue'].notnull()]['cgmValue']
-
-
-    dataZero = data[data['time'] == "08:58"]
-    initialBG = dataZero['cgmValue'].values[0]
+    initialBG = cgmY[0]
 
     udata.bginitial = initialBG
 
-    data = calculateBG(df, udata, 100)
+    data = calculateBG(df, udata, 500)
 
     basalValues = df[df.etype == 'tempbasal']
     carbValues = df[df.etype == 'carb']
@@ -59,18 +71,24 @@ def checkCurrent(data, udata):
         print(str(data[3][i]) + '\t' * 5 + str(data[0][i]) + '\t' * 5 + str(data[1][i]) + '\t' * 5 + str(data[2][i]) )
 
     dataasdf = pandas.DataFrame([data[1], data[0], data[1], data[2]])
-    print(dataasdf)
 
-    plt.plot(data[3], data[0])
-    plt.plot(data[3], data[1])
-    plt.plot(data[3], data[2])
+    plt.figure(figsize=(10, 7))
+    plt.grid(color="#cfd8dc")
+    plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
 
-    plt.plot(cgm.values)
+    plt.plot(data[3], data[0], "#b71c1c", alpha=0.8, label="sim BG")
+    plt.plot(data[3], data[5], "#4527a0", alpha=0.8, label="sim BG ADV")
 
-    plt.plot(basalValues.time, [0] * len(basalValues), "bo")
-    plt.plot(carbValues.time, [0] * len(carbValues),"go")
-    plt.plot(bolusValues.time, [0] * len(bolusValues),"ro")
-    plt.savefig("result.png", dpi=600)
+    plt.plot(data[3], data[1], "#64dd17", alpha=0.8, label="sim BGC")
+    plt.plot(data[3], data[2], "#d50000", alpha=0.8, label="sim BGI")
+    plt.plot(data[3], data[4], "#aa00ff", alpha=0.8, label="sim BGI ADV")
+
+    plt.plot(basalValues.time, [0] * len(basalValues), "bo", alpha=0.8, label="basal event")
+    plt.plot(carbValues.time, [0] * len(carbValues),"go", alpha=0.8, label="carb event")
+    plt.plot(bolusValues.time, [0] * len(bolusValues),"ro", alpha=0.8, label="bolus (not used)")
+    plt.legend(loc=2, bbox_to_anchor=(1,1))
+    plt.tight_layout(pad=6)
+    plt.savefig("result.png", dpi=300)
 
 
 def convertTimes(event, start):

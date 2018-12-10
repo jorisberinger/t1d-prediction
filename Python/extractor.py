@@ -26,7 +26,7 @@ def getEvents(data):
         mealEvents = []
     else:
         mealEvents = meal.apply(
-            lambda event: Event.createCarb(time=event['date']+','+event['time'], grams=event['mealValue'], ctype=3*60), axis=1) # TODO Carbtype
+            lambda event: Event.createCarb(time=event['date']+','+event['time'], grams=event['mealValue'], ctype=4*60), axis=1) # TODO Carbtype
 
     #mealEvents.apply(lambda event: event.toString(), 1)
 
