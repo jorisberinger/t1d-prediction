@@ -33,7 +33,7 @@ def predictRolling(inputData, userData):
     rolling.apply(lambda window: predictWindow(window))
 
 
-def rolling(data, delta, steps, udata):
+def rolling(data, delta, steps, udata, stepsback):
     startTime = data.index[0]
     startTime = startTime.replace(minute= startTime.minute // int((steps.seconds / 60)))
     endTime = data.index[len(data)-1]
@@ -42,11 +42,11 @@ def rolling(data, delta, steps, udata):
         subset = data.loc[startTime <= data.index]
         subset = subset.loc[startTime + delta > subset.index]
 
-        results.append(checkWindow(subset, udata, startTime))
+        results.append(checkWindow(subset, udata, startTime, stepsback))
 
         startTime += steps
     return results
-def predictRollingCached(inputData, userData):
+def predictRollingCached(inputData, userData, steps):
         # user rolling window to get 5 hours of data
         logger.debug("convert data to dataFrame")
         data = pandas.DataFrame(inputData)
@@ -57,6 +57,6 @@ def predictRollingCached(inputData, userData):
         logger.debug(data)
         # make sample size smaller
         # user rolling window
-        return rolling(data, timedelta(hours=5), timedelta(minutes=15), userData)
+        return rolling(data, timedelta(hours=5), timedelta(minutes=15), userData, steps)
 
 

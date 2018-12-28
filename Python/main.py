@@ -1,5 +1,6 @@
 import pandas
 
+from analyze import analyze
 from autotune_prep import writeJson
 from check import checkCurrent
 from Classes import Event, UserData
@@ -26,21 +27,23 @@ def plt(udata):
 
 def mainPredict(data, userdata):
     data = data[data['date'] == "15.12.17"]
-    start = "15.12.17,11:00"
+    start = "15.12.17,10:00"
     res = checkCurrent(data, userdata, start)
 
 
 def predictFast(data, userdata):
-    res = rolling.predictRollingCached(data, userdata)
-
+    steps = 5
+    res = rolling.predictRollingCached(data, userdata, steps)
     res_series = pandas.Series(res[0])
     res_adv_series = pandas.Series(res[1])
     mean = res_series.mean(skipna=True)
     median = res_series.median(skipna=True)
     mean_adv = res_adv_series.mean(skipna=True)
     median_adv = res_adv_series.median(skipna=True)
-    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv),"median": float(median),  "median_adv": int(median_adv), "data": res}
-    file = open('./result-10.json', 'w')
+    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "median": float(median),  "median_adv": int(median_adv), "data": res}
+    filename = "result-" + str(steps) + ".json"
+    analyze(jsonobject, filename)
+    file = open(filename, 'w')
     file.write(json.dumps(jsonobject))
     logger.info("finished")
 
@@ -59,11 +62,23 @@ def main():
     #data = read_data(filenameDocker)
     data = read_data(filename1217)
     logger.debug("Loaded Data with shape: " + str(data.shape))
-    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=5, stats=None)
+    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
     logger.debug("set user data")
-
-    predictFast(data, udata)
+    mainPredict(data, udata)
+   # predictFast(data, udata)
     logger.info("finished")
 
 if __name__ == '__main__':
     main()
+
+
+# prediction mit gleichem wert
+# prediction mit steigung von  letzten 3 werten
+# verticale linie in result.png und prediction plotten
+# prediction time 60 min
+# 6h
+# basal raten -> bolus
+# autotune fuer jeden tag
+# verschiedene zeitfenster fuer autotune
+# carb platzierung
+# carbs alle 10 minuten, unit optimieren bis die kurve passt
