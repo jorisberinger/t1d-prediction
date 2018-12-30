@@ -7,6 +7,8 @@ from Classes import Event, UserData
 from readData import read_data
 import rolling
 import predict
+import autotune_prep
+import autotune
 import json
 import logging
 
@@ -59,10 +61,12 @@ def main():
     # get rolling prediction window
     logger.info("Start Main")
     logger.debug("Load Data")
-    #data = read_data(filenameDocker)
-    data = read_data(filename1217)
+    data = read_data(filenameDocker)
+    #data = read_data(filename1217)
     logger.debug("Loaded Data with shape: " + str(data.shape))
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
+    autotune_prep.prep_for_autotune(data)
+    autotune.run_autotune(data)
     logger.debug("set user data")
     mainPredict(data, udata)
    # predictFast(data, udata)

@@ -5,13 +5,18 @@ import extractor
 import uuid
 from datetime import datetime
 import pandas
+import logging
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 timeFormat = "%d.%m.%y,%H:%M%z"
 timeZone = "+0100"
-datafilename = "../../Data/data0318.csv"
+datafilename = "../../Data/data1217.csv"
+filenameDocker = "/t1d/data/data1217.csv"
+pathDocker = "/t1d/input/1/"
 path = "../Autotune/data/input/"
-
 
 # Convert Time from String to Datetime object
 def convertTime(dateandtime):
@@ -20,20 +25,28 @@ def convertTime(dateandtime):
 
 # write Json data in file. Filename is appended to path variable to get relative path of file
 def writeJson(jsonarray, filename):
-    file = open(path + filename + '.json', 'w')
+    file = open(pathDocker + filename + '.json', 'w')
     file.write(json.dumps(jsonarray))
 
 
 # create Glucose Json in order to use it as input for autotune
 def createGlucoseJson(data):
     i = 0
-    jsonarray = data.apply(lambda x: {"_id": uuid.uuid4().hex,
-                                      "type" : "sgv",
-                                      "dateString" : convertTime(x.date + ',' + x.time).isoformat(),
-                                      "date" : convertTime(x.date + ',' + x.time).timestamp() * 1000,
-                                      "sgv" : x.cgmValue,
-                                      "device": "openaps://tmpaps"}, axis=1)
-    writeJson(jsonarray.values.tolist(), "glucose")
+    grouped = data.groupby(['date'])
+    for name, group in grouped:
+        logger.debug("glucose - " + name)
+        jsonarray = group.apply(lambda x: {"_id": uuid.uuid4().hex,
+                                                                 "type": "sgv",
+                                                                 "dateString": convertTime(
+                                                                     x.date + ',' + x.time).isoformat(),
+                                                                 "date": convertTime(
+                                                                     x.date + ',' + x.time).timestamp() * 1000,
+                                                                 "sgv": x.cgmValue,
+                                                                 "device": "openaps://tmpaps"}, axis=1)
+        writeJson(jsonarray.values.tolist(), "glucose-" + name)
+
+
+
 
 
 def bolusToJson(event):
@@ -96,16 +109,19 @@ def eventToJson(e):
 # create insulin pump history Json in order to use it as input for autotune
 def createPumphistoryJson(events):
     data = pandas.DataFrame(events)
-    jsondata = data.apply(eventToJson, axis=1)
-    jsondata = jsondata[jsondata.notnull()]
-    writeJson(jsondata.values.tolist(), "pumphistory")
+    data['date'] = data.apply(lambda x:
+                              x.values[0].time.split(',')[0], axis=1)
+    grouped = data.groupby('date')
+    for name, group in grouped:
+        logger.debug("pumphistory - " + name)
+        jsondata = group.apply(eventToJson, axis=1)
+        jsondata = jsondata[jsondata.notnull()]
+        writeJson(jsondata.values.tolist(), "pumphistory-"+name)
 
 
 # read data and create json files for autotune
-def main():
-    data = read_data(datafilename)
-    data = data[data['date'] == "08.03.18"]
-
+def prep_for_autotune(data):
+    logger.info("prep for autotune - start")
     # create glucose.json from cgmValue
     cgms = extractor.getBGContinious(data)
     createGlucoseJson(cgms)
@@ -113,7 +129,4 @@ def main():
     # create pumphistory.json from insulin events
     events = extractor.getEvents(data)
     createPumphistoryJson(events)
-
-
-if __name__ == '__main__':
-    main()
+    logger.info("prep for autotune - end")

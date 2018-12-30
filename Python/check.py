@@ -116,8 +116,8 @@ def checkCurrent(data, udata, startTime):
     bolusValues = df[df.etype == 'bolus']
 
 
-    for i in range(0,len(data[0])):
-        print(str(data[3][i]) + '\t' * 5 + str(data[0][i]) + '\t' * 5 + str(data[1][i]) + '\t' * 5 + str(data[2][i]))
+    #for i in range(0,len(data[0])):
+     #   print(str(data[3][i]) + '\t' * 5 + str(data[0][i]) + '\t' * 5 + str(data[1][i]) + '\t' * 5 + str(data[2][i]))
 
     dataasdf = pandas.DataFrame([data[1], data[0], data[1], data[2]])
 
