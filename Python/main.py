@@ -27,7 +27,9 @@ def plt(udata):
 
     predict.calculateBG(uevent, udata, 500)
 
+# makes a 1 hour prediction based on a 5 hour data set. it will generate a plot to show prediction in result.png
 def mainPredict(data, userdata):
+    # select date and start time for prediction
     data = data[data['date'] == "15.12.17"]
     start = "15.12.17,10:00"
     res = checkCurrent(data, userdata, start)
@@ -64,10 +66,13 @@ def main():
     data = read_data(filenameDocker)
     #data = read_data(filename1217)
     logger.debug("Loaded Data with shape: " + str(data.shape))
-    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
-    autotune_prep.prep_for_autotune(data)
-    autotune.run_autotune(data)
     logger.debug("set user data")
+    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
+    logger.debug("Prep glucose and insulin history for autotune as json")
+    autotune_prep.prep_for_autotune(data)
+    logger.debug("Run autotune")
+    autotune.run_autotune(data)
+    logger.debug("Run Prediciton")
     mainPredict(data, udata)
    # predictFast(data, udata)
     logger.info("finished")

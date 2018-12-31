@@ -1,7 +1,8 @@
 import logging
 import subprocess
+import json
 
-logging.basicConfig(level=logging.info)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 prepjs = "/autotune/oref0/bin/oref0-autotune-prep.js"
@@ -27,3 +28,19 @@ def run_autotune(data):
         with open(path + "autotune-result-" + name + ".json", "w") as file:
             proc = subprocess.run(["node", corejs,  "/autotune/data/input/1/prepped_glucose-" + name + ".json" ,  profilejson, profilepumpjson], encoding='utf-8', stdout=subprocess.PIPE)
             file.write(proc.stdout)
+
+    for name, group in grouped:
+        logger.debug("read - " + name)
+        getSensAndCR(name)
+
+def getSensAndCR(datestring):
+    with open(path + "autotune-result-" + datestring + ".json", "r") as file:
+        data = json.load(file)
+        logger.debug("file read " + datestring)
+        cr = data["carb_ratio"]
+        sens = data["isfProfile"]["sensitivities"]
+
+        logger.debug("carb ratio: " + str(cr))
+        logger.debug("sensitivities: " + str(sens))
+
+        return {"cr" : cr, "sens" : sens}
