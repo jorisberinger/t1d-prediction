@@ -16,7 +16,9 @@ RUN npm install
 RUN npm install -git
 RUN npm link
 RUN npm link oref0
+RUN npm install -g nodemon
 
 WORKDIR /t1d
 
-CMD python main.py
+CMD nodemon --exec python main.py -L
+#CMD python main.pyd
