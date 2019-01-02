@@ -20,5 +20,5 @@ RUN npm install -g nodemon
 
 WORKDIR /t1d
 
-CMD nodemon --exec python main.py -L
-#CMD python main.pyd
+#CMD nodemon --exec python main.py -L
+CMD python main.py

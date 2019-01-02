@@ -81,7 +81,7 @@ def main():
     logger.debug("Run Prediciton")
     mainPredict(data, udata)
    # predictFast(data, udata)
-    logger.info("finished")
+    logger.info("finished!")
 
 if __name__ == '__main__':
     main()
