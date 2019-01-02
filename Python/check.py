@@ -74,6 +74,8 @@ def getTimeDelta(row, start):
 
 def getClosestIndex(cgmX, number):
     res = 0
+    logger.debug("cgmX last" + str(cgmX[len(cgmX) -1 ]))
+    logger.debug("number " + str(number))
     while cgmX[res] <= number:
         res += 1
     return res - 1
@@ -128,12 +130,18 @@ def checkCurrent(data, udata, startTime):
 
     plt.figure(figsize=(10, 7))
     plt.grid(color="#cfd8dc")
+    plt.xlim(0,udata.simlength * 60)
+
     plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
 
     plt.plot(data[3], data[0], "#b71c1c", alpha=0.5, label="sim BG")
     plt.plot(range(int(cgmX[index]), len(data[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
     plt.plot(data[3], data[5], "#4527a0", alpha=0.5, label="sim BG ADV")
     plt.plot(range(int(cgmX[index]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
+
+    # vertical prediction
+    plt.axhline(y = prediction_vals[0], xmin=5/6,alpha=0.8, label="Same Value Prediction")
+
 
     plt.plot(data[3], data[1], "#64dd17", alpha=0.5, label="sim BGC")
     plt.plot(data[3], data[2], "#d50000", alpha=0.5, label="sim BGI")
@@ -150,7 +158,7 @@ def checkCurrent(data, udata, startTime):
 
     plt.legend(loc=2, bbox_to_anchor=(1, 1))
     plt.tight_layout(pad=6)
-    plt.axvline(x=(udata.simlength - 1) * 60)
+    plt.axvline(x=(udata.simlength - 1) * 60, color="black")
     plt.savefig("result.png", dpi=300)
 
 

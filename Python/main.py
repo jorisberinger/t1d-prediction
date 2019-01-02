@@ -30,8 +30,14 @@ def plt(udata):
 # makes a 1 hour prediction based on a 5 hour data set. it will generate a plot to show prediction in result.png
 def mainPredict(data, userdata):
     # select date and start time for prediction
-    data = data[data['date'] == "15.12.17"]
-    start = "15.12.17,10:00"
+    date = "21.12.17"
+    time = "16:00"
+    autotune_res = autotune.getSensAndCR(date)
+    userdata.cratio = autotune_res["cr"]
+    logger.info(autotune_res)
+    userdata.sensf = autotune_res["sens"][0]["sensitivity"]
+    data = data[data['date'] == date]
+    start = date+","+time
     res = checkCurrent(data, userdata, start)
 
 
@@ -69,9 +75,9 @@ def main():
     logger.debug("set user data")
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
     logger.debug("Prep glucose and insulin history for autotune as json")
-    autotune_prep.prep_for_autotune(data)
+    #autotune_prep.prep_for_autotune(data)
     logger.debug("Run autotune")
-    autotune.run_autotune(data)
+    #autotune.run_autotune(data)
     logger.debug("Run Prediciton")
     mainPredict(data, udata)
    # predictFast(data, udata)
