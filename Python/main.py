@@ -31,7 +31,7 @@ def plt(udata):
 def mainPredict(data, userdata):
     # select date and start time for prediction
     date = "21.12.17"
-    time = "16:00"
+    time = "18:00"
     autotune_res = autotune.getSensAndCR(date)
     userdata.cratio = autotune_res["cr"]
     logger.info(autotune_res)
@@ -75,9 +75,9 @@ def main():
     logger.debug("set user data")
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
     logger.debug("Prep glucose and insulin history for autotune as json")
-    #autotune_prep.prep_for_autotune(data)
+    autotune_prep.prep_for_autotune(data)
     logger.debug("Run autotune")
-    #autotune.run_autotune(data)
+    autotune.run_autotune(data)
     logger.debug("Run Prediciton")
     mainPredict(data, udata)
    # predictFast(data, udata)

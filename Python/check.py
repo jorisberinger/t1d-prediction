@@ -1,6 +1,6 @@
 import logging
 import math
-
+import os
 import pandas
 
 import extractor
@@ -159,7 +159,10 @@ def checkCurrent(data, udata, startTime):
     plt.legend(loc=2, bbox_to_anchor=(1, 1))
     plt.tight_layout(pad=6)
     plt.axvline(x=(udata.simlength - 1) * 60, color="black")
-    plt.savefig("result.png", dpi=300)
+    directory = os.path.dirname("/t1d/results/")
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    plt.savefig("/t1d/results/result.png", dpi=300)
 
 
 def convertTimes(event, start):

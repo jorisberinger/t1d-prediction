@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 import pandas
 import logging
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ timeFormat = "%d.%m.%y,%H:%M%z"
 timeZone = "+0100"
 datafilename = "../../Data/data1217.csv"
 filenameDocker = "/t1d/data/data1217.csv"
-pathDocker = "/t1d/input/1/"
+pathDocker = "/t1d/autotune/data/input/2/"
 path = "../Autotune/data/input/"
 
 # Convert Time from String to Datetime object
@@ -122,6 +123,10 @@ def createPumphistoryJson(events):
 # read data and create json files for autotune
 def prep_for_autotune(data):
     logger.info("prep for autotune - start")
+    directory = os.path.dirname(pathDocker)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     # create glucose.json from cgmValue
     cgms = extractor.getBGContinious(data)
     createGlucoseJson(cgms)

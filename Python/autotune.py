@@ -1,32 +1,39 @@
 import logging
 import subprocess
 import json
+import os
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+folder = "/t1d/autotune/data/input/"
+path = folder + "2/"
 prepjs = "/autotune/oref0/bin/oref0-autotune-prep.js"
 corejs = "/autotune/oref0/bin/oref0-autotune-core.js"
-profilejson = "/autotune/data/input/profile.json"
-profilepumpjson = "/autotune/data/input/profile.pump.json"
-path = "/autotune/data/input/1/"
+profilejson = folder + "profile.json"
+profilepumpjson = folder + "profile.pump.json"
+
+
 
 
 
 def run_autotune(data):
     logger.info("run autotune")
+    directory = os.path.dirname(path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
     #subprocess.run(["node", prepjs ,  "/autotune/data/input/1/pumphistory-15.12.17.json" ,  profilejson ,  "/autotune/data/input/1/glucose-15.12.17.json" ,  profilepumpjson, ">", preppedjson])
     grouped = data.groupby('date')
     for name, group in grouped:
         logger.debug("prep - " + name)
         with open(path + "prepped_glucose-" + name + ".json", "w") as file:
-            proc = subprocess.run(["node", prepjs,  "/autotune/data/input/1/pumphistory-" + name + ".json" ,  profilejson ,  "/autotune/data/input/1/glucose-" + name + ".json" ,  profilepumpjson], encoding='utf-8', stdout=subprocess.PIPE)
+            proc = subprocess.run(["node", prepjs,  path + "pumphistory-" + name + ".json" ,  profilejson ,  path + "glucose-" + name + ".json" ,  profilepumpjson], encoding='utf-8', stdout=subprocess.PIPE)
             file.write(proc.stdout)
 
     for name, group in grouped:
         logger.debug("result - " + name)
         with open(path + "autotune-result-" + name + ".json", "w") as file:
-            proc = subprocess.run(["node", corejs,  "/autotune/data/input/1/prepped_glucose-" + name + ".json" ,  profilejson, profilepumpjson], encoding='utf-8', stdout=subprocess.PIPE)
+            proc = subprocess.run(["node", corejs,  path + "prepped_glucose-" + name + ".json" ,  profilejson, profilepumpjson], encoding='utf-8', stdout=subprocess.PIPE)
             file.write(proc.stdout)
 
     for name, group in grouped:
