@@ -15,10 +15,8 @@ import logging
 logging.basicConfig(level=logging.info)
 logger = logging.getLogger(__name__)
 
-filename = "../../Data/data0318.csv"
-filename17 = "../../Data/data2017.csv"
-filename1217 = "../../Data/data1217.csv"
-filenameDocker = "/t1d/data/data1217.csv"
+
+filenameDocker = "/t1d/data/csv/data.csv"
 
 def plt(udata):
     uevent = [Event.createBolus(time=10, units=3.8),
@@ -67,7 +65,7 @@ def compareIOBs(userdata):
 
 def main():
     # get rolling prediction window
-    logger.info("Start Main")
+    logger.info("Start Main!")
     logger.debug("Load Data")
     data = read_data(filenameDocker)
     #data = read_data(filename1217)

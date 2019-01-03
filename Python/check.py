@@ -162,7 +162,8 @@ def checkCurrent(data, udata, startTime):
     directory = os.path.dirname("/t1d/results/")
     if not os.path.exists(directory):
         os.makedirs(directory)
-    plt.savefig("/t1d/results/result.png", dpi=300)
+        
+    plt.savefig("/t1d/results/result.svgz", dpi=300)
 
 
 def convertTimes(event, start):

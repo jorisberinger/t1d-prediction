@@ -6,7 +6,7 @@ import os
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
-folder = "/t1d/autotune/data/input/"
+folder = "/t1d/data/input/"
 path = folder + "2/"
 prepjs = "/autotune/oref0/bin/oref0-autotune-prep.js"
 corejs = "/autotune/oref0/bin/oref0-autotune-core.js"

@@ -14,10 +14,7 @@ logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
 timeZone = "+0100"
-datafilename = "../../Data/data1217.csv"
-filenameDocker = "/t1d/data/data1217.csv"
-pathDocker = "/t1d/autotune/data/input/2/"
-path = "../Autotune/data/input/"
+pathDocker = "/t1d/data/input/2/"
 
 # Convert Time from String to Datetime object
 def convertTime(dateandtime):
