@@ -1,5 +1,69 @@
+import math
+from datetime import datetime
+from typing import Any, Union
+
 import matplotlib.pyplot as plt
 import numpy as np
+
+from Classes import Event
+
+"""   _td := 360
+   _tp := 55
+ 
+func initVars(_td int, _tp int) {
+   td = float64(_td)
+   tp = float64(_tp)
+   //Time constant of exp decay
+   tau = tp * (1 - tp/td) / (1 - 2*tp/td)
+   //Rise time factor
+   a = 2 * tau / td
+   //Auxiliary scale factor
+   S = 1 / (1 - a + (1+a)*math.Exp(-td/tau))
+}
+ 
+ func calculateInsulinOnBoard(t float64, ie float64) float64 {
+   //IOB curve IOB(t)
+   IOB := 1 - S*(1-a)*((math.Pow(t, 2)/(tau*td*(1-a))-t/tau-1)*math.Exp(-t/tau)+1)
+
+   return ie * IOB
+}"""
+
+
+# Insulin on Board Advanced
+# g = time in minutes from bolus event
+# idur = insulin duration
+
+def init_vars(sensf, idur):
+    # Time constant of exp decay
+    tau = sensf * (1 - sensf/ idur) / (1 - 2*sensf/ idur)
+    # Rise time factor
+    a = 2 * tau /  idur
+    # Auxiliary scale factor
+    s = 1 / (1 - a + (1 + a) * math.exp(- idur / tau))
+    varobject = {}
+    varobject['tau'] = tau
+    varobject['a'] = a
+    varobject['s'] = s
+    return varobject
+
+
+def iob_adv(t, ie, idur, varsobject):
+    tau = varsobject['tau']
+    a = varsobject['a']
+    s = varsobject['s']
+    # IOB curve IOB(t)
+    IOB = 1 - s * (1 - a) * ((math.pow(t, 2) / (tau*idur*(1-a))-t/tau-1) * math.exp(-t/tau)+1)
+
+    if t < 0:
+        return 1
+    elif t > idur:
+        return 0
+    else:
+        return  IOB
+
+
+
+
 # Insulin on Board
 # g = time in minutes from bolus event
 # idur = insulin duration
@@ -23,7 +87,7 @@ def iob(g, idur):
 
 # Simpson rule tot integrate IOB.
 def intIOB(x1, x2, idur, g):
-    nn = 50  # nn needs to be even
+    nn = 200  # nn needs to be even
     ii = 1
 
     # init with first and last terms of simpson series
@@ -65,45 +129,75 @@ def deltaBGC(g, sensf, cratio, camount, ct):
 def deltaBGI(g, bolus, sensf, idur):
     return -bolus*sensf*(1-iob(g, idur)/100.0)
 
+def deltaBGI_adv(g, bolus, sensf, idur, varsobject):
+    return - bolus * sensf*( 1- iob_adv(g, bolus, idur, varsobject))
+
+
 
 def deltaBG(g, sensf, cratio, camount, ct, bolus, idur):
     return deltaBGI(g, bolus, sensf, idur) + deltaBGC(g, sensf, cratio, camount, ct)
 
 
-
-
-
-
-def reloadGraphData(uevent, udata, n):
+def calculateBG(uevent, udata, n):
 
     simbg = np.array([udata.bginitial] * n)
     simbgc = np.array([0.0] * n)
     simbgi = np.array([0.0] * n)
+    simbgi_adv = np.array([0.0] * n)
+    simbg_adv = np.array([udata.bginitial] * n)
 
     simt = udata.simlength * 60
     dt = simt / n
-    print("dt", dt)
+
+    varsobject = init_vars(udata.sensf, udata.idur * 60)
+
     for j in range(0, len(uevent)):
-        if uevent[j] and uevent[j].etype != "":
+        if uevent.etype.values[j] != "":
             for i in range(0, n):
-                if uevent[j].etype == "carb":
-                    simbgc[i] = simbgc[i]+deltaBGC(i * dt - uevent[j].time, udata.sensf, udata.cratio, uevent[j].grams, uevent[j].ctype)
-                elif uevent[j].etype == "bolus":
-                    simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent[j].time, uevent[j].units, udata.sensf, udata.idur)
-                else:
-                    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent[j].dbdt, udata.sensf, udata.idur, uevent[j].t1, uevent[j].t2)
+                if uevent.etype.values[j] == "carb":
+                    simbgc[i] = simbgc[i]+deltaBGC(i * dt - uevent.time.values[j], udata.sensf, udata.cratio, uevent.grams.values[j], uevent.ctype.values[j])
+                elif uevent.etype.values[j] == "bolus":
+                    simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
+                    simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur * 60, varsobject)
 
-    simbg = simbg + simbgc + simbgi
-    x = np.array(range(0, n))
-    x = x * dt
-    print(x)
-    plt.plot(x, simbgc)
-    plt.plot(x, simbgi)
-    plt.plot(x, simbg)
-    plt.show()
+                #else:
+                  #  simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t2.values[j])
 
-    print(simbgc)
-    print(simbgi)
+    simbg_res = simbg + simbgc + simbgi
+    simbg_adv = simbg_adv + simbgc + simbgi_adv
+    x = np.linspace(0,simt,n)
+    return (simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv)
 
+# compare two different IOB functions
+def compareIobs(userdata, uevents, filename):
 
+    # init parameters
+    n = userdata.simlength * 60  # one time step every minute
+    simt = userdata.simlength * 60  # Simulation length in minutes
+    dt = simt / n   # time steps
+    sensf = userdata.sensf  # Insulin sensitivity factor
+    idur = userdata.idur  # insulin durtion in hours
 
+    # init empty arrays for results
+    x = np.linspace(0, simt, n)
+    simbgi_adv = np.array([userdata.bginitial] * n)
+    simbgi = np.array([userdata.bginitial] * n)
+
+    # initialize vars for advanced iob funtion
+    varsobject = init_vars(sensf, idur*60)
+
+    # calculate BGI for every timestep
+    for j in range(0, len(uevents)):
+        event = uevents[j]
+        for i in range(0, n):
+            simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevents[j].time, event.units, sensf, idur)
+            simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevents[j].time, event.units, sensf, idur * 60, varsobject)
+
+    # plot results in compare.png
+    plt.plot(x, simbgi, label='standard', alpha=0.7)
+    plt.plot(x, simbgi_adv, label='advanced', alpha=0.7)
+    for event in uevents:
+        plt.plot(event.time, 0, "o", label="bolus, " + str(event.units) + " units")
+    plt.legend()
+    plt.title("Comparison of IOB functions")
+    plt.savefig(filename, dpi=600)
