@@ -1,5 +1,4 @@
 import pandas
-
 from analyze import analyze
 from autotune_prep import writeJson
 from check import checkCurrent
@@ -17,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 filenameDocker = "/t1d/data/csv/data.csv"
+run_autotune = True
 
 def plt(udata):
     uevent = [Event.createBolus(time=10, units=3.8),
@@ -72,10 +72,11 @@ def main():
     logger.debug("Loaded Data with shape: " + str(data.shape))
     logger.debug("set user data")
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
-    logger.debug("Prep glucose and insulin history for autotune as json")
-    autotune_prep.prep_for_autotune(data)
-    logger.debug("Run autotune")
-    autotune.run_autotune(data)
+    if run_autotune:
+        logger.debug("Prep glucose and insulin history for autotune as json")
+        autotune_prep.prep_for_autotune(data)
+        logger.debug("Run autotune")
+        autotune.run_autotune(data)
     logger.debug("Run Prediciton")
     mainPredict(data, udata)
    # predictFast(data, udata)

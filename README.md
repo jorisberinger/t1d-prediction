@@ -57,3 +57,5 @@ Nodemon will watch inside the docker container for file changes (only .py) and w
 
 ## Change code
 To change code, open the python directory with your editor of choice. For rapid development start the docker container with autowatch. It will rerun the code everytime you change a python file. 
+
+After the first run, autotune has created all necessary files and run_autotune in python/main.py can be set to False for a faster runtime. 

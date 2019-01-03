@@ -14,9 +14,6 @@ profilejson = folder + "profile.json"
 profilepumpjson = folder + "profile.pump.json"
 
 
-
-
-
 def run_autotune(data):
     logger.info("run autotune")
     directory = os.path.dirname(path)
