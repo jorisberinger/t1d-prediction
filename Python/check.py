@@ -97,6 +97,8 @@ def getPredictionVals(cgmX, cgmY, index,  simData):
 
 def checkCurrent(data, udata, startTime):
 
+    run_plot = False
+
     events = extractor.getEvents(data)
 
     converted = events.apply(lambda event: convertTimes(event, startTime))
@@ -137,43 +139,54 @@ def checkCurrent(data, udata, startTime):
     prediction_vals = getPredictionVals(cgmX, cgmY, index,  data[0])
     prediction_vals_adv = getPredictionVals(cgmX, cgmY, index,  data[5])
 
-    plt.figure(figsize=(10, 7))
-    plt.grid(color="#cfd8dc")
-    plt.xlim(0,udata.simlength * 60)
+    if run_plot:
+        plt.figure(figsize=(10, 7))
+        plt.grid(color="#cfd8dc")
+        plt.xlim(0,udata.simlength * 60)
 
-    plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
+        plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
 
-    plt.plot(data[3], data[0], "#b71c1c", alpha=0.5, label="sim BG")
-    plt.plot(range(int(cgmX[index]), len(data[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
-    plt.plot(data[3], data[5], "#4527a0", alpha=0.5, label="sim BG ADV")
-    plt.plot(range(int(cgmX[index]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
+        plt.plot(data[3], data[0], "#b71c1c", alpha=0.5, label="sim BG")
+        plt.plot(range(int(cgmX[index]), len(data[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
+        plt.plot(data[3], data[5], "#4527a0", alpha=0.5, label="sim BG ADV")
+        plt.plot(range(int(cgmX[index]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
 
-    # vertical prediction
-    plt.axhline(y = prediction_vals[0], xmin=5/6,alpha=0.8, label="Same Value Prediction")
-
-
-    plt.plot(data[3], data[1], "#64dd17", alpha=0.5, label="sim BGC")
-    plt.plot(data[3], data[2], "#d50000", alpha=0.5, label="sim BGI")
-    plt.plot(data[3], data[4], "#aa00ff", alpha=0.5, label="sim BGI ADV")
+        # vertical prediction
+        plt.axhline(y = prediction_vals[0], xmin=5/6,alpha=0.8, label="Same Value Prediction")
 
 
-
-
-    plt.plot(basalValues.time, [0] * len(basalValues), "bo", alpha=0.8, label="basal event (not used)")
-    plt.plot(carbValues.time, [0] * len(carbValues), "go", alpha=0.8, label="carb event")
-    plt.plot(bolusValues.time, [0] * len(bolusValues), "ro", alpha=0.8, label="bolus evnet")
+        plt.plot(data[3], data[1], "#64dd17", alpha=0.5, label="sim BGC")
+        plt.plot(data[3], data[2], "#d50000", alpha=0.5, label="sim BGI")
+        plt.plot(data[3], data[4], "#aa00ff", alpha=0.5, label="sim BGI ADV")
 
 
 
-    plt.legend(loc=2, bbox_to_anchor=(1, 1))
-    plt.tight_layout(pad=6)
-    plt.axvline(x=(udata.simlength - 1) * 60, color="black")
-    directory = os.path.dirname("/t1d/results/")
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        
-    plt.savefig("/t1d/results/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".svgz", dpi=300)
 
+        plt.plot(basalValues.time, [0] * len(basalValues), "bo", alpha=0.8, label="basal event (not used)")
+        plt.plot(carbValues.time, [0] * len(carbValues), "go", alpha=0.8, label="carb event")
+        plt.plot(bolusValues.time, [0] * len(bolusValues), "ro", alpha=0.8, label="bolus evnet")
+
+
+
+        plt.legend(loc=2, bbox_to_anchor=(1, 1))
+        plt.tight_layout(pad=6)
+        plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+        directory = os.path.dirname("/t1d/results/")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        plt.savefig("/t1d/results/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".svgz", dpi=300)
+
+        plt.close()
+
+    lastValue = cgmY[len(cgmY)-1]
+    prediction = prediction_vals[int(cgmX[len(cgmX)-1] - cgmX[index])]
+    prediction_adv = prediction_vals_adv[int(cgmX[len(cgmX) - 1] - cgmX[index])]
+    error = lastValue - prediction
+    error_adv = lastValue - prediction_adv
+    error_same_value = lastValue - cgmY[index]
+    logger.debug("error: " + str(error) +  "\terror_adv: " + str(error_adv) + "\terror_same_value: " + str(error_same_value))
+    return [error, error_adv, error_same_value]
 
 
 def convertTimes(event, start):

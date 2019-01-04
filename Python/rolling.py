@@ -52,6 +52,7 @@ def rolling(data, delta, udata):
         startTime += delta # delta determines the time between two predictions
     return results
 
+
 # prepare data for rolling prediction and call rolling prediction
 def predictRolling(inputData, userData):
         # user rolling window to get 5 hours of data
@@ -63,6 +64,7 @@ def predictRolling(inputData, userData):
         data["datetime"] = data.apply(lambda row: getDateTime(row), axis=1)
         #logger.debug(data)
         # make sample size smaller
+        logger.debug(len(data))
         # user rolling window
         return rolling(data, timedelta(minutes=15), userData)
 
