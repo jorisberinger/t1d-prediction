@@ -2,7 +2,7 @@ import pandas
 import logging
 from datetime import datetime, timedelta
 from autotune_prep import convertTime
-from check import checkWindow
+from check import checkWindow, checkCurrent
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ def predictWindow(window):
     return 1
 
 
-def predictRolling(inputData, userData):
+def predictRolling2(inputData, userData):
     # user rolling window to get 5 hours of data
     logger.debug("convert data to dataFrame")
     data = pandas.DataFrame(inputData)
@@ -32,21 +32,28 @@ def predictRolling(inputData, userData):
     rolling = data.rolling('5h')
     rolling.apply(lambda window: predictWindow(window))
 
-
-def rolling(data, delta, steps, udata, stepsback):
+# make rolling prediction and call checkWindow for every data window
+def rolling(data, delta, udata):
     startTime = data.index[0]
-    startTime = startTime.replace(minute= startTime.minute // int((steps.seconds / 60)))
+    startTime = startTime.replace(minute= startTime.minute // int((udata.predictionlength)))
     endTime = data.index[len(data)-1]
     results = []
-    while startTime < endTime - delta:
+
+    # loop through the data
+    while startTime < endTime - timedelta(hours=udata.simlength):
+
+        # select data for this window
         subset = data.loc[startTime <= data.index]
-        subset = subset.loc[startTime + delta > subset.index]
+        subset = subset.loc[startTime + timedelta(hours=udata.simlength) > subset.index]
 
-        results.append(checkWindow(subset, udata, startTime, stepsback))
+        # call the prediction method
+        results.append(checkCurrent(subset, udata, startTime))
 
-        startTime += steps
+        startTime += delta # delta determines the time between two predictions
     return results
-def predictRollingCached(inputData, userData, steps):
+
+# prepare data for rolling prediction and call rolling prediction
+def predictRolling(inputData, userData):
         # user rolling window to get 5 hours of data
         logger.debug("convert data to dataFrame")
         data = pandas.DataFrame(inputData)
@@ -54,9 +61,9 @@ def predictRollingCached(inputData, userData, steps):
         data["datetime"] = data.apply(lambda row: getDateTime(row), axis=1)
         data = data.set_index('datetime')
         data["datetime"] = data.apply(lambda row: getDateTime(row), axis=1)
-        logger.debug(data)
+        #logger.debug(data)
         # make sample size smaller
         # user rolling window
-        return rolling(data, timedelta(hours=5), timedelta(minutes=15), userData, steps)
+        return rolling(data, timedelta(minutes=15), userData)
 
 

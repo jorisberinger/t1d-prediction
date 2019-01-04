@@ -13,10 +13,12 @@ import logging
 
 logging.basicConfig(level=logging.info)
 logger = logging.getLogger(__name__)
+import profile
 
 
 filenameDocker = "/t1d/data/csv/data.csv"
-run_autotune = True
+run_autotune = False
+
 
 def plt(udata):
     uevent = [Event.createBolus(time=10, units=3.8),
@@ -38,10 +40,12 @@ def mainPredict(data, userdata):
     start = date+","+time
     res = checkCurrent(data, userdata, start)
 
-
+# make prediction every 15 minutes
 def predictFast(data, userdata):
-    steps = 5
-    res = rolling.predictRollingCached(data, userdata, steps)
+    id = 1 # for debug
+    res = rolling.predictRolling(data, userdata)
+
+    # analyse data and prepare for output
     res_series = pandas.Series(res[0])
     res_adv_series = pandas.Series(res[1])
     mean = res_series.mean(skipna=True)
@@ -49,11 +53,11 @@ def predictFast(data, userdata):
     mean_adv = res_adv_series.mean(skipna=True)
     median_adv = res_adv_series.median(skipna=True)
     jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "median": float(median),  "median_adv": int(median_adv), "data": res}
-    filename = "result-" + str(steps) + ".json"
+    filename = "result-" + str(id) + ".json"
     analyze(jsonobject, filename)
     file = open(filename, 'w')
     file.write(json.dumps(jsonobject))
-    logger.info("finished")
+    logger.info("finished prediction")
 
 def predictRolling(data, userdata):
     rolling.predictRolling(data, userdata)
@@ -61,7 +65,7 @@ def predictRolling(data, userdata):
 def compareIOBs(userdata):
     # create sample events
     uevents = [Event.createBolus(30, 1), Event.createBolus(180, 1)]
-    predict.compareIobs(userdata, uevents, "compare.png")
+    predict.compareIobs(userdata, uevents, "/t1d/results/compare.png")
 
 def main():
     # get rolling prediction window
@@ -71,19 +75,19 @@ def main():
     #data = read_data(filename1217)
     logger.debug("Loaded Data with shape: " + str(data.shape))
     logger.debug("set user data")
-    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, stats=None)
+    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, predictionlength=60, stats=None)
     if run_autotune:
         logger.debug("Prep glucose and insulin history for autotune as json")
         autotune_prep.prep_for_autotune(data)
         logger.debug("Run autotune")
         autotune.run_autotune(data)
     logger.debug("Run Prediciton")
-    mainPredict(data, udata)
-   # predictFast(data, udata)
+   # mainPredict(data, udata)
+    predictFast(data, udata)
     logger.info("finished!")
 
 if __name__ == '__main__':
-    main()
+    profile.run('main()')
 
 
 # prediction mit gleichem wert

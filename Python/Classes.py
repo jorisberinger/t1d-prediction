@@ -33,11 +33,12 @@ class Event:
 
 
 class UserData:
-    def __init__(self, bginitial, cratio, idur, inputeeffect, sensf, simlength, stats):
+    def __init__(self, bginitial, cratio, idur, inputeeffect, sensf, simlength, stats, predictionlength):
         self.bginitial = bginitial
         self.cratio = cratio
         self.idur = idur
         self.inputeeffect = inputeeffect
         self.sensf = sensf
         self.simlength = simlength
+        self.predictionlength = predictionlength
         self.stats = stats

@@ -1,10 +1,9 @@
 import logging
-import math
 import os
 import pandas
 
 import extractor
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from Classes import UserData
 from predict import calculateBG
@@ -16,8 +15,13 @@ timeZone = "+0100"
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def checkWindow(data, udata, startTime, steps):
-    events = extractor.getEvents(data)
+# make prediction for a window
+def checkWindow(data, udata, startTime):
+
+    # split data for only training
+    trainData = data.loc[startTime + timedelta(hours=udata.simlength-1) > data.index]
+
+    events = extractor.getEvents(trainData)
     converted = events.apply(lambda event: convertTimes(event, startTime))
     df = pandas.DataFrame([vars(e) for e in converted])
     cgmData = data[data['cgmValue'].notnull()]
@@ -26,6 +30,7 @@ def checkWindow(data, udata, startTime, steps):
     udata.bginitial = values[0]
 
     bg = calculateBG(df, udata, udata.simlength * 60)
+
 
     simbg = bg[0]
     simbg_adv = bg[5]
@@ -123,7 +128,11 @@ def checkCurrent(data, udata, startTime):
 
     dataasdf = pandas.DataFrame([data[1], data[0], data[1], data[2]])
 
-    index = getClosestIndex(cgmX, (udata.simlength -1) * 60)
+    if(cgmX[len(cgmX) -1] >= (udata.simlength -1) * 60):
+        index = getClosestIndex(cgmX, (udata.simlength -1) * 60)
+    else:
+        logger.warning("not able to predict")
+        return
 
     prediction_vals = getPredictionVals(cgmX, cgmY, index,  data[0])
     prediction_vals_adv = getPredictionVals(cgmX, cgmY, index,  data[5])
@@ -163,7 +172,8 @@ def checkCurrent(data, udata, startTime):
     if not os.path.exists(directory):
         os.makedirs(directory)
         
-    plt.savefig("/t1d/results/result.svgz", dpi=300)
+    plt.savefig("/t1d/results/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".svgz", dpi=300)
+
 
 
 def convertTimes(event, start):
