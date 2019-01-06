@@ -1,12 +1,12 @@
 import logging
 import os
 import pandas
-
+import numpy as np
 import extractor
 from datetime import datetime, timedelta
 
 from Classes import UserData
-from predict import calculateBG
+import predict
 from matplotlib import pyplot as plt
 
 timeFormat = "%d.%m.%y,%H:%M%z"
@@ -56,7 +56,14 @@ def checkWindow(data, udata, startTime):
 
     return [error, error_adv]
 
-
+def getTimeDeltaFast(row, start):
+    time = row.datetime
+    if time < start:
+        timeDifference = start - time
+        return - timeDifference.seconds / 60
+    else:
+        timeDifference = time - start
+        return timeDifference.seconds / 60
 def getTimeDelta(row, start):
     if isinstance(start, datetime):
         startTime = start
@@ -78,8 +85,8 @@ def getTimeDelta(row, start):
 
 def getClosestIndex(cgmX, number):
     res = 0
-    logger.debug("cgmX last" + str(cgmX[len(cgmX) -1 ]))
-    logger.debug("number " + str(number))
+    #logger.debug("cgmX last" + str(cgmX[len(cgmX) -1 ]))
+    #logger.debug("number " + str(number))
     while cgmX[res] <= number:
         res += 1
     return res - 1
@@ -93,6 +100,66 @@ def getPredictionVals(cgmX, cgmY, index,  simData):
         res.append(start + simData[i] - zero)
     return res
 
+
+def getPredictionAt(index_last_train, df_train, udata):
+
+    prediction = predict.calculateBGAt(index_last_train, df_train, udata, udata.simlength * 60)
+    #logger.debug("prediction at " + str(prediction))
+    return prediction
+
+
+def checkFast(data, udata, startTime):
+
+    # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
+    cgmtrue = data[data['cgmValue'].notnull()]
+    cgmtrue['delta'] = cgmtrue.apply(lambda row: getTimeDeltaFast(row, startTime), axis=1)
+    cgmtrue = cgmtrue[0 < cgmtrue['delta']]
+    cgmtrue = cgmtrue[cgmtrue['delta'] < udata.simlength * 60]
+    cgmX = cgmtrue['delta'].values
+    cgmY = cgmtrue['cgmValue'].values
+
+    # Find Data Point closest to 5h mark, save index
+    if (cgmX[len(cgmX) - 1] >= (udata.simlength - 1) * 60):
+        index_last_train = getClosestIndex(cgmX, (udata.simlength - 1) * 60)
+        time_last_train = cgmX[index_last_train]
+        train_value = cgmY[index_last_train]
+    else:
+        logger.warning("not able to predict")
+        return None
+
+    # Get Last Datapoint and index
+    index_last_value = len(cgmY) - 1  # TODO check if index l v - index l t is circa 60 min
+    time_last_value = cgmX[index_last_value]
+    lastValue = cgmY[index_last_value]
+
+
+    # Get Events for Prediction
+    events = extractor.getEvents(data)
+    converted = events.apply(lambda event: convertTimes(event, startTime))
+    df = pandas.DataFrame([vars(e) for e in converted])
+    df_train = df[df.time < (udata.simlength - 1) * 60]
+    logger.debug("index train " + str(index_last_train))
+    logger.debug("index last " + str(index_last_value))
+    # Get prediction Value for last train value
+    prediction_last_train = np.array(predict.calculateBGAt(time_last_train, df_train, udata, udata.simlength * 60))
+    logger.debug("prediction train " + str(prediction_last_train))
+    # Get prediction Value for last value
+    prediction_last_value = np.array(predict.calculateBGAt(time_last_value, df_train, udata, udata.simlength * 60))
+    logger.debug("prediction value " + str(prediction_last_value))
+    # Get Delta between train and last value
+    prediction_delta = prediction_last_value - prediction_last_train
+    logger.debug("delta " + str(prediction_delta))
+    # add on last Train value
+    prediction = np.add(train_value, prediction_delta)
+    logger.debug("prediction " + str(prediction))
+    # add same value prediction
+    prediction = np.append(prediction, train_value)
+    logger.debug("prediction " + str(prediction))
+    # calculate error
+    errors = np.subtract(lastValue, prediction)
+    logger.debug("errors " + str(errors))
+
+    return errors.tolist()
 
 def checkCurrent(data, udata, startTime):
 
@@ -117,7 +184,7 @@ def checkCurrent(data, udata, startTime):
 
     udata.bginitial = initialBG
 
-    data = calculateBG(df_train, udata, udata.simlength * 60)
+    data = predict.calculateBG(df_train, udata, udata.simlength * 60)
 
     basalValues = df[df.etype == 'tempbasal']
     carbValues = df[df.etype == 'carb']

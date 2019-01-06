@@ -4,7 +4,8 @@ from typing import Any, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import logging
+logger = logging.getLogger(__name__)
 from Classes import Event
 
 """   _td := 360
@@ -123,6 +124,9 @@ def deltatempBGI(g, dbdt, sensf, idur, t1, t2):
 
 
 def deltaBGC(g, sensf, cratio, camount, ct):
+    logger.debug("delta bgc")
+    logger.debug(str(g) + "\t" + str(sensf) + "\t" + str(cratio) + "\t" + str(camount) + "\t" + str(ct))
+    logger.debug(sensf/cratio*camount*cob(g, ct))
     return sensf/cratio*camount*cob(g, ct)
 
 
@@ -136,6 +140,36 @@ def deltaBGI_adv(g, bolus, sensf, idur, varsobject):
 
 def deltaBG(g, sensf, cratio, camount, ct, bolus, idur):
     return deltaBGI(g, bolus, sensf, idur) + deltaBGC(g, sensf, cratio, camount, ct)
+
+
+def calculateBGAt(index, uevent, udata, n):
+    varsobject = init_vars(udata.sensf, udata.idur * 60)
+
+    simbg = udata.bginitial
+    simbg_adv = udata.bginitial
+    simbgc = 0
+    simbgi = 0
+    simbgi_adv = 0
+
+
+    simt = udata.simlength * 60
+    dt = simt / n # dt must be 1, 1 minute intervals
+    i = index
+    logger.debug("number of events " + str(len(uevent)))
+    logger.debug("index " + str(i))
+    for j in range(0, len(uevent)):
+        if uevent.etype.values[j] != "":
+                if uevent.etype.values[j] == "carb":
+                    simbgc = simbgc + deltaBGC(i * dt - uevent.time.values[j], udata.sensf, udata.cratio, uevent.grams.values[j], uevent.ctype.values[j])
+                elif uevent.etype.values[j] == "bolus":
+                    simbgi = simbgi + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
+                    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur * 60, varsobject)
+
+    simbg_res = simbg + simbgc + simbgi
+    simbg_adv = simbg_adv + simbgc + simbgi_adv
+    return [simbg_res, simbg_adv]
+
+
 
 
 def calculateBG(uevent, udata, n):
@@ -201,3 +235,5 @@ def compareIobs(userdata, uevents, filename):
     plt.legend()
     plt.title("Comparison of IOB functions")
     plt.savefig(filename, dpi=600)
+
+

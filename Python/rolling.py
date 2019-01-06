@@ -2,7 +2,7 @@ import pandas
 import logging
 from datetime import datetime, timedelta
 from autotune_prep import convertTime
-from check import checkWindow, checkCurrent
+import check
 
 
 logger = logging.getLogger(__name__)
@@ -15,7 +15,6 @@ def getDateTime(row):
 def predictWindow(window):
     print(window.shape)
     return 1
-
 
 def predictRolling2(inputData, userData):
     # user rolling window to get 5 hours of data
@@ -48,7 +47,8 @@ def rolling(data, delta, udata):
         subset = subset.loc[startTime + timedelta(hours=udata.simlength) > subset.index]
 
         # call the prediction method
-        res = checkCurrent(subset, udata, startTime)
+        res = check.checkFast(subset, udata, startTime)
+        #res = check.checkCurrent(subset, udata, startTime)
         if res is not None:
             results.append(res)
 

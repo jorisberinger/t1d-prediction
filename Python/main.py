@@ -10,7 +10,8 @@ import autotune
 import json
 import logging
 import time
-from tabulate import tabulate
+import filecmp
+
 import profile
 import pstats
 from pstats import SortKey
@@ -45,11 +46,9 @@ def mainPredict(data, userdata):
 
 # make prediction every 15 minutes
 def predictFast(data, userdata):
-    setNumber = 1  # for debug
+    setNumber = 3  # for debug
     res = rolling.predictRolling(data, userdata)
 
-
-    logger.debug(tabulate(res, headers='keys', tablefmt='psql'))
     logger.debug(res)
     # analyse data and prepare for output
     df = pandas.DataFrame(res)
@@ -80,8 +79,8 @@ def predictFast(data, userdata):
     jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value),
                   "median": float(median),  "median_adv": float(median_adv), "median_same_value": float(median_same_value),
                   "data": res}
-    filename = "/t1d/result-" + str(setNumber) + ".json"
-    analyze(jsonobject, filename)
+    filename = "/t1d/results/result-" + str(setNumber) + ".json"
+    #analyze(jsonobject, filename)
     file = open(filename, 'w')
     file.write(json.dumps(jsonobject))
     logger.info("finished prediction")
@@ -113,17 +112,20 @@ def main():
     predictFast(data, udata)
     logger.info("finished!")
 if __name__ == '__main__':
-
+    run_profile = False
     start_time = time.process_time()
-    main()
-    print(time.process_time() - start_time, "seconds")
     #
-    #prof = profile.run('main()', "/t1d/results/profile")
-    #p = pstats.Stats("/t1d/results/profile")
-    #p.strip_dirs().sort_stats(SortKey.CUMULATIVE).reverse_order().dump_stats("/t1d/results/profile.txt")
-    #p.strip_dirs().sort_stats(SortKey.CUMULATIVE).print_stats(15)
-    #p.strip_dirs().sort_stats(SortKey.CALLS).print_stats(15)
-    #p.strip_dirs().sort_stats(SortKey.TIME).print_stats(15)
+    if run_profile:
+        prof = profile.run('main()', "/t1d/results/profile")
+        p = pstats.Stats("/t1d/results/profile")
+        p.strip_dirs().sort_stats(SortKey.CUMULATIVE).reverse_order().dump_stats("/t1d/results/profile.txt")
+        p.strip_dirs().sort_stats(SortKey.CUMULATIVE).print_stats(15)
+        p.strip_dirs().sort_stats(SortKey.CALLS).print_stats(15)
+        p.strip_dirs().sort_stats(SortKey.TIME).print_stats(15)
+    else:
+        main()
+    logger.info(str(time.process_time() - start_time) + " seconds")
+    logger.info("File Comparison: " + str(filecmp.cmp('/t1d/results/result-3.json', '/t1d/results/result-2.json')))
 
 
 # prediction mit gleichem wert
