@@ -3,7 +3,6 @@ import subprocess
 import json
 import os
 
-logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 folder = "/t1d/data/input/"

@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from autotune_prep import convertTime
 from check import checkWindow, checkCurrent
 
-logging.basicConfig(level=logging.INFO)
+
 logger = logging.getLogger(__name__)
 
 filename = "../../Data/data1217.csv"
@@ -38,18 +38,22 @@ def rolling(data, delta, udata):
     startTime = startTime.replace(minute= startTime.minute // int((udata.predictionlength)))
     endTime = data.index[len(data)-1]
     results = []
-
+    i = 0
     # loop through the data
     while startTime < endTime - timedelta(hours=udata.simlength):
-
+        logger.info("#" + str(i))
+        i += 1
         # select data for this window
         subset = data.loc[startTime <= data.index]
         subset = subset.loc[startTime + timedelta(hours=udata.simlength) > subset.index]
 
         # call the prediction method
-        results.append(checkCurrent(subset, udata, startTime))
+        res = checkCurrent(subset, udata, startTime)
+        if res is not None:
+            results.append(res)
 
         startTime += delta # delta determines the time between two predictions
+    logger.debug("length of result " + str(len(results)))
     return results
 
 

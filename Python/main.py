@@ -9,12 +9,15 @@ import autotune_prep
 import autotune
 import json
 import logging
+import time
+from tabulate import tabulate
 import profile
 import pstats
 from pstats import SortKey
-
-logging.basicConfig(level=logging.info)
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+
 
 filenameDocker = "/t1d/data/csv/data.csv"
 run_autotune = False
@@ -45,6 +48,8 @@ def predictFast(data, userdata):
     setNumber = 1  # for debug
     res = rolling.predictRolling(data, userdata)
 
+
+    logger.debug(tabulate(res, headers='keys', tablefmt='psql'))
     logger.debug(res)
     # analyse data and prepare for output
     df = pandas.DataFrame(res)
@@ -107,14 +112,18 @@ def main():
    # mainPredict(data, udata)
     predictFast(data, udata)
     logger.info("finished!")
-
 if __name__ == '__main__':
-    prof = profile.run('main()', "/t1d/results/profile")
-    p = pstats.Stats("/t1d/results/profile")
-    p.strip_dirs().sort_stats(SortKey.CUMULATIVE).reverse_order().dump_stats("/t1d/results/profile.txt")
-    p.strip_dirs().sort_stats(SortKey.CUMULATIVE).print_stats(15)
-    p.strip_dirs().sort_stats(SortKey.CALLS).print_stats(15)
-    p.strip_dirs().sort_stats(SortKey.TIME).print_stats(15)
+
+    start_time = time.process_time()
+    main()
+    print(time.process_time() - start_time, "seconds")
+    #
+    #prof = profile.run('main()', "/t1d/results/profile")
+    #p = pstats.Stats("/t1d/results/profile")
+    #p.strip_dirs().sort_stats(SortKey.CUMULATIVE).reverse_order().dump_stats("/t1d/results/profile.txt")
+    #p.strip_dirs().sort_stats(SortKey.CUMULATIVE).print_stats(15)
+    #p.strip_dirs().sort_stats(SortKey.CALLS).print_stats(15)
+    #p.strip_dirs().sort_stats(SortKey.TIME).print_stats(15)
 
 
 # prediction mit gleichem wert

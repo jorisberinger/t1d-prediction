@@ -12,7 +12,6 @@ from matplotlib import pyplot as plt
 timeFormat = "%d.%m.%y,%H:%M%z"
 timeZone = "+0100"
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # make prediction for a window
@@ -134,7 +133,7 @@ def checkCurrent(data, udata, startTime):
         index = getClosestIndex(cgmX, (udata.simlength -1) * 60)
     else:
         logger.warning("not able to predict")
-        return
+        return None
 
     prediction_vals = getPredictionVals(cgmX, cgmY, index,  data[0])
     prediction_vals_adv = getPredictionVals(cgmX, cgmY, index,  data[5])
@@ -186,6 +185,12 @@ def checkCurrent(data, udata, startTime):
     error_adv = lastValue - prediction_adv
     error_same_value = lastValue - cgmY[index]
     logger.debug("error: " + str(error) +  "\terror_adv: " + str(error_adv) + "\terror_same_value: " + str(error_same_value))
+    if error is None:
+        logger.warning("none type error")
+    if error_adv is None:
+        logger.warning("none type adv")
+    if error_same_value is None:
+        logger.warning("none type sv")
     return [error, error_adv, error_same_value]
 
 
