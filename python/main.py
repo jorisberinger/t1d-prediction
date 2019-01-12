@@ -11,7 +11,6 @@ import json
 import logging
 import time
 import filecmp
-
 import profile
 import pstats
 from pstats import SortKey
@@ -21,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 filenameDocker = "/t1d/data/csv/data.csv"
-run_autotune = False
+run_autotune = True
 
 
 def plt(udata):
@@ -115,14 +114,3 @@ if __name__ == '__main__':
     logger.info(str(time.process_time() - start_time) + " seconds")
     logger.info("File Comparison: " + str(filecmp.cmp('/t1d/results/result-3.json', '/t1d/results/result-2.json')))
 
-
-# prediction mit gleichem wert
-# prediction mit steigung von  letzten 3 werten
-# verticale linie in result.png und prediction plotten
-# prediction time 60 min
-# 6h
-# basal raten -> bolus
-# autotune fuer jeden tag
-# verschiedene zeitfenster fuer autotune
-# carb platzierung
-# carbs alle 10 minuten, unit optimieren bis die kurve passt
