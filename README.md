@@ -33,7 +33,7 @@ Start with a file containing about 15 days of history and see how fast the compu
 Create new folder for autotune Input Data 
 
 (still in data folder)
-`mkdir Input`
+`mkdir input`
 
 Add your **profile.json** and **profile.pump.json** files
 
