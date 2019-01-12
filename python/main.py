@@ -1,37 +1,22 @@
-import pandas
-from analyze import analyze
-from check import checkCurrent
-from Classes import Event, UserData
+import analyze
+import check
+from Classes import UserData
 from readData import read_data
 import rolling
-import predict
 import autotune_prep
 import autotune
-import json
 import logging
 import time
-import filecmp
-import profile
-import pstats
-from pstats import SortKey
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-
-
 filenameDocker = "/t1d/data/csv/data.csv"
-run_autotune = True
 
 
-def plt(udata):
-    uevent = [Event.createBolus(time=10, units=3.8),
-              Event.createCarb(time=5, grams=18, ctype=180),
-              Event.createTemp(time=0,dbdt=2,t1=10,t2=20)]
-
-    predict.calculateBG(uevent, udata, 500)
 
 # makes a 1 hour prediction based on a 5 hour data set. it will generate a plot to show prediction in result.png
-def mainPredict(data, userdata):
+def createOnePlot(data, userdata):
     # select date and start time for prediction
     date = "21.12.17"
     time = "18:00"
@@ -41,76 +26,44 @@ def mainPredict(data, userdata):
     userdata.sensf = autotune_res["sens"][0]["sensitivity"]
     data = data[data['date'] == date]
     start = date+","+time
-    res = checkCurrent(data, userdata, start)
+    res = check.checkCurrent(data, userdata, start)
+
 
 # make prediction every 15 minutes
 def predictFast(data, userdata):
-    setNumber = 3  # for debug
+    # make a rolling prediction
     res = rolling.predictRolling(data, userdata)
-
     # analyse data and prepare for output
-    df = pandas.DataFrame(res)
-    df = df.apply(abs)
-    res_series = pandas.Series(df[0])
-    res_series = res_series.apply(abs)
-    res_adv_series = pandas.Series(df[1])
-    res_same_value = pandas.Series(df[2])
-    mean = res_series.mean(skipna=True)
-    median = res_series.median(skipna=True)
-    mean_adv = res_adv_series.mean(skipna=True)
-    median_adv = res_adv_series.median(skipna=True)
-    mean_same_value = res_same_value.mean(skipna=True)
-    median_same_value = res_same_value.median(skipna=True)
-    logger.info("Results: mean: " + str(mean)+ "\tmean_adv: " + str(mean_adv) + "\tmean_same_value: " + str(mean_same_value)
-                + "\tmedian: " + str(median) + "\tmedian_adv: " + str(median_adv) + "\tmedian_same_value: " + str(median_same_value))
-    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value),
-                  "median": float(median),  "median_adv": float(median_adv), "median_same_value": float(median_same_value),
-                  "data": res}
-    filename = "/t1d/results/result-" + str(setNumber) + ".json"
-    analyze(jsonobject, filename)
-    file = open(filename, 'w')
-    file.write(json.dumps(jsonobject))
+    summary = analyze.getSummary(res)
+    analyze.createErrorPlots(summary)
     logger.info("finished prediction")
 
-def predictRolling(data, userdata):
-    rolling.predictRolling(data, userdata)
 
-def compareIOBs(userdata):
-    # create sample events
-    uevents = [Event.createBolus(30, 1), Event.createBolus(180, 1)]
-    predict.compareIobs(userdata, uevents, "/t1d/results/compare.png")
+def runAutotune(data):
+    logger.debug("Prep glucose and insulin history for autotune as json")
+    autotune_prep.prep_for_autotune(data)
+    logger.debug("Run autotune")
+    autotune.run_autotune(data)
+
 
 def main():
-    # get rolling prediction window
+    run_autotune = True   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
     logger.info("Start Main!")
     logger.debug("Load Data")
     data = read_data(filenameDocker)
-    #data = read_data(filename1217)
-    logger.debug("Loaded Data with shape: " + str(data.shape))
-    logger.debug("set user data")
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, predictionlength=60, stats=None)
+
+    logger.info("Run Autotune? " + run_autotune)
     if run_autotune:
-        logger.debug("Prep glucose and insulin history for autotune as json")
-        autotune_prep.prep_for_autotune(data)
-        logger.debug("Run autotune")
-        autotune.run_autotune(data)
+        runAutotune(data)
+
     logger.debug("Run Prediciton")
-   # mainPredict(data, udata)
     predictFast(data, udata)
     logger.info("finished!")
+
+
 if __name__ == '__main__':
-    run_profile = False
     start_time = time.process_time()
-    #
-    if run_profile:
-        prof = profile.run('main()', "/t1d/results/profile")
-        p = pstats.Stats("/t1d/results/profile")
-        p.strip_dirs().sort_stats(SortKey.CUMULATIVE).reverse_order().dump_stats("/t1d/results/profile.txt")
-        p.strip_dirs().sort_stats(SortKey.CUMULATIVE).print_stats(15)
-        p.strip_dirs().sort_stats(SortKey.CALLS).print_stats(15)
-        p.strip_dirs().sort_stats(SortKey.TIME).print_stats(15)
-    else:
-        main()
+    main()
     logger.info(str(time.process_time() - start_time) + " seconds")
-    logger.info("File Comparison: " + str(filecmp.cmp('/t1d/results/result-3.json', '/t1d/results/result-2.json')))
 

@@ -234,4 +234,10 @@ def compareIobs(userdata, uevents, filename):
     plt.title("Comparison of IOB functions")
     plt.savefig(filename, dpi=600)
 
+def plotIOBs(userdata):
+    # create sample events
+    uevents = [Event.createBolus(30, 1), Event.createBolus(180, 1)]
+    compareIobs(userdata, uevents, "/t1d/results/compare.png")
+
+
 
