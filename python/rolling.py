@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 # make rolling prediction and call checkWindow for every data window
-def rolling(data, delta, udata, plotOption):
+def rolling(data, delta, udata, autotune_res, plotOption):
     # select starting point as first data point, always start at 15 minute intervals
     startTime = data.index[0]
     startTime = startTime.replace(minute= startTime.minute // int(udata.predictionlength))
@@ -24,6 +24,12 @@ def rolling(data, delta, udata, plotOption):
         subset = data.loc[startTime <= data.index]
         subset = subset.loc[startTime + timedelta(hours=udata.simlength) > subset.index]
 
+        # Set Sensitivity factor and CarbRatio
+        ar = autotune_res[subset.date.values[0]]
+        udata.cratio = ar['cr']
+        udata.sensf = ar['sens'][0]['sensitivity']
+        logger.debug("date " + subset.date.values[0] + "\cratio " + str(udata.cratio) + "\tsensf " + str(udata.sensf))
+
         # call the prediction method
         if plotOption:
             res = check.checkAndPlot(subset, udata, startTime)
@@ -37,7 +43,7 @@ def rolling(data, delta, udata, plotOption):
 
 
 # prepare data for rolling prediction and call rolling prediction
-def predictRolling(inputData, userData, plotOption):
+def predictRolling(inputData, userData, autotune_res, plotOption):
         # user rolling window to get 5 hours of data
         # convert data to dataFrame
         data = pandas.DataFrame(inputData)
@@ -48,7 +54,7 @@ def predictRolling(inputData, userData, plotOption):
         data = data.set_index('datetimeIndex')
 
         # Run rolling window prediction with 15 minute intervals
-        res = rolling(data, timedelta(minutes=15), userData, plotOption)
+        res = rolling(data, timedelta(minutes=15), userData, autotune_res,  plotOption)
         # user rolling window
         return res
 

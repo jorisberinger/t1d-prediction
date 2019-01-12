@@ -6,7 +6,7 @@ import os
 logger = logging.getLogger(__name__)
 
 folder = "/t1d/data/input/"
-path = folder + "2/"
+path = folder + "1/"
 prepjs = "/autotune/oref0/bin/oref0-autotune-prep.js"
 corejs = "/autotune/oref0/bin/oref0-autotune-core.js"
 profilejson = folder + "profile.json"
@@ -18,7 +18,6 @@ def run_autotune(data):
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
         os.makedirs(directory)
-    #subprocess.run(["node", prepjs ,  "/autotune/data/input/1/pumphistory-15.12.17.json" ,  profilejson ,  "/autotune/data/input/1/glucose-15.12.17.json" ,  profilepumpjson, ">", preppedjson])
     grouped = data.groupby('date')
     for name, group in grouped:
         logger.debug("prep - " + name)
@@ -32,11 +31,15 @@ def run_autotune(data):
             proc = subprocess.run(["node", corejs,  path + "prepped_glucose-" + name + ".json" ,  profilejson, profilepumpjson], encoding='utf-8', stdout=subprocess.PIPE)
             file.write(proc.stdout)
 
+    autotune_res = {}
     for name, group in grouped:
         logger.debug("read - " + name)
-        getSensAndCR(name)
+        res = getSensAndCR(name)
+        autotune_res[name] = res
+    return autotune_res
 
 def getSensAndCR(datestring):
+    logger.info(datestring)
     with open(path + "autotune-result-" + datestring + ".json", "r") as file:
         data = json.load(file)
         logger.debug("file read " + datestring)
@@ -46,4 +49,13 @@ def getSensAndCR(datestring):
         logger.debug("carb ratio: " + str(cr))
         logger.debug("sensitivities: " + str(sens))
 
-        return {"cr" : cr, "sens" : sens}
+        return {"cr": cr, "sens": sens}
+
+def getAllSensAndCR(data):
+    grouped = data.groupby('date')
+    autotune_res = {}
+    for name, group in grouped:
+        logger.info("read - " + name)
+        res = getSensAndCR(name)
+        autotune_res[name] = res
+    return autotune_res

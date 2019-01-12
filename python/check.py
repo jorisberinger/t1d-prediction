@@ -161,10 +161,10 @@ def checkAndPlot(data, udata, startTime):
     bolusValues = df[df.etype == 'bolus']
 
     # Get prediction Value for last train value
-    prediction_last_train = np.array([data[0][index_last_train],data[5][time_last_train]])
+    prediction_last_train = np.array([data[0][time_last_train], data[5][time_last_train]])
     logger.debug("prediction train " + str(prediction_last_train))
     # Get prediction Value for last value
-    prediction_last_value = np.array([data[0][index_last_value],data[5][time_last_value]])
+    prediction_last_value = np.array([data[0][time_last_value], data[5][time_last_value]])
     logger.debug("prediction value " + str(prediction_last_value))
     # Get Delta between train and last value
     prediction_delta = prediction_last_value - prediction_last_train

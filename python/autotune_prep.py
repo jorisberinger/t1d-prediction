@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
 timeZone = "+0100"
-pathDocker = "/t1d/data/input/2/"
+pathDocker = "/t1d/data/input/1/"
 
 # Convert Time from String to Datetime object
 def convertTime(dateandtime):

@@ -4,11 +4,14 @@ import matplotlib.pyplot as plt
 import logging
 
 logger = logging.getLogger(__name__)
-def analyzeFile(filename):
 
+
+def analyzeFile(filename):
     file = open(filename)
     res = json.load(file)
     createErrorPlots(res)
+
+
 def createErrorPlots(inputData):
     data = inputData['data']
     count = 0
@@ -33,6 +36,7 @@ def createErrorPlots(inputData):
     plt.grid(color="#cfd8dc")
     plt.title("Boxplot Comparison data")
     plt.savefig("/t1d/results/boxplot.png", dpi=600)
+
 
 def getSummary(res):
     setNumber = 1  # for debug
