@@ -15,25 +15,15 @@ Patient health data needs to be provided in a csv file. It needs the following c
 * bolusValue	
 * mealValue
 
-Go to data folder
+Go to Folder `cd data/csv`
 
-`cd data`
+Add file called **`data.csv`**
 
-Create folder and enter Folder csv
-
-`mkdir csv && cd csv`
-
-add file called **`data.csv`**
-
-Start with a file containing about 15 days of history and see how fast the computation is.
+Start with a file containing about 5 days of history and see how fast the computation is.
 
 ### Autotune config files
 
-
-Create new folder for autotune Input Data 
-
-(still in data folder)
-`mkdir input`
+Go to Folder `cd data/input` (call it from root of project)
 
 Add your **profile.json** and **profile.pump.json** files
 
@@ -42,18 +32,18 @@ Add your **profile.json** and **profile.pump.json** files
 ### Build Docker image
 Build the docker image from the provided Dockerfile
 
-`docker build -t t1d-pred:latest .`
+`docker build -t t1d-pred:latest .` (call from root of project)
 
 ### Run Docker image
 You need to mount your local files and input data
 
-`docker run --rm -v <path to local folder>/t1d-prediction:/t1d t1d-pred:latest`
+`docker run --rm -v <absoulute path to root of project (should end with /t1d-prediction)>:/t1d t1d-pred:latest`
 
 Inside the docker container the python/main.py will be called.
 
 ## Run Docker image with autowatch
 Nodemon will watch inside the docker container for file changes (only .py) and will restart the main.py
-`docker run --rm -v <path to local folder>/t1d-prediction:/t1d t1d-pred:latest nodemon --exec python python/main.py -e py -L`
+`docker run --rm -v <absoulute path to root of project>:/t1d t1d-pred:latest nodemon --exec python python/main.py -e py -L`
 
 ### To stop running containers with autowatch
 
