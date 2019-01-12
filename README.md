@@ -7,8 +7,8 @@ Check out this repository
 
 ### Health Data
 Patient health data needs to be provided in a csv file. It needs the following columns:
-* date	
-* time	
+* date	(eg. 15.12.17)
+* time	(eg. 13:59)
 * bgValue	
 * cgmValue	
 * basalValue	
@@ -18,6 +18,10 @@ Patient health data needs to be provided in a csv file. It needs the following c
 Go to data folder
 
 `cd data`
+
+Create folder and enter Folder csv
+
+`mkdir csv && cd csv`
 
 add file called **`data.csv`**
 
