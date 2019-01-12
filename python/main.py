@@ -8,6 +8,7 @@ import autotune
 import logging
 import time
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -26,13 +27,14 @@ def createOnePlot(data, userdata):
     userdata.sensf = autotune_res["sens"][0]["sensitivity"]
     data = data[data['date'] == date]
     start = date+","+time
-    res = check.checkCurrent(data, userdata, start)
+    res = check.checkAndPlot(data, userdata, start)
 
 
 # make prediction every 15 minutes
-def predictFast(data, userdata):
+def predictFast(data, userdata, plotOption):
     # make a rolling prediction
-    res = rolling.predictRolling(data, userdata)
+    res = rolling.predictRolling(data, userdata, plotOption)
+
     # analyse data and prepare for output
     summary = analyze.getSummary(res)
     analyze.createErrorPlots(summary)
@@ -47,18 +49,21 @@ def runAutotune(data):
 
 
 def main():
-    run_autotune = True   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
+    # SELECT OPTIONS
+    run_autotune = False   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
+    create_plots = True  # Select True if you want a plot for every prediction window
+
     logger.info("Start Main!")
     logger.debug("Load Data")
     data = read_data(filenameDocker)
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, predictionlength=60, stats=None)
 
-    logger.info("Run Autotune? " + run_autotune)
+    logger.info("Run Autotune? " + str(run_autotune))
     if run_autotune:
         runAutotune(data)
 
     logger.debug("Run Prediciton")
-    predictFast(data, udata)
+    predictFast(data, udata, create_plots)
     logger.info("finished!")
 
 

@@ -142,7 +142,7 @@ def deltaBG(g, sensf, cratio, camount, ct, bolus, idur):
     return deltaBGI(g, bolus, sensf, idur) + deltaBGC(g, sensf, cratio, camount, ct)
 
 
-def calculateBGAt(index, uevent, udata, n):
+def calculateBGAt(index, uevent, udata):
     varsobject = init_vars(udata.sensf, udata.idur * 60)
 
     simbg = udata.bginitial
@@ -151,9 +151,7 @@ def calculateBGAt(index, uevent, udata, n):
     simbgi = 0
     simbgi_adv = 0
 
-
-    simt = udata.simlength * 60
-    dt = simt / n # dt must be 1, 1 minute intervals
+    dt = 1 # dt must be 1, 1 minute intervals
     i = index
     for j in range(0, len(uevent)):
         if uevent.etype.values[j] != "":
@@ -170,16 +168,15 @@ def calculateBGAt(index, uevent, udata, n):
 
 
 
-def calculateBG(uevent, udata, n):
-
+def calculateBG(uevent, udata):
+    n = udata.simlength * 60
     simbg = np.array([udata.bginitial] * n)
     simbgc = np.array([0.0] * n)
     simbgi = np.array([0.0] * n)
     simbgi_adv = np.array([0.0] * n)
     simbg_adv = np.array([udata.bginitial] * n)
 
-    simt = udata.simlength * 60
-    dt = simt / n
+    dt = 1
 
     varsobject = init_vars(udata.sensf, udata.idur * 60)
 
@@ -191,14 +188,13 @@ def calculateBG(uevent, udata, n):
                 elif uevent.etype.values[j] == "bolus":
                     simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
                     simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur * 60, varsobject)
-
                 #else:
                   #  simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t2.values[j])
 
     simbg_res = simbg + simbgc + simbgi
     simbg_adv = simbg_adv + simbgc + simbgi_adv
-    x = np.linspace(0,simt,n)
-    return (simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv)
+    x = np.linspace(0,n,n)
+    return [simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv]
 
 # compare two different IOB functions
 def compareIobs(userdata, uevents, filename):

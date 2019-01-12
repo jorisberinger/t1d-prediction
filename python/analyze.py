@@ -17,8 +17,8 @@ def createErrorPlots(inputData):
             count += 1
 
     data = pandas.DataFrame(data)
-    print("number of results: " + str(len(data)))
-    print("number of zeros: " + str(count))
+    logger.info("number of results: " + str(len(data)))
+    logger.debug("number of zeros: " + str(count))
 
     plt.plot(data[0], label="Standard", alpha=0.6)
     plt.plot(data[1], label="Adv", alpha=0.6)
