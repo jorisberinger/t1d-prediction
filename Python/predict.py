@@ -155,8 +155,6 @@ def calculateBGAt(index, uevent, udata, n):
     simt = udata.simlength * 60
     dt = simt / n # dt must be 1, 1 minute intervals
     i = index
-    logger.debug("number of events " + str(len(uevent)))
-    logger.debug("index " + str(i))
     for j in range(0, len(uevent)):
         if uevent.etype.values[j] != "":
                 if uevent.etype.values[j] == "carb":

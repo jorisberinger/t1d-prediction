@@ -21,16 +21,17 @@ def analyze(json, filename):
 
     plt.plot(data[0], label="Standard", alpha=0.6)
     plt.plot(data[1], label="Adv", alpha=0.6)
+    plt.plot(data[2], label="Same Value", alpha=0.6)
     plt.grid(color="#cfd8dc")
     plt.legend()
     plt.title("error plot data: " + filename)
-    plt.savefig("errorPlot.png", dpi=600)
+    plt.savefig("/t1d/results/errorPlot.png", dpi=600)
 
     plt.figure()
-    plt.boxplot([data[0], data[1]], labels=["standard", "adv"])
+    plt.boxplot([data[0], data[1], data[2]], labels=["standard", "adv", "same value"])
     plt.grid(color="#cfd8dc")
     plt.title("Boxplot Comparison data: " + filename)
-    plt.savefig("boxplot.png", dpi=600)
+    plt.savefig("/t1d/results/boxplot.png", dpi=600)
 
 
 if __name__ == '__main__':

@@ -15,7 +15,7 @@ import filecmp
 import profile
 import pstats
 from pstats import SortKey
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
@@ -49,38 +49,26 @@ def predictFast(data, userdata):
     setNumber = 3  # for debug
     res = rolling.predictRolling(data, userdata)
 
-    logger.debug(res)
     # analyse data and prepare for output
     df = pandas.DataFrame(res)
     df = df.apply(abs)
-    logger.debug(df)
     res_series = pandas.Series(df[0])
-    logger.debug(res_series)
     res_series = res_series.apply(abs)
-    logger.debug(res_series)
     res_adv_series = pandas.Series(df[1])
-    logger.debug(res_adv_series)
     res_same_value = pandas.Series(df[2])
-    logger.debug(res_same_value)
     mean = res_series.mean(skipna=True)
-    logger.debug(mean)
     median = res_series.median(skipna=True)
-    logger.debug(median)
     mean_adv = res_adv_series.mean(skipna=True)
-    logger.debug(mean_adv)
     median_adv = res_adv_series.median(skipna=True)
-    logger.debug(median_adv)
     mean_same_value = res_same_value.mean(skipna=True)
-    logger.debug(mean_same_value)
     median_same_value = res_same_value.median(skipna=True)
-    logger.debug(median_same_value)
     logger.info("Results: mean: " + str(mean)+ "\tmean_adv: " + str(mean_adv) + "\tmean_same_value: " + str(mean_same_value)
                 + "\tmedian: " + str(median) + "\tmedian_adv: " + str(median_adv) + "\tmedian_same_value: " + str(median_same_value))
     jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value),
                   "median": float(median),  "median_adv": float(median_adv), "median_same_value": float(median_same_value),
                   "data": res}
     filename = "/t1d/results/result-" + str(setNumber) + ".json"
-    #analyze(jsonobject, filename)
+    analyze(jsonobject, filename)
     file = open(filename, 'w')
     file.write(json.dumps(jsonobject))
     logger.info("finished prediction")
