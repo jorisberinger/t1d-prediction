@@ -1,4 +1,4 @@
-data
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -118,3 +118,7 @@ dmypy.json
 Autotune/data/Input/
 
 results/
+
+data/csv/
+
+data/input/
