@@ -45,11 +45,9 @@ def getSensAndCR(datestring):
         logger.debug("file read " + datestring)
         cr = data["carb_ratio"]
         sens = data["isfProfile"]["sensitivities"]
+        basal= data["basalprofile"]
 
-        logger.debug("carb ratio: " + str(cr))
-        logger.debug("sensitivities: " + str(sens))
-
-        return {"cr": cr, "sens": sens}
+        return {"cr": cr, "sens": sens, "basal" : basal}
 
 def getAllSensAndCR(data):
     grouped = data.groupby('date')

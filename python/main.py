@@ -35,8 +35,8 @@ def runAutotune(data):
 
 def main():
     # SELECT OPTIONS
-    run_autotune = True   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
-    create_plots = False  # Select True if you want a plot for every prediction window
+    run_autotune = False   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
+    create_plots = True  # Select True if you want a plot for every prediction window
 
     logger.info("Start Main!")
 

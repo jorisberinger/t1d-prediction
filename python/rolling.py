@@ -25,9 +25,12 @@ def rolling(data, delta, udata, autotune_res, plotOption):
         subset = subset.loc[startTime + timedelta(hours=udata.simlength) > subset.index]
 
         # Set Sensitivity factor and CarbRatio
-        ar = autotune_res[subset.date.values[0]]
-        udata.cratio = ar['cr']
-        udata.sensf = ar['sens'][0]['sensitivity']
+        arStart = autotune_res[subset.date.values[0]]
+        arEnd = autotune_res[subset.date.values[len(subset.date.values) -1]] # TODO use second day if overlapping
+
+        udata.cratio = arStart['cr']
+        udata.sensf = arStart['sens'][0]['sensitivity']
+        udata.basalProfile = arStart['basal']
         logger.debug("date " + subset.date.values[0] + "\cratio " + str(udata.cratio) + "\tsensf " + str(udata.sensf))
 
         # call the prediction method

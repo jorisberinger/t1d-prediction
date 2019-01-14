@@ -62,7 +62,7 @@ def convertTimes(event, start):
         event.time = event.time - 30  # TODO verify
     if event.etype == "tempbasal":
         event.t1 = event.time
-        event.t2 = event.t1 + 30  # TODO better estimate
+        event.t2 = eventTime
     return event
 
 def getCgmReading(data, startTime):
@@ -213,7 +213,7 @@ def checkAndPlot(data, udata, startTime):
     directory = os.path.dirname("/t1d/results/")
     if not os.path.exists(directory):
         os.makedirs(directory)
-    plt.savefig("/t1d/results/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".svgz", dpi=300)
+    plt.savefig("/t1d/results/result-b-"+startTime.strftime('%Y-%m-%d-%H-%M')+".svgz", dpi=300)
     plt.close()
 
     return errors.tolist()

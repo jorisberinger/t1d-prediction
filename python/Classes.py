@@ -42,3 +42,4 @@ class UserData:
         self.simlength = simlength
         self.predictionlength = predictionlength
         self.stats = stats
+        self.basalprofile = None

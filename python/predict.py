@@ -1,9 +1,9 @@
 import math
 from datetime import datetime
-from typing import Any, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import logging
 logger = logging.getLogger(__name__)
 from Classes import Event
@@ -168,6 +168,7 @@ def calculateBGAt(index, uevent, udata):
 
 
 
+
 def calculateBG(uevent, udata):
     n = udata.simlength * 60
     simbg = np.array([udata.bginitial] * n)
@@ -180,6 +181,8 @@ def calculateBG(uevent, udata):
 
     varsobject = init_vars(udata.sensf, udata.idur * 60)
 
+    uevent = correctBasalEvents(uevent, udata)
+
     for j in range(0, len(uevent)):
         if uevent.etype.values[j] != "":
             for i in range(0, n):
@@ -188,8 +191,9 @@ def calculateBG(uevent, udata):
                 elif uevent.etype.values[j] == "bolus":
                     simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
                     simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur * 60, varsobject)
-                #else:
-                  #  simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t2.values[j])
+                else:
+                    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
+                    simbgi_adv[i] = simbgi[i] + deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
 
     simbg_res = simbg + simbgc + simbgi
     simbg_adv = simbg_adv + simbgc + simbgi_adv
@@ -235,5 +239,34 @@ def plotIOBs(userdata):
     uevents = [Event.createBolus(30, 1), Event.createBolus(180, 1)]
     compareIobs(userdata, uevents, "/t1d/results/compare.png")
 
+
+def getBasalForDate(date, basalProfile):
+    # get hours in minutes
+    logger.debug("get basal")
+    ts = (date - np.datetime64('1970-01-01T00:00:00Z')) / np.timedelta64(1, 's')
+    dt = datetime.utcfromtimestamp(ts)
+    basalValue = basalProfile[dt.hour]
+    return basalValue['rate']
+
+
+def correctBasalEvents(uevent, udata):
+    logger.debug("in correct basal")
+    logger.debug(uevent.dbdt)
+    for j in range(0, len(uevent)):
+        logger.debug(uevent.etype.values[j])
+        if uevent.etype.values[j] == "tempbasal":
+            logger.debug("basal Temp ")
+            logger.debug(uevent.dbdt.values[j])
+            logger.debug(uevent.t1.values[j])
+            logger.debug(uevent.t2.values[j])
+            dbdtOriginal = uevent.dbdt.values[j]
+            autotune_basalValue = getBasalForDate(uevent.t2.values[j], udata.basalProfile)
+
+            logger.debug("dbdt befor: " + str(dbdtOriginal))
+            logger.debug("dbdt autotune: " + str(autotune_basalValue))
+            uevent.dbdt.values[j] = dbdtOriginal - autotune_basalValue
+            logger.debug("dbdt new: " + str(uevent.dbdt.values[j]))
+
+    return uevent
 
 
