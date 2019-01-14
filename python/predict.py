@@ -191,9 +191,9 @@ def calculateBG(uevent, udata):
                 elif uevent.etype.values[j] == "bolus":
                     simbgi[i] = simbgi[i] + deltaBGI(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur)
                     simbgi_adv[i] = simbgi_adv[i] + deltaBGI_adv(i * dt - uevent.time.values[j], uevent.units.values[j], udata.sensf, udata.idur * 60, varsobject)
-                else:
-                    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
-                    simbgi_adv[i] = simbgi[i] + deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
+                #else:
+                #    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
+                #    simbgi_adv[i] = simbgi[i] + deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
 
     simbg_res = simbg + simbgc + simbgi
     simbg_adv = simbg_adv + simbgc + simbgi_adv
