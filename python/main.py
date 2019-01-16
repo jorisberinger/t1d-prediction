@@ -7,11 +7,12 @@ import autotune_prep
 import autotune
 import logging
 import time
+import gifmaker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-filenameDocker = "/t1d/data/csv/data.csv"
+filenameDocker = "/t1d/data/csv/data-Jens.csv"
 
 
 
