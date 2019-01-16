@@ -12,7 +12,7 @@ import gifmaker
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-filenameDocker = "/t1d/data/csv/data-Jens.csv"
+filenameDocker = "/t1d/data/csv/data.csv"
 
 
 

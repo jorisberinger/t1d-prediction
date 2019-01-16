@@ -20,4 +20,7 @@ def makeGif(path, data):
         imgs.append(imageio.imread(path + filename))
 
     name = getName(data)
+    if not os.path.exists("/t1d/results/gifs/"):
+        os.makedirs("/t1d/results/gifs/")
+
     imageio.mimsave('/t1d/results/gifs/' + name + '.gif', imgs, loop=0, fps=5, subrectangles=True)

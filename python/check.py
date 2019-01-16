@@ -288,6 +288,8 @@ def checkAndPlot(data, udata, startTime):
     directory = os.path.dirname("/t1d/results/")
     if not os.path.exists(directory):
         os.makedirs(directory)
+    if not os.path.exists(directory + '/plots/'):
+        os.makedirs(directory + '/plots/')
     plt.savefig("/t1d/results/plots/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".png", dpi=75)
     plt.close()
 
