@@ -70,16 +70,21 @@ def convertTimes(event, start):
 def getCgmReading(data, startTime):
     cgmtrue = data[data['cgmValue'].notnull()]
     logger.debug("Length: " + str(len(cgmtrue)))
-    cgmtrue['delta'] = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
-    cgmX = cgmtrue['delta'].values
-    cgmY = cgmtrue['cgmValue'].values
-    return cgmX, cgmY
+    if len(cgmtrue > 0):
+        cgmtrue['delta'] = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
+        cgmX = cgmtrue['delta'].values
+        cgmY = cgmtrue['cgmValue'].values
+        return cgmX, cgmY
+    else:
+        return None, None
 
 def checkFast(data, udata, startTime):
 
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
     cgmX, cgmY = getCgmReading(data, startTime)
-
+    # Check if there is data
+    if cgmX is None:
+        return None
     # Check if there is data around the 5h mark
     if not (cgmX[len(cgmX) - 1] >= (udata.simlength - 1) * 60):
         logger.warning("not able to predict")
@@ -131,6 +136,9 @@ def checkAndPlot(data, udata, startTime):
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
     cgmX, cgmY = getCgmReading(data, startTime)
 
+    # Check if there is data
+    if cgmX is None:
+        return None
     # Check if there is data around the 5h mark
     if not (cgmX[len(cgmX) - 1] >= (udata.simlength - 1) * 60):
         logger.warning("not able to predict")
@@ -239,28 +247,30 @@ def checkAndPlot(data, udata, startTime):
     #plt.plot(data[3], data[4], "#aa00ff", alpha=0.5, label="sim BGI ADV")
 
     ax = plt.subplot(gs[1])
-    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
-    plt.box(False)
+
     major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
     minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
-    major_ticks_y = np.arange(0, 8, 50)
+    major_ticks_y = np.arange(0, 11, 2)
     # minor_ticks_x = np.arange(0, 400, 15)
 
     ax.set_xticks(major_ticks_x)
     ax.set_xticks(minor_ticks_x, minor=True)
     ax.set_yticks(major_ticks_y)
+
     ax.grid(which='minor', alpha=0.2)
     ax.grid(which='major', alpha=0.5)
 
-    
+    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
+    plt.box(False)
+
     # Plot Events
     plt.xlim(0, udata.simlength * 60)
     plt.ylim(0, 10)
     plt.grid(color="#cfd8dc")
-    logger.info(basalValues.values[0])
+    logger.debug(basalValues.values[0])
     if(len(basalValues) > 0):
         plt.bar(basalValues.time, basalValues.dbdt, 5, alpha=0.8, label="basal event (not used)")
-    logger.info(carbValues)
+    logger.debug(carbValues)
     if len(carbValues) > 0:
         plt.bar(carbValues.time, carbValues.grams, 5, alpha=0.8, label="carb event")
     if len(bolusValues) > 0:
@@ -278,8 +288,7 @@ def checkAndPlot(data, udata, startTime):
     directory = os.path.dirname("/t1d/results/")
     if not os.path.exists(directory):
         os.makedirs(directory)
-    plt.savefig("/t1d/results/result-n-"+startTime.strftime('%Y-%m-%d-%H-%M')+".svgz", dpi=300)
+    plt.savefig("/t1d/results/plots/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".png", dpi=75)
     plt.close()
 
     return errors.tolist()
-

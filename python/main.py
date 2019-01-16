@@ -23,6 +23,8 @@ def predictFast(data, userdata, autotune_res, plotOption):
     # analyse data and prepare for output
     summary = analyze.getSummary(res)
     analyze.createErrorPlots(summary)
+
+    gifmaker.makeGif("/t1d/results/plots/", data)
     logger.info("finished prediction")
 
 

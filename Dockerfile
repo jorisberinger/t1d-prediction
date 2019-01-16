@@ -2,7 +2,7 @@ FROM nikolaik/python-nodejs:latest
 
 WORKDIR /t1d
 
-RUN pip install pandas matplotlib coloredlogs
+RUN pip install pandas matplotlib coloredlogs imageio
 
 WORKDIR /autotune
 
