@@ -2,8 +2,6 @@ FROM nikolaik/python-nodejs:latest
 
 WORKDIR /t1d
 
-RUN pip install pandas matplotlib coloredlogs imageio
-
 WORKDIR /autotune
 
 # get openAPS Project from github
@@ -17,6 +15,8 @@ RUN npm install -git
 RUN npm link
 RUN npm link oref0
 RUN npm install -g nodemon
+
+RUN pip install pandas matplotlib coloredlogs imageio scipy
 
 WORKDIR /t1d
 
