@@ -21,14 +21,14 @@ class Event:
     def createTemp(cls, time, dbdt, t1, t2):
         return Event(time=time, etype="tempbasal", dbdt=dbdt, t1=t1, t2=t2)
 
-    def toString(cls):
-        print("Event of Type: " + cls.etype + "\tTime " + cls.time)
-        if cls.etype == "bolus":
-            print("units " + str(cls.units))
-        elif cls.etype == "carb":
-            print("grams " + str(cls.grams) + "\tCtype " + str(cls.ctype))
-        if cls.etype == "tempbasal":
-            print("dbdt " + str(cls.dbdt) + "\tt1 " + cls.t1 + "\tt2 " + cls.t2)
+    def toString(self):
+        print("Event of Type: " + self.etype + "\tTime " + self.time)
+        if self.etype == "bolus":
+            print("units " + str(self.units))
+        elif self.etype == "carb":
+            print("grams " + str(self.grams) + "\tCtype " + str(self.ctype))
+        if self.etype == "tempbasal":
+            print("dbdt " + str(self.dbdt) + "\tt1 " + self.t1 + "\tt2 " + self.t2)
 
 
 

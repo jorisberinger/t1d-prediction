@@ -1,3 +1,4 @@
+import json
 import logging
 from datetime import timedelta
 
@@ -15,7 +16,7 @@ import numpy as np
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-filenameDocker = "/t1d/data/csv/data-o.csv"
+filenameDocker = "/t1d/data/csv/data-o2.csv"
 
 udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=5, predictionlength=60,
                      stats=None)
@@ -35,7 +36,7 @@ def optimize():
     global cgmX
     global cgmY
     cgmX , cgmY = check.getCgmReading(subset, startTime)
-
+    udata.bginitial = cgmY[0]
     # Extract events
     events = extractor.getEvents(subset)
     converted = events.apply(lambda event: check.convertTimes(event, startTime))
@@ -49,17 +50,24 @@ def optimize():
     events = df
 
     x0 = np.array([1/12] * 20)
-    bounds = ((0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20),(0, 20))
+    bounds = ((0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5))
     logger.info("bounds " + str(bounds))
 
     logger.debug(x0)
     predicter(x0)
     #res = minimize(predicter, x0, method='nelder-mead', options = {'xtol': 20, 'maxiter': 200, 'disp': True})
     #res = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds,options = {'ftol': 20, 'maxiter': 500, 'disp': True})
-    res = minimize(predicter, x0, bounds=bounds, options = {'disp': True})
-    logger.debug(res.x)
+    values = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter' : 20})
+    #values = [0.03379249,0.13681316,0.37367363,0.1598953,0.,0.,0.02388029,0.41539094,0.61511251,0.68934991,0.75458775,0.73071723,0.83987685,0.59371879,0.35199973,0.23027308,0.31348796,0.46602493,0.08333333,0.08333333]
+    plot(values.x)
+    with open("/t1d/results/optimizer/values1.json", "w") as file:
+        file.write(json.dumps(values.x.tolist()))
+        file.close()
 
-    logger.debug(df)
+
+    #logger.debug(res.x)
+
+    #logger.debug(df)
 
 def predicter(inputs):
     logger.info(inputs)
@@ -84,6 +92,23 @@ def predicter(inputs):
     #logger.info(error)
     logger.info(error)
     return error
+
+def plot(values):
+    logger.info(values)
+    carbEvents = []
+    for i in range(0, len(values)):
+        carbEvents.append(Event.createCarb(i * 15, values[i], 60))
+    ev = pandas.DataFrame([vars(e) for e in carbEvents])
+    # logger.info(ev)
+    allEvents = pandas.concat([df, ev])
+    # logger.info(allEvents)
+
+    sim = predict.calculateBG(allEvents, udata)
+    logger.info(len(sim))
+    plt.plot(sim[5], "g")
+    plt.plot(cgmX, cgmY)
+    logger.debug("cgmX" + str(cgmX))
+    plt.savefig("/t1d/results/optimizer/result-1.png", dpi=75)
 
 
 
