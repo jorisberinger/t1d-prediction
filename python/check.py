@@ -1,13 +1,12 @@
 import logging
 import os
-import pandas
-import numpy as np
-import extractor
 from datetime import datetime
+import extractor
+import numpy as np
+import pandas
 import predict
-from matplotlib import pyplot as plt
 from matplotlib import gridspec
-
+from matplotlib import pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +73,8 @@ def getCgmReading(data, startTime):
         cgmtrue['delta'] = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
         cgmX = cgmtrue['delta'].values
         cgmY = cgmtrue['cgmValue'].values
-        return cgmX, cgmY
+        cgmP = cgmtrue['glucoseAnnotation'].values
+        return cgmX, cgmY, cgmP
     else:
         return None, None
 
@@ -134,7 +134,7 @@ def checkFast(data, udata, startTime):
 
 def checkAndPlot(data, udata, startTime):
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
-    cgmX, cgmY = getCgmReading(data, startTime)
+    cgmX, cgmY, cgmP = getCgmReading(data, startTime)
 
     # Check if there is data
     if cgmX is None:
@@ -184,6 +184,12 @@ def checkAndPlot(data, udata, startTime):
     logger.debug("prediction " + str(prediction))
     # add same value prediction
     prediction = np.append(prediction, train_value)
+    logger.debug("prediction " + str(prediction))
+    # add last 30 min prediction
+    splits = cgmP[index_last_train].split('=')  # read field of glucose Annotation and split by '=' to get only signed value
+    prediction30delta = float(splits[len(splits) -1 ]) * udata.predictionlength / 30     # convert string to float and extend it to prediction length
+    prediction30 = train_value + prediction30delta
+    prediction = np.append(prediction, prediction30)
     logger.debug("prediction " + str(prediction))
     # calculate error
     errors = np.subtract(lastValue, prediction)
@@ -235,6 +241,8 @@ def checkAndPlot(data, udata, startTime):
     plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
     # Same value prediction
     plt.axhline(y=prediction_vals[0], xmin=(udata.simlength - udata.predictionlength/60) / udata.simlength, alpha=0.8, label="Same Value Prediction")
+    # last 30 prediction value
+    plt.plot([(udata.simlength -1 )* 60, udata.simlength * 60], [train_value, prediction30], alpha=0.8, label="Last 30 Prediction")
 
     # Plot Legend
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))

@@ -46,15 +46,18 @@ def getSummary(res):
     res_series = res_series.apply(abs)
     res_adv_series = pandas.Series(df[1])
     res_same_value = pandas.Series(df[2])
+    res_30_value = pandas.Series(df[3])
     mean = res_series.mean(skipna=True)
     median = res_series.median(skipna=True)
     mean_adv = res_adv_series.mean(skipna=True)
     median_adv = res_adv_series.median(skipna=True)
     mean_same_value = res_same_value.mean(skipna=True)
     median_same_value = res_same_value.median(skipna=True)
-    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value),
+    mean_30_value = res_30_value.mean(skipna=True)
+    median_30_value = res_30_value.median(skipna=True)
+    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value), "mean_30_value": float(mean_30_value),
                   "median": float(median), "median_adv": float(median_adv),
-                  "median_same_value": float(median_same_value),
+                  "median_same_value": float(median_same_value),"median_30_value": float(median_30_value),
                   "data": res}
     logger.info(
         "Results: mean: " + str(mean) + "\tmean_adv: " + str(mean_adv) + "\tmean_same_value: " + str(
