@@ -200,7 +200,7 @@ def checkAndPlot(data, udata, startTime):
     #fig, ax = plt.subplots()
 
     ax = plt.subplot(gs[0])
-    plt.xlim(0, udata.simlength * 60)
+    plt.xlim(0, udata.simlength * 60 +1)
     plt.ylim(0, 400)
     plt.grid(color="#cfd8dc")
     # Major ticks every 20, minor ticks every 5
@@ -234,7 +234,7 @@ def checkAndPlot(data, udata, startTime):
     plt.plot(data[3], data[5], "#4527a0", alpha=0.5, label="sim BG ADV")
     plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
     # Same value prediction
-    plt.axhline(y=prediction_vals[0], xmin=5/6, alpha=0.8, label="Same Value Prediction")
+    plt.axhline(y=prediction_vals[0], xmin=(udata.simlength - udata.predictionlength/60) / udata.simlength, alpha=0.8, label="Same Value Prediction")
 
     # Plot Legend
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -264,7 +264,7 @@ def checkAndPlot(data, udata, startTime):
     plt.box(False)
 
     # Plot Events
-    plt.xlim(0, udata.simlength * 60)
+    plt.xlim(0, udata.simlength * 60 +1)
     plt.ylim(0, 10)
     plt.grid(color="#cfd8dc")
     logger.debug(basalValues.values[0])

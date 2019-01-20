@@ -44,7 +44,7 @@ def main():
     logger.info("Start Main!")
 
     data = read_data(filenameDocker)
-    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=6, predictionlength=60, stats=None)
+    udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=11, predictionlength=60, stats=None)
 
     logger.info("Run Autotune? " + str(run_autotune))
     if run_autotune:
