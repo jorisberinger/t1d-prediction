@@ -132,7 +132,7 @@ def checkFast(data, udata, startTime):
 
     return errors.tolist()
 
-def checkAndPlot(data, udata, startTime):
+def checkAndPlot(data, udata, startTime, createPlots):
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
     cgmX, cgmY, cgmP = getCgmReading(data, startTime)
 
@@ -164,18 +164,25 @@ def checkAndPlot(data, udata, startTime):
     df_train = df[df.time < (udata.simlength - 1) * 60]
 
     # Run Prediction
-    data = predict.calculateBG(df_train, udata)
+    if createPlots:
+        data = predict.calculateBG(df_train, udata)
+        # Get prediction Value for last train value
+        prediction_last_train = np.array([data[0][time_last_train], data[5][time_last_train]])
+        logger.debug("prediction train " + str(prediction_last_train))
+        # Get prediction Value for last value
+        prediction_last_value = np.array([data[0][time_last_value], data[5][time_last_value]])
+        logger.debug("prediction value " + str(prediction_last_value))
+    else:
+         # Get prediction Value for last train value
+        prediction_last_train = np.array(predict.calculateBGAt(time_last_train, df_train, udata))
+        logger.debug("prediction train " + str(prediction_last_train))
+        # Get prediction Value for last value
+        prediction_last_value = np.array(predict.calculateBGAt(time_last_value, df_train, udata))
+        logger.debug("prediction value " + str(prediction_last_value))
+        
+ 
 
-    basalValues = df[df.etype == 'tempbasal']
-    carbValues = df[df.etype == 'carb']
-    bolusValues = df[df.etype == 'bolus']
-
-    # Get prediction Value for last train value
-    prediction_last_train = np.array([data[0][time_last_train], data[5][time_last_train]])
-    logger.debug("prediction train " + str(prediction_last_train))
-    # Get prediction Value for last value
-    prediction_last_value = np.array([data[0][time_last_value], data[5][time_last_value]])
-    logger.debug("prediction value " + str(prediction_last_value))
+    
     # Get Delta between train and last value
     prediction_delta = prediction_last_value - prediction_last_train
     logger.debug("delta " + str(prediction_delta))
@@ -195,110 +202,115 @@ def checkAndPlot(data, udata, startTime):
     errors = np.subtract(lastValue, prediction)
     logger.debug("errors " + str(errors))
 
-    # get values for prediction timeframe
-    prediction_vals = getPredictionVals(cgmX, cgmY, index_last_train, data[0])
-    prediction_vals_adv = getPredictionVals(cgmX, cgmY, index_last_train, data[5])
+    if createPlots:
+        # get values for prediction timeframe
+        prediction_vals = getPredictionVals(cgmX, cgmY, index_last_train, data[0])
+        prediction_vals_adv = getPredictionVals(cgmX, cgmY, index_last_train, data[5])
 
-    # Plot
+        # Plot
 
-    fig = plt.figure(figsize=(10, 7))
-    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
-    #fig, ax = plt.subplots()
+        basalValues = df[df.etype == 'tempbasal']
+        carbValues = df[df.etype == 'carb']
+        bolusValues = df[df.etype == 'bolus']
 
-    ax = plt.subplot(gs[0])
-    plt.xlim(0, udata.simlength * 60 +1)
-    plt.ylim(0, 400)
-    plt.grid(color="#cfd8dc")
-    # Major ticks every 20, minor ticks every 5
-    major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
-    minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
-    major_ticks_y = np.arange(0, 401, 50)
-    #minor_ticks_x = np.arange(0, 400, 15)
+        fig = plt.figure(figsize=(10, 7))
+        gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+        #fig, ax = plt.subplots()
 
-    ax.set_xticks(major_ticks_x)
-    ax.set_xticks(minor_ticks_x, minor=True)
-    ax.set_yticks(major_ticks_y)
+        ax = plt.subplot(gs[0])
+        plt.xlim(0, udata.simlength * 60 +1)
+        plt.ylim(0, 400)
+        plt.grid(color="#cfd8dc")
+        # Major ticks every 20, minor ticks every 5
+        major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
+        minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
+        major_ticks_y = np.arange(0, 401, 50)
+        #minor_ticks_x = np.arange(0, 400, 15)
 
-    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
-    plt.box(False)
+        ax.set_xticks(major_ticks_x)
+        ax.set_xticks(minor_ticks_x, minor=True)
+        ax.set_yticks(major_ticks_y)
 
-    # And a corresponding grid
-    #ax.grid(which='both')
+        plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
+        plt.box(False)
 
-    # Or if you want different settings for the grids:
-    ax.grid(which='minor', alpha=0.2)
-    ax.grid(which='major', alpha=0.5)
+        # And a corresponding grid
+        #ax.grid(which='both')
 
-
-    # Plot Line when prediction starts
-    plt.axvline(x=(udata.simlength - 1) * 60, color="black")
-    # Plot real blood glucose readings
-    plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
-    # Plot sim results
-    plt.plot(data[3], data[0], "#b71c1c", alpha=0.5, label="sim BG")
-    plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
-    plt.plot(data[3], data[5], "#4527a0", alpha=0.5, label="sim BG ADV")
-    plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
-    # Same value prediction
-    plt.axhline(y=prediction_vals[0], xmin=(udata.simlength - udata.predictionlength/60) / udata.simlength, alpha=0.8, label="Same Value Prediction")
-    # last 30 prediction value
-    plt.plot([(udata.simlength -1 )* 60, udata.simlength * 60], [train_value, prediction30], alpha=0.8, label="Last 30 Prediction")
-
-    # Plot Legend
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.tight_layout(pad=6)
+        # Or if you want different settings for the grids:
+        ax.grid(which='minor', alpha=0.2)
+        ax.grid(which='major', alpha=0.5)
 
 
-    # Plot Insulin and Carb graph
-    #plt.plot(data[3], data[1], "#64dd17", alpha=0.5, label="sim BGC")
-    #plt.plot(data[3], data[2], "#d50000", alpha=0.5, label="sim BGI")
-    #plt.plot(data[3], data[4], "#aa00ff", alpha=0.5, label="sim BGI ADV")
+        # Plot Line when prediction starts
+        plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+        # Plot real blood glucose readings
+        plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
+        # Plot sim results
+        plt.plot(data[3], data[0], "#b71c1c", alpha=0.5, label="sim BG")
+        plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
+        plt.plot(data[3], data[5], "#4527a0", alpha=0.5, label="sim BG ADV")
+        plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
+        # Same value prediction
+        plt.axhline(y=prediction_vals[0], xmin=(udata.simlength - udata.predictionlength/60) / udata.simlength, alpha=0.8, label="Same Value Prediction")
+        # last 30 prediction value
+        plt.plot([(udata.simlength -1 )* 60, udata.simlength * 60], [train_value, prediction30], alpha=0.8, label="Last 30 Prediction")
 
-    ax = plt.subplot(gs[1])
+        # Plot Legend
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.tight_layout(pad=6)
 
-    major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
-    minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
-    major_ticks_y = np.arange(0, 11, 2)
-    # minor_ticks_x = np.arange(0, 400, 15)
 
-    ax.set_xticks(major_ticks_x)
-    ax.set_xticks(minor_ticks_x, minor=True)
-    ax.set_yticks(major_ticks_y)
+        # Plot Insulin and Carb graph
+        #plt.plot(data[3], data[1], "#64dd17", alpha=0.5, label="sim BGC")
+        #plt.plot(data[3], data[2], "#d50000", alpha=0.5, label="sim BGI")
+        #plt.plot(data[3], data[4], "#aa00ff", alpha=0.5, label="sim BGI ADV")
 
-    ax.grid(which='minor', alpha=0.2)
-    ax.grid(which='major', alpha=0.5)
+        ax = plt.subplot(gs[1])
 
-    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
-    plt.box(False)
+        major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
+        minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
+        major_ticks_y = np.arange(0, 11, 2)
+        # minor_ticks_x = np.arange(0, 400, 15)
 
-    # Plot Events
-    plt.xlim(0, udata.simlength * 60 +1)
-    plt.ylim(0, 10)
-    plt.grid(color="#cfd8dc")
-    logger.debug(basalValues.values[0])
-    if(len(basalValues) > 0):
-        plt.bar(basalValues.time, basalValues.dbdt, 5, alpha=0.8, label="basal event (not used)")
-    logger.debug(carbValues)
-    if len(carbValues) > 0:
-        plt.bar(carbValues.time, carbValues.grams, 5, alpha=0.8, label="carb event")
-    if len(bolusValues) > 0:
-        plt.bar(bolusValues.time, bolusValues.units, 5, alpha=0.8, label="bolus event")
-    #plt.bar(basalValues.time, [0] * len(basalValues), "bo", alpha=0.8, label="basal event (not used)")
-    #plt.plot(carbValues.time, [0] * len(carbValues), "go", alpha=0.8, label="carb event")
-    #plt.plot(bolusValues.time, [0] * len(bolusValues), "ro", alpha=0.8, label="bolus evnet")
-    # Plot Line when prediction starts
-    plt.axvline(x=(udata.simlength - 1) * 60, color="black")
-    # Plot Legend
-    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
-    plt.tight_layout(pad=6)
-    plt.subplots_adjust(hspace=0.2)
-    # Save plot as svgz (smallest format, able to open with chrome)
-    directory = os.path.dirname("/t1d/results/")
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    if not os.path.exists(directory + '/plots/'):
-        os.makedirs(directory + '/plots/')
-    plt.savefig("/t1d/results/plots/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".png", dpi=75)
-    plt.close()
+        ax.set_xticks(major_ticks_x)
+        ax.set_xticks(minor_ticks_x, minor=True)
+        ax.set_yticks(major_ticks_y)
+
+        ax.grid(which='minor', alpha=0.2)
+        ax.grid(which='major', alpha=0.5)
+
+        plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
+        plt.box(False)
+
+        # Plot Events
+        plt.xlim(0, udata.simlength * 60 +1)
+        plt.ylim(0, 10)
+        plt.grid(color="#cfd8dc")
+        logger.debug(basalValues.values[0])
+        if(len(basalValues) > 0):
+            plt.bar(basalValues.time, basalValues.dbdt, 5, alpha=0.8, label="basal event (not used)")
+        logger.debug(carbValues)
+        if len(carbValues) > 0:
+            plt.bar(carbValues.time, carbValues.grams, 5, alpha=0.8, label="carb event")
+        if len(bolusValues) > 0:
+            plt.bar(bolusValues.time, bolusValues.units, 5, alpha=0.8, label="bolus event")
+        #plt.bar(basalValues.time, [0] * len(basalValues), "bo", alpha=0.8, label="basal event (not used)")
+        #plt.plot(carbValues.time, [0] * len(carbValues), "go", alpha=0.8, label="carb event")
+        #plt.plot(bolusValues.time, [0] * len(bolusValues), "ro", alpha=0.8, label="bolus evnet")
+        # Plot Line when prediction starts
+        plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+        # Plot Legend
+        plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.tight_layout(pad=6)
+        plt.subplots_adjust(hspace=0.2)
+        # Save plot as svgz (smallest format, able to open with chrome)
+        directory = os.path.dirname("/t1d/results/")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        if not os.path.exists(directory + '/plots/'):
+            os.makedirs(directory + '/plots/')
+        plt.savefig("/t1d/results/plots/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".png", dpi=75)
+        plt.close()
 
     return errors.tolist()

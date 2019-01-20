@@ -34,10 +34,7 @@ def rolling(data, delta, udata, autotune_res, plotOption):
         logger.debug("date " + subset.date.values[0] + "\cratio " + str(udata.cratio) + "\tsensf " + str(udata.sensf))
 
         # call the prediction method
-        if plotOption:
-            res = check.checkAndPlot(subset, udata, startTime)
-        else:
-            res = check.checkFast(subset, udata, startTime)
+        res = check.checkAndPlot(subset, udata, startTime, plotOption)
         if res is not None:
             results.append(res)
         startTime += delta  # delta determines the time between two predictions
