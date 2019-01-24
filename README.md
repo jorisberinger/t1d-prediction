@@ -14,6 +14,7 @@ Patient health data needs to be provided in a csv file. It needs the following c
 * basalValue	
 * bolusValue	
 * mealValue
+* glucoseAnnotation
 
 Go to Folder `cd data/csv`
 
