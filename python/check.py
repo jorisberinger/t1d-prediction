@@ -193,9 +193,14 @@ def checkAndPlot(data, udata, startTime, createPlots):
     prediction = np.append(prediction, train_value)
     logger.debug("prediction " + str(prediction))
     # add last 30 min prediction
-    splits = cgmP[index_last_train].split('=')  # read field of glucose Annotation and split by '=' to get only signed value
-    prediction30delta = float(splits[len(splits) -1 ]) * udata.predictionlength / 30     # convert string to float and extend it to prediction length
-    prediction30 = train_value + prediction30delta
+    prediction30 = train_value  # default value 
+    i = index_last_train
+    while (type(cgmP[i]) != str) and i > 0: # find last value with glucose annotation
+        i = i -1
+    if "=" in cgmP[i]:
+        splits = cgmP[i].split('=')  # read field of glucose Annotation and split by '=' to get only signed value
+        prediction30delta = float(splits[len(splits) -1 ]) * udata.predictionlength / 30     # convert string to float and extend it to prediction length
+        prediction30 = train_value + prediction30delta
     prediction = np.append(prediction, prediction30)
     logger.debug("prediction " + str(prediction))
     # calculate error
@@ -254,12 +259,11 @@ def checkAndPlot(data, udata, startTime, createPlots):
         # Same value prediction
         plt.axhline(y=prediction_vals[0], xmin=(udata.simlength - udata.predictionlength/60) / udata.simlength, alpha=0.8, label="Same Value Prediction")
         # last 30 prediction value
-        plt.plot([(udata.simlength -1 )* 60, udata.simlength * 60], [train_value, prediction30], alpha=0.8, label="Last 30 Prediction")
+        plt.plot([(udata.simlength -1 )* 60, udata.simlength * 60], [train_value, prediction30], "#388E3C", alpha=0.8, label="Last 30 Prediction")
 
         # Plot Legend
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.tight_layout(pad=6)
-
 
         # Plot Insulin and Carb graph
         #plt.plot(data[3], data[1], "#64dd17", alpha=0.5, label="sim BGC")
