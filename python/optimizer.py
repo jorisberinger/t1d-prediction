@@ -15,6 +15,7 @@ from matplotlib import pyplot as plt
 import numpy as np
 from torch import optim, zeros, nn, tensor, torch
 from scipy.optimize import least_squares
+import cProfile
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -47,8 +48,13 @@ def optimize():
     #predicter(x0)
     #res = minimize(predicter, x0, method='nelder-mead', options = {'xtol': 20, 'maxiter': 200, 'disp': True})
     #res = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds,options = {'ftol': 20, 'maxiter': 500, 'disp': True})
-    #values = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds, options = {'disp': True})
-    values = minimize(predicter, x0, method='CG', bounds=bounds, options = {'disp': True})
+    pr = cProfile.Profile()
+    pr.enable()
+    values = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 1})
+    pr.disable()
+    pr.print_stats()
+    pr.dump_stats("/t1d/results/optimizer/stats.txt")
+    #values = minimize(predicter, x0, method='CG', bounds=bounds, options = {'disp': True})
 
     logger.info(values.x)
     #values = brute(predicter, bounds, full_output=True)
