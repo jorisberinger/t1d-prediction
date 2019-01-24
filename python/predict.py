@@ -124,9 +124,6 @@ def deltatempBGI(g, dbdt, sensf, idur, t1, t2):
 
 
 def deltaBGC(g, sensf, cratio, camount, ct):
-    logger.debug("delta bgc")
-    logger.debug(str(g) + "\t" + str(sensf) + "\t" + str(cratio) + "\t" + str(camount) + "\t" + str(ct))
-    logger.debug(sensf/cratio*camount*cob(g, ct))
     return sensf/cratio*camount*cob(g, ct)
 
 
