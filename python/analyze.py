@@ -26,13 +26,14 @@ def createErrorPlots(inputData):
     plt.plot(data[0], label="Standard", alpha=0.6)
     plt.plot(data[1], label="Adv", alpha=0.6)
     plt.plot(data[2], label="Same Value", alpha=0.6)
+    plt.plot(data[3], label="Last 30 Prediction", alpha=0.6)
     plt.grid(color="#cfd8dc")
     plt.legend()
     plt.title("error plot data")
     plt.savefig("/t1d/results/errorPlot.png", dpi=600)
 
     plt.figure()
-    plt.boxplot([data[0], data[1], data[2]], labels=["standard", "adv", "same value"])
+    plt.boxplot([data[0], data[1], data[2], data[3]], labels=["standard", "adv", "same value", "last 30"])
     plt.grid(color="#cfd8dc")
     plt.title("Boxplot Comparison data")
     plt.savefig("/t1d/results/boxplot.png", dpi=600)
@@ -59,6 +60,7 @@ def getSummary(res):
                   "median": float(median), "median_adv": float(median_adv),
                   "median_same_value": float(median_same_value),"median_30_value": float(median_30_value),
                   "data": res}
+
     logger.info(
         "Results: mean: " + str(mean) + "\tmean_adv: " + str(mean_adv) + "\tmean_same_value: " + str(
             mean_same_value) + "\tmedian: " + str(median) + "\tmedian_adv: " + str(
