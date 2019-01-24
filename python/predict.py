@@ -139,7 +139,84 @@ def deltaBG(g, sensf, cratio, camount, ct, bolus, idur):
     return deltaBGI(g, bolus, sensf, idur) + deltaBGC(g, sensf, cratio, camount, ct)
 
 
+def calculateBGAt2(index, uevent, udata):
+    varsobject = init_vars(udata.sensf, udata.idur * 60)
+
+    simbg = udata.bginitial
+    simbg_adv = udata.bginitial
+    simbgc = 0
+    simbgi = 0
+    simbgi_adv = 0
+
+    dt = 1 # dt must be 1, 1 minute intervals
+    i = index
+    values = uevent.apply(calcEvent, args=([i, udata, varsobject]), axis=1, result_type='expand')  
+    sums = values.sum()
+    simbg_res = simbg + sums[0] + sums[1]
+    simbg_adv = simbg_adv + sums[0] + sums[2]
+    return [simbg_res, simbg_adv]
+
+def calcEvent(event,i, udata, varsobject):
+    etype = event.etype
+    simbgc = 0.0
+    simbgi = 0.0
+    simbgi_adv = 0.0
+    if etype != "":
+        if etype == "carb":
+            simbgc = deltaBGC(i - event.time, udata.sensf, udata.cratio, event.grams, event.ctype)
+        elif etype == "bolus":
+            simbgi = deltaBGI(i  - event.time, event.units, udata.sensf, udata.idur)
+            simbgi_adv = deltaBGI_adv(i  - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
+    return simbgc, simbgi, simbgi_adv
+
 def calculateBGAt(index, uevent, udata):
+    varsobject = init_vars(udata.sensf, udata.idur * 60)
+
+    simbg = udata.bginitial
+    simbg_adv = udata.bginitial
+    simbgc = 0
+    simbgi = 0
+    simbgi_adv = 0
+
+    dt = 1 # dt must be 1, 1 minute intervals
+    i = index
+    for event in uevent.itertuples():
+        if event.etype != "":
+                if event.etype == "carb":
+                    simbgc = simbgc + deltaBGC(i * dt - event.time, udata.sensf, udata.cratio, event.grams, event.ctype)
+                elif event.etype == "bolus":
+                    simbgi = simbgi + deltaBGI(i * dt - event.time, event.units, udata.sensf, udata.idur)
+                    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
+
+    simbg_res = simbg + simbgc + simbgi
+    simbg_adv = simbg_adv + simbgc + simbgi_adv
+    return [simbg_res, simbg_adv]
+
+
+def calculateBGAt(index, uevent, udata):
+    varsobject = init_vars(udata.sensf, udata.idur * 60)
+
+    simbg = udata.bginitial
+    simbg_adv = udata.bginitial
+    simbgc = 0
+    simbgi = 0
+    simbgi_adv = 0
+
+    dt = 1 # dt must be 1, 1 minute intervals
+    i = index
+    for event in uevent.itertuples():
+        if event.etype != "":
+                if event.etype == "carb":
+                    simbgc = simbgc + deltaBGC(i * dt - event.time, udata.sensf, udata.cratio, event.grams, event.ctype)
+                elif event.etype == "bolus":
+                    simbgi = simbgi + deltaBGI(i * dt - event.time, event.units, udata.sensf, udata.idur)
+                    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
+
+    simbg_res = simbg + simbgc + simbgi
+    simbg_adv = simbg_adv + simbgc + simbgi_adv
+    return [simbg_res, simbg_adv]
+
+def calculateBGAt0(index, uevent, udata):
     varsobject = init_vars(udata.sensf, udata.idur * 60)
 
     simbg = udata.bginitial
