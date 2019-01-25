@@ -109,7 +109,7 @@ def plot(values):
 
     sim = predict.calculateBG(allEvents, udata)
     logger.debug(len(sim))
-    plt.plot(sim[5], "g")S
+    plt.plot(sim[5], "g")
     plt.plot(cgmX, cgmY)
     logger.debug("cgmX" + str(cgmX))
     plt.savefig(resultPath + "optimizer/result-1.png", dpi=75)
