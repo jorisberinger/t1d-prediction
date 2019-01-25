@@ -18,6 +18,8 @@ RUN npm install -g nodemon
 
 RUN pip install pandas matplotlib coloredlogs imageio scipy
 
+ENV T1DPATH=/t1d/
+
 WORKDIR /t1d
 
 #CMD nodemon --exec python main.py -L

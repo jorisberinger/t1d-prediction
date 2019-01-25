@@ -3,8 +3,7 @@ import logging
 from datetime import timedelta
 import time
 import pandas
-from scipy.optimize import minimize, Bounds, brute, basinhopping 
-
+from scipy.optimize import minimize
 import check
 import extractor
 import readData
@@ -13,103 +12,93 @@ import predict
 from Classes import UserData, Event
 from matplotlib import pyplot as plt
 import numpy as np
-from torch import optim, zeros, nn, tensor, torch
-from scipy.optimize import least_squares
 import cProfile
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-filenameDocker = "/t1d/data/csv/data-o2.csv"
+docker = False
+path = os.getenv('T1DPATH', '../')
+filename = path + "data/csv/data.csv"
+resultPath = path + "results/"
 
+# use example User data
 udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=11, predictionlength=60,
                      stats=None)
 
-events = None
+# Set True if minimizer should get profiled
+profile = False
+
 def optimize():
     logger.info("start optimizing")
-
     # load data and select time frame
     loadData()
+    logger.info("data loaded")
+    directory = os.path.dirname(resultPath + "optimizer/")
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
-    events = df
+    # set number of parameters; has to be manually done for bounds TODO Improve
     numberOfParameter = 40
-    x0 = np.array([1/12] * numberOfParameter)
-    bounds = ((0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5),(0, 5))
-    bounds = ([0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5],[0, 5])
-    #bounds = (slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25), slice(0, 5, 0.25))
-   
-    logger.info("bounds " + str(bounds))
+    # set inital guess to 0 for all input parameters
+    x0 = np.array([0] * numberOfParameter)
+    # set all bounds to 0 - 1
+    bounds = ([0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1])
+    logger.info(str(numberOfParameter) + " parameters set")
+    # enable profiling
+    logger.info("profiling enabled: " + str(profile))
+    if profile:
+        pr = cProfile.Profile()
+        pr.enable()
 
+    # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
+    values = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 30})  # Set maxiter higher if you have Time
+    #values = minimize(predicter, x0, method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 20})
 
-
-
-    logger.debug(x0)
-    #predicter(x0)
-    #res = minimize(predicter, x0, method='nelder-mead', options = {'xtol': 20, 'maxiter': 200, 'disp': True})
-    #res = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds,options = {'ftol': 20, 'maxiter': 500, 'disp': True})
-    pr = cProfile.Profile()
-    pr.enable()
-    values = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 1})
-    pr.disable()
-    pr.print_stats()
-    pr.dump_stats("/t1d/results/optimizer/stats.txt")
-    #values = minimize(predicter, x0, method='CG', bounds=bounds, options = {'disp': True})
-
-    logger.info(values.x)
-    #values = brute(predicter, bounds, full_output=True)
-    #values = basinhopping(predicter, x0, niter=5, disp=True, stepsize=2, T=30, interval=10)
-    #values = least_squares(predicter, x0, bounds=bounds)
-    #values = [0.03379249,0.13681316,0.37367363,0.1598953,0.,0.,0.02388029,0.41539094,0.61511251,0.68934991,0.75458775,0.73071723,0.83987685,0.59371879,0.35199973,0.23027308,0.31348796,0.46602493,0.08333333,0.08333333]
-    
-    #plot(values.x)
-    with open("/t1d/results/optimizer/values1.json", "w") as file:
+    if profile:
+        pr.disable()
+        pr.print_stats()
+        pr.dump_stats(resultPath + "optimizer/profile")
+    # output values which minimize predictor
+    logger.info("x_min" + str(values.x))
+    # make a plot, comparing the real values with the predicter
+    plot(values.x)
+    # save x_min values
+    with open(resultPath + "optimizer/values-1.json", "w") as file:
         file.write(json.dumps(values.x.tolist()))
         file.close()
 
-
-    #logger.debug(res.x)
-
-    #logger.debug(df)
+    logger.info("finished")
 
 def predicter(inputs):
     logger.debug(inputs)
     carbEvents = []
+    # Create Carb event every 15 Minutes and combine it with the insulin events
     for i in range(0,len(inputs)):
         carbEvents.append(Event.createCarb(i* udata.simlength * 60  / len(inputs), inputs[i], 60))
     ev = pandas.DataFrame([vars(e) for e in carbEvents])
-    #logger.info(ev)
     allEvents = pandas.concat([df,ev])
-    #logger.info(allEvents)
+    logger.debug("All Events " + str(allEvents))
 
-    #sim = predict.calculateBG(allEvents, udata)
+    # Total Error
     error = 0
-
-    #for i in range(0, 280, 15):
-        #logger.info(i)
-        #logger.info(i/5)
-        #logger.info(cgmX[int(i/5)])
-        #    error += abs(sim[5][i] - cgmY[int(i/5)])
-    #for i in range(0,len(cgmX)):
-    #    simValue = sim[5][int(cgmX[i])]
-    #    logger.info("sim value " + str(simValue))
-    #    realValue = cgmY[i]
-    #    logger.info("real value " + str(realValue))
-    #    error += abs(realValue - simValue)
-    for i in range(0,len(cgmX)):
-        simValue = predict.calculateBGAt(int(cgmX[i]) , allEvents, udata)[1]
+    # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
+    # TODO change number of points to increase speed. Speed vs Acc Tradeoff
+    for i in range(0,len(cgmX)):  # TODO try to use itertuple() to iterate #faster
+        # calculate simulated value
+        simValue = predict.calculateBGAt(int(cgmX[i]), allEvents, udata)[1]  # TODO compare [0] and [1]
         logger.debug("sim value " + str(simValue))
+        # get real value
         realValue = cgmY[i]
         logger.debug("real value " + str(realValue))
-        error += abs(realValue - simValue)
-    
+        error += abs(realValue - simValue)  # TODO try out different error functions
 
-    #logger.info(error)
     logger.info("error: " + str(error))
     return error
 
 def plot(values):
-    logger.info(values)
+    logger.debug(values)
     carbEvents = []
     for i in range(0, len(values)):
         carbEvents.append(Event.createCarb(i * 15, values[i], 60))
@@ -119,77 +108,15 @@ def plot(values):
     # logger.info(allEvents)
 
     sim = predict.calculateBG(allEvents, udata)
-    logger.info(len(sim))
-    plt.plot(sim[5], "g")
+    logger.debug(len(sim))
+    plt.plot(sim[5], "g")S
     plt.plot(cgmX, cgmY)
     logger.debug("cgmX" + str(cgmX))
-    plt.savefig("/t1d/results/optimizer/result-1.png", dpi=75)
-
-
-def optimizeTorch():
-    logger.info("optimize torch")
-    # load data
-    loadData()
-    # init input parameters
-    global x0
-    x0 = zeros(40)
-    x0 = nn.Parameter(x0)
-    # init optimizer with input and learning rate 
-    global optimizer
-    optimizer = optim.SGD([x0], lr = 0.01, momentum=0.9)
-    #optimizer = optim.Adam([x0], lr = 0.01)
-    # init loss function
-    global lossfct
-    #lossfct = nn.L1Loss()
-    lossfct = nn.MSELoss()
-    # do an optimzer step 
-    for epoch in range(3):
-        logger.info("#" + str(epoch))
-        optimizer.step(closure)
-
-    logger.info("done optimizing")
-
-def closure():
-    optimizer.zero_grad()
-    output = calcBG(x0)
-    logger.info(output)
-    logger.debug(cgmY)
-    loss = lossfct(output, cgmY)
-    logger.info("loss: " + str(loss))
-    optimizer.zero_grad()
-
-    logger.info("loss: " + str(loss))
-    
-    return loss
-
-def calcBG(inputs):
-    logger.debug(inputs)
-    carbEvents = []
-    for i in range(0,len(inputs)):
-        carbEvents.append(Event.createCarb(i*15, inputs[i], 60))
-    ev = pandas.DataFrame([vars(e) for e in carbEvents])
-    #logger.info(ev)
-    allEvents = pandas.concat([df,ev])
-    #logger.info(allEvents)
-
-    sim = predict.calculateBG(allEvents, udata)
-    error = []
-
-    #for i in range(0, 280, 15):
-        #logger.info(i)
-        #logger.info(i/5)
-        #logger.info(cgmX[int(i/5)])
-        #    error += abs(sim[5][i] - cgmY[int(i/5)])
-    for i in range(0,len(cgmX)):
-        simValue = sim[5][int(cgmX[i])]
-        error.append(simValue)
-    logger.debug(error)
-    error = tensor(error)
-    return error
+    plt.savefig(resultPath + "optimizer/result-1.png", dpi=75)
 
 
 def loadData():
-    data = readData.read_data(filenameDocker)
+    data = readData.read_data(filename)
     data["datetimeIndex"] = data.apply(lambda row: rolling.convertTime(row.date + ',' + row.time), axis=1)
     data["datetime"] = data["datetimeIndex"]
     data = data.set_index('datetimeIndex')
@@ -201,9 +128,6 @@ def loadData():
     global cgmX
     global cgmY
     cgmX , cgmY, cgmP = check.getCgmReading(subset, startTime)
-    #cgmY =  tensor(cgmY, dtype=torch.float)
-    global output
-    output = zeros(len(cgmY))
     udata.bginitial = cgmY[0]
     # Extract events
     events = extractor.getEvents(subset_train)
@@ -215,11 +139,8 @@ def loadData():
     df = df[df['etype'] != "carb"]
     df = df[df['etype'] != "tempbasal"]
 
-    events = df
-
 
 if __name__ == '__main__':
     start_time = time.process_time()
     optimize()
     logger.info(str(time.process_time() - start_time) + " seconds")
-    
