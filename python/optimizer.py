@@ -4,6 +4,8 @@ from datetime import timedelta
 import time
 import pandas
 from scipy.optimize import minimize
+from sklearn import metrics
+
 import check
 import extractor
 import readData
@@ -20,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 docker = False
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data.csv"
+filename = path + "data/csv/data-Jens.csv"
 resultPath = path + "results/"
 
 # use example User data
@@ -30,6 +32,9 @@ udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41,
 # Set True if minimizer should get profiled
 profile = False
 
+
+vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[0,1,2])
+vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1,2])
 def optimize():
     logger.info("start optimizing")
     # load data and select time frame
@@ -44,21 +49,47 @@ def optimize():
     # set inital guess to 0 for all input parameters
     x0 = np.array([0] * numberOfParameter)
     # set all bounds to 0 - 1
-    bounds = ([0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1],[0, 1])
+    ub = 5
+    lb = 0
+    bounds = ([lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub])
     logger.info(str(numberOfParameter) + " parameters set")
+
+    # set error time points
+    t_index = np.arange(0, len(cgmX_train), 3)
+    t = cgmX_train[t_index]
+    global real_values
+    real_values = cgmY_train[t_index]
+    logger.info(real_values)
+
+    logger.info("check error at: " + str(t))
     # enable profiling
     logger.info("profiling enabled: " + str(profile))
     if profile:
         pr = cProfile.Profile()
         pr.enable()
 
+    # get Insulin Values
+    insulin_values = np.array([0] * len(t))
+    t_ = t[:,np.newaxis]
+    varsobject = predict.init_vars(udata.sensf, udata.idur * 60)
+    for row in df.itertuples():
+        iv = vec_get_insulin(row, udata, varsobject, t_).flatten()
+        insulin_values = insulin_values + iv
+    plt.plot(t, insulin_values)
+    plt.savefig(resultPath + "optimizer/insulin.png", dpi=75)
+
+    # Create Carb Events
+    carbEvents = [];
+    for i in range(0,numberOfParameter):
+        carbEvents.append(Event.createCarb(i * (udata.simlength - 1) * 60 / numberOfParameter, x0[i], 60))
+    ev = pandas.DataFrame([vars(e) for e in carbEvents])
+
     # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
-    values = minimize(predicter, x0, method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 30})  # Set maxiter higher if you have Time
+    values = minimize(predicter, x0, args=(t_, insulin_values, ev), method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 50})  # Set maxiter higher if you have Time
     #values = minimize(predicter, x0, method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 20})
 
     if profile:
         pr.disable()
-        pr.print_stats()
         pr.dump_stats(resultPath + "optimizer/profile")
     # output values which minimize predictor
     logger.info("x_min" + str(values.x))
@@ -71,37 +102,33 @@ def optimize():
 
     logger.info("finished")
 
-def predicter(inputs):
-    logger.debug(inputs)
-    carbEvents = []
-    # Create Carb event every 15 Minutes and combine it with the insulin events
-    for i in range(0,len(inputs)):
-        carbEvents.append(Event.createCarb(i* udata.simlength * 60  / len(inputs), inputs[i], 60))
-    ev = pandas.DataFrame([vars(e) for e in carbEvents])
-    allEvents = pandas.concat([df,ev])
-    logger.debug("All Events " + str(allEvents))
 
-    # Total Error
-    error = 0
+def predicter(inputs, t, insulin_values, ev):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
-    # TODO change number of points to increase speed. Speed vs Acc Tradeoff
-    for i in range(0,len(cgmX)):  # TODO try to use itertuple() to iterate #faster
-        # calculate simulated value
-        simValue = predict.calculateBGAt(int(cgmX[i]), allEvents, udata)[1]  # TODO compare [0] and [1]
-        logger.debug("sim value " + str(simValue))
-        # get real value
-        realValue = cgmY[i]
-        logger.debug("real value " + str(realValue))
-        error += abs(realValue - simValue)  # TODO try out different error functions
+    # Update inputs
+    logger.debug("inputs " + str(inputs))
+    logger.debug("ev " + str(ev))
+    ev.grams = inputs
+    logger.debug("ev " + str(ev.grams))
+    logger.debug(type(inputs[0]))
+    logger.debug(type(ev.grams[0]))
+    carb_prediction  = vec_get_carb(t, ev, udata).flatten()
+    predictions = carb_prediction + insulin_values
+    error = abs(real_values - predictions)
+    error_sum = error.sum()
+    #logger.info(real_values)
 
-    logger.info("error: " + str(error))
-    return error
+    #error_sum  = metrics.mean_squared_error(real_values, predictions)
+    #error_sum = metrics.mean_absolute_error(real_values, predictions)
+    logger.info("error: " + str(error_sum))
+    return error_sum
+
 
 def plot(values):
     logger.debug(values)
     carbEvents = []
     for i in range(0, len(values)):
-        carbEvents.append(Event.createCarb(i * 15, values[i], 60))
+        carbEvents.append(Event.createCarb(i * 15, values[i]/12, 60))
     ev = pandas.DataFrame([vars(e) for e in carbEvents])
     # logger.info(ev)
     allEvents = pandas.concat([df, ev])
@@ -127,7 +154,10 @@ def loadData():
     subset_train = subset.loc[startTime + timedelta(hours=10) > subset.index]
     global cgmX
     global cgmY
+    global cgmX_train
+    global cgmY_train
     cgmX , cgmY, cgmP = check.getCgmReading(subset, startTime)
+    cgmX_train , cgmY_train, cgmP_train = check.getCgmReading(subset_train, startTime)
     udata.bginitial = cgmY[0]
     # Extract events
     events = extractor.getEvents(subset_train)

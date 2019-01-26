@@ -169,54 +169,66 @@ def calcEvent(event,i, udata, varsobject):
             simbgi_adv = deltaBGI_adv(i  - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
     return simbgc, simbgi, simbgi_adv
 
-def calculateBGAt(index, uevent, udata):
-    varsobject = init_vars(udata.sensf, udata.idur * 60)
 
-    simbg = udata.bginitial
-    simbg_adv = udata.bginitial
-    simbgc = 0
-    simbgi = 0
-    simbgi_adv = 0
+def cob1(g):
+    if g <= 0:
+        return 0
+    elif g == 15:
+        return 0.125
+    elif g == 30:
+        return 0.5
+    elif g == 45:
+        return 0.875
+    elif g >= 60:
+        return 1
+    else:
+        raise NameError('ERROR IN COB1; Wrong index value)')
 
-    dt = 1 # dt must be 1, 1 minute intervals
+
+vec_cob = np.vectorize(cob1, otypes=[float])
+vec_cob1 = np.vectorize(cob, otypes=[float])
+
+
+def calculateCarbAt(index, carbEvents, udata):
+
+    carbs = carbEvents.grams
+    bgc = udata.sensf / udata.cratio * carbs * vec_cob(index - carbEvents.time)
+    bgcTotal = bgc.sum()
+
+    return bgcTotal + udata.bginitial
+
+def calculateBIAt(event, udata, varsobject, index):
     i = index
-    for event in uevent.itertuples():
-        if event.etype != "":
-                if event.etype == "carb":
-                    simbgc = simbgc + deltaBGC(i * dt - event.time, udata.sensf, udata.cratio, event.grams, event.ctype)
-                elif event.etype == "bolus":
-                    simbgi = simbgi + deltaBGI(i * dt - event.time, event.units, udata.sensf, udata.idur)
-                    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
-
-    simbg_res = simbg + simbgc + simbgi
-    simbg_adv = simbg_adv + simbgc + simbgi_adv
-    return [simbg_res, simbg_adv]
-
-
-def calculateBGAt(index, uevent, udata):
-    varsobject = init_vars(udata.sensf, udata.idur * 60)
-
-    simbg = udata.bginitial
-    simbg_adv = udata.bginitial
-    simbgc = 0
-    simbgi = 0
+    dt = 1  # dt must be 1, 1 minute intervals
     simbgi_adv = 0
-
-    dt = 1 # dt must be 1, 1 minute intervals
-    i = index
-    for event in uevent.itertuples():
-        if event.etype != "":
-                if event.etype == "carb":
-                    simbgc = simbgc + deltaBGC(i * dt - event.time, udata.sensf, udata.cratio, event.grams, event.ctype)
-                elif event.etype == "bolus":
-                    simbgi = simbgi + deltaBGI(i * dt - event.time, event.units, udata.sensf, udata.idur)
-                    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
-
-    simbg_res = simbg + simbgc + simbgi
-    simbg_adv = simbg_adv + simbgc + simbgi_adv
-    return [simbg_res, simbg_adv]
+    #simbgi = simbgi + deltaBGI(i * dt - event.time, event.units, udata.sensf, udata.idur)
+    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
+    return simbgi_adv
 
 def calculateBGAt0(index, uevent, udata):
+    varsobject = init_vars(udata.sensf, udata.idur * 60)
+
+    simbg = udata.bginitial
+    simbg_adv = udata.bginitial
+    simbgc = 0
+    simbgi = 0
+    simbgi_adv = 0
+
+    dt = 1 # dt must be 1, 1 minute intervals
+    i = index
+    for event in uevent.itertuples():
+        if event.etype != "":
+                if event.etype == "carb":
+                    simbgc = simbgc + deltaBGC(i * dt - event.time, udata.sensf, udata.cratio, event.grams, event.ctype)
+                elif event.etype == "bolus":
+                    simbgi = simbgi + deltaBGI(i * dt - event.time, event.units, udata.sensf, udata.idur)
+                    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
+
+    simbg_res = simbg + simbgc + simbgi
+    simbg_adv = simbg_adv + simbgc + simbgi_adv
+    return [simbg_res, simbg_adv]
+
+def calculateBGAt1(index, uevent, udata):
     varsobject = init_vars(udata.sensf, udata.idur * 60)
 
     simbg = udata.bginitial
