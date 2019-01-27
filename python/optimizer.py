@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 docker = False
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data-Jens.csv"
+filename = path + "data/csv/data-o.csv"
 resultPath = path + "results/"
 
 # use example User data
@@ -44,15 +44,6 @@ def optimize():
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    # set number of parameters; has to be manually done for bounds TODO Improve
-    numberOfParameter = 40
-    # set inital guess to 0 for all input parameters
-    x0 = np.array([0] * numberOfParameter)
-    # set all bounds to 0 - 1
-    ub = 5
-    lb = 0
-    bounds = ([lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub],[lb, ub])
-    logger.info(str(numberOfParameter) + " parameters set")
 
     # set error time points
     t_index = np.arange(0, len(cgmX_train), 3)
@@ -60,6 +51,17 @@ def optimize():
     global real_values
     real_values = cgmY_train[t_index]
     logger.info(real_values)
+
+    # set number of parameters
+    numberOfParameter = len(t)
+    # set inital guess to 0 for all input parameters
+    x0 = np.array([1] * numberOfParameter)
+    # set all bounds to 0 - 1
+    ub = 10
+    lb = 0
+    bounds = np.array([(lb, ub)] * numberOfParameter)
+    logger.debug("bounds " + str(bounds))
+    logger.info(str(numberOfParameter) + " parameters set")
 
     logger.info("check error at: " + str(t))
     # enable profiling
@@ -69,7 +71,7 @@ def optimize():
         pr.enable()
 
     # get Insulin Values
-    insulin_values = np.array([0] * len(t))
+    insulin_values = np.array([cgmY[0]] * len(t))
     t_ = t[:,np.newaxis]
     varsobject = predict.init_vars(udata.sensf, udata.idur * 60)
     for row in df.itertuples():
@@ -77,6 +79,7 @@ def optimize():
         insulin_values = insulin_values + iv
     plt.plot(t, insulin_values)
     plt.savefig(resultPath + "optimizer/insulin.png", dpi=75)
+    plt.close()
 
     # Create Carb Events
     carbEvents = [];
@@ -84,8 +87,24 @@ def optimize():
         carbEvents.append(Event.createCarb(i * (udata.simlength - 1) * 60 / numberOfParameter, x0[i], 60))
     ev = pandas.DataFrame([vars(e) for e in carbEvents])
 
+    # create Time Matrix
+    times = []
+    for i in t:
+        times.append(predict.vec_cob(t-i))
+    cob_matrix = np.matrix(times)
+    logger.debug(cob_matrix)
+    logger.info(t.shape)
+
+
+    # get patient coefficient
+    p_co = udata.sensf / udata.cratio
+
+    # multiply p_co with cob_matrix
+    p_cob = p_co * cob_matrix
+    logger.debug(p_cob)
+
     # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
-    values = minimize(predicter, x0, args=(t_, insulin_values, ev), method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 50})  # Set maxiter higher if you have Time
+    values = minimize(predicter, x0, args=(t_, insulin_values, p_cob), method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 100})  # Set maxiter higher if you have Time
     #values = minimize(predicter, x0, method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 20})
 
     if profile:
@@ -94,7 +113,7 @@ def optimize():
     # output values which minimize predictor
     logger.info("x_min" + str(values.x))
     # make a plot, comparing the real values with the predicter
-    plot(values.x)
+    plot(values.x, t)
     # save x_min values
     with open(resultPath + "optimizer/values-1.json", "w") as file:
         file.write(json.dumps(values.x.tolist()))
@@ -103,17 +122,24 @@ def optimize():
     logger.info("finished")
 
 
-def predicter(inputs, t, insulin_values, ev):
+def predicter(inputs, t, insulin_values, p_cob):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
     # Update inputs
     logger.debug("inputs " + str(inputs))
-    logger.debug("ev " + str(ev))
-    ev.grams = inputs
-    logger.debug("ev " + str(ev.grams))
-    logger.debug(type(inputs[0]))
-    logger.debug(type(ev.grams[0]))
-    carb_prediction  = vec_get_carb(t, ev, udata).flatten()
-    predictions = carb_prediction + insulin_values
+    logger.debug("P_co " + str(p_cob))
+
+    logger.debug(inputs.shape)
+    logger.debug(p_cob.shape)
+
+    carb_values = np.matmul(inputs.T , p_cob).flatten()
+    logger.debug(carb_values.shape)
+    logger.debug(carb_values)
+
+
+    #carb_prediction  = vec_get_carb(t, ev, udata).flatten()
+    predictions = carb_values + insulin_values
+    logger.debug(predictions)
+
     error = abs(real_values - predictions)
     error_sum = error.sum()
     #logger.info(real_values)
@@ -124,7 +150,7 @@ def predicter(inputs, t, insulin_values, ev):
     return error_sum
 
 
-def plot(values):
+def plot(values, t):
     logger.debug(values)
     carbEvents = []
     for i in range(0, len(values)):
@@ -136,6 +162,7 @@ def plot(values):
 
     sim = predict.calculateBG(allEvents, udata)
     logger.debug(len(sim))
+    plt.bar(t, values*100)
     plt.plot(sim[5], "g")
     plt.plot(cgmX, cgmY)
     logger.debug("cgmX" + str(cgmX))
