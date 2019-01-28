@@ -69,7 +69,7 @@ def convertTimes(event, start):
 def getCgmReading(data, startTime):
     cgmtrue = data[data['cgmValue'].notnull()]
     logger.debug("Length: " + str(len(cgmtrue)))
-    if len(cgmtrue > 0):
+    if len(cgmtrue) > 0:
         cgmtrue['delta'] = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
         cgmX = cgmtrue['delta'].values
         cgmY = cgmtrue['cgmValue'].values

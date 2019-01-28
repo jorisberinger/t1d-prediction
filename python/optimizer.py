@@ -12,7 +12,7 @@ import readData
 import rolling
 import predict
 from Classes import UserData, Event
-from matplotlib import pyplot as plt
+from matplotlib import pyplot as plt, gridspec
 import numpy as np
 import cProfile
 import os
@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 docker = False
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data-o.csv"
+filename = path + "data/csv/data.csv"
 resultPath = path + "results/"
 
 # use example User data
@@ -31,6 +31,8 @@ udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41,
 
 # Set True if minimizer should get profiled
 profile = False
+# Set carb duration
+carb_duration = 60
 
 
 vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[0,1,2])
@@ -84,13 +86,13 @@ def optimize():
     # Create Carb Events
     carbEvents = [];
     for i in range(0,numberOfParameter):
-        carbEvents.append(Event.createCarb(i * (udata.simlength - 1) * 60 / numberOfParameter, x0[i], 60))
+        carbEvents.append(Event.createCarb(i * (udata.simlength - 1) * 60 / numberOfParameter, x0[i], carb_duration))
     ev = pandas.DataFrame([vars(e) for e in carbEvents])
 
     # create Time Matrix
     times = []
     for i in t:
-        times.append(predict.vec_cob(t-i))
+        times.append(predict.vec_cob1(t-i,carb_duration))
     cob_matrix = np.matrix(times)
     logger.debug(cob_matrix)
     logger.info(t.shape)
@@ -104,8 +106,8 @@ def optimize():
     logger.debug(p_cob)
 
     # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
-    values = minimize(predicter, x0, args=(t_, insulin_values, p_cob), method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 100})  # Set maxiter higher if you have Time
-    #values = minimize(predicter, x0, method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 20})
+    values = minimize(predicter, x0, args=(t_, insulin_values, p_cob), method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 1000})  # Set maxiter higher if you have Time
+    #values = minimize(predicter, x0, args=(t_, insulin_values, p_cob), method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 1000})
 
     if profile:
         pr.disable()
@@ -154,7 +156,7 @@ def plot(values, t):
     logger.debug(values)
     carbEvents = []
     for i in range(0, len(values)):
-        carbEvents.append(Event.createCarb(i * 15, values[i]/12, 60))
+        carbEvents.append(Event.createCarb(t[i], values[i]/12, carb_duration))
     ev = pandas.DataFrame([vars(e) for e in carbEvents])
     # logger.info(ev)
     allEvents = pandas.concat([df, ev])
@@ -162,11 +164,91 @@ def plot(values, t):
 
     sim = predict.calculateBG(allEvents, udata)
     logger.debug(len(sim))
-    plt.bar(t, values*100)
-    plt.plot(sim[5], "g")
+
+    # Plot
+    basalValues = allEvents[allEvents.etype == 'tempbasal']
+    carbValues = allEvents[allEvents.etype == 'carb']
+    bolusValues = allEvents[allEvents.etype == 'bolus']
+
+    fig = plt.figure(figsize=(12, 7))
+    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+    # fig, ax = plt.subplots()
+
+    ax = plt.subplot(gs[0])
+    plt.xlim(0, udata.simlength * 60 + 1)
+    plt.ylim(0, 400)
+    plt.grid(color="#cfd8dc")
+    # Major ticks every 20, minor ticks every 5
+    major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
+    minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
+    major_ticks_y = np.arange(0, 401, 50)
+    # minor_ticks_x = np.arange(0, 400, 15)
+
+    ax.set_xticks(major_ticks_x)
+    ax.set_xticks(minor_ticks_x, minor=True)
+    ax.set_yticks(major_ticks_y)
+
+    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
+    plt.box(False)
+
+    # And a corresponding grid
+    # ax.grid(which='both')
+
+    # Or if you want different settings for the grids:
+    ax.grid(which='minor', alpha=0.2)
+    ax.grid(which='major', alpha=0.5)
+
+    # Plot Line when prediction starts
+    plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+    # Plot real blood glucose readings
+    plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
+    # Plot sim results
+    plt.plot(sim[5], "g", alpha=0.8, label="sim BG")
+
+
+    # Plot Legend
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.tight_layout(pad=6)
+
+    ax = plt.subplot(gs[1])
+
+    major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
+    minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
+    major_ticks_y = np.arange(0, 11, 2)
+    # minor_ticks_x = np.arange(0, 400, 15)
+
+    ax.set_xticks(major_ticks_x)
+    ax.set_xticks(minor_ticks_x, minor=True)
+    ax.set_yticks(major_ticks_y)
+
+    ax.grid(which='minor', alpha=0.2)
+    ax.grid(which='major', alpha=0.5)
+
+    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
+    plt.box(False)
+
+    # Plot Events
+    plt.xlim(0, udata.simlength * 60 + 1)
+    plt.ylim(0, 10)
+    plt.grid(color="#cfd8dc")
+    if (len(basalValues) > 0):
+        plt.bar(basalValues.time, basalValues.dbdt, 5, alpha=0.8, label="basal event (not used)")
+    if len(carbValues) > 0:
+        plt.bar(carbValues.time, carbValues.grams, 5, alpha=0.8, label="carb event")
+    if len(bolusValues) > 0:
+        plt.bar(bolusValues.time, bolusValues.units, 5, alpha=0.8, label="bolus event")
+    # plt.bar(basalValues.time, [0] * len(basalValues), "bo", alpha=0.8, label="basal event (not used)")
+    # plt.plot(carbValues.time, [0] * len(carbValues), "go", alpha=0.8, label="carb event")
+    # plt.plot(bolusValues.time, [0] * len(bolusValues), "ro", alpha=0.8, label="bolus evnet")
+    # Plot Line when prediction starts
+    plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+    # Plot Legend
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.tight_layout(pad=6)
+    plt.subplots_adjust(hspace=0.2)
     plt.plot(cgmX, cgmY)
     logger.debug("cgmX" + str(cgmX))
-    plt.savefig(resultPath + "optimizer/result-1.png", dpi=75)
+    plt.savefig(resultPath + "optimizer/result-1.png", dpi=150)
 
 
 def loadData():
