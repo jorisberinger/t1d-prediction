@@ -32,7 +32,7 @@ udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41,
 # Set True if minimizer should get profiled
 profile = False
 # Set carb duration
-carb_duration = 60
+carb_duration = 90
 
 
 vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[0,1,2])
@@ -59,7 +59,7 @@ def optimize():
     # set inital guess to 0 for all input parameters
     x0 = np.array([1] * numberOfParameter)
     # set all bounds to 0 - 1
-    ub = 10
+    ub = 20
     lb = 0
     bounds = np.array([(lb, ub)] * numberOfParameter)
     logger.debug("bounds " + str(bounds))
@@ -129,7 +129,6 @@ def predicter(inputs, t, insulin_values, p_cob):
     # Update inputs
     logger.debug("inputs " + str(inputs))
     logger.debug("P_co " + str(p_cob))
-
     logger.debug(inputs.shape)
     logger.debug(p_cob.shape)
 
@@ -142,13 +141,14 @@ def predicter(inputs, t, insulin_values, p_cob):
     predictions = carb_values + insulin_values
     logger.debug(predictions)
 
+    global error
     error = abs(real_values - predictions)
     error_sum = error.sum()
     #logger.info(real_values)
 
     #error_sum  = metrics.mean_squared_error(real_values, predictions)
     #error_sum = metrics.mean_absolute_error(real_values, predictions)
-    logger.info("error: " + str(error_sum))
+    logger.debug("error: " + str(error_sum))
     return error_sum
 
 
@@ -170,8 +170,8 @@ def plot(values, t):
     carbValues = allEvents[allEvents.etype == 'carb']
     bolusValues = allEvents[allEvents.etype == 'bolus']
 
-    fig = plt.figure(figsize=(12, 7))
-    gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
+    fig = plt.figure(figsize=(12, 10))
+    gs = gridspec.GridSpec(3, 1, height_ratios=[3, 1, 1])
     # fig, ax = plt.subplots()
 
     ax = plt.subplot(gs[0])
@@ -246,8 +246,39 @@ def plot(values, t):
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout(pad=6)
     plt.subplots_adjust(hspace=0.2)
-    plt.plot(cgmX, cgmY)
-    logger.debug("cgmX" + str(cgmX))
+
+    ax = plt.subplot(gs[2])
+
+    major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
+    minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
+    major_ticks_y = np.arange(0, 51, 10)
+    # minor_ticks_x = np.arange(0, 400, 15)
+
+    ax.set_xticks(major_ticks_x)
+    ax.set_xticks(minor_ticks_x, minor=True)
+    ax.set_yticks(major_ticks_y)
+
+    ax.grid(which='minor', alpha=0.2)
+    ax.grid(which='major', alpha=0.5)
+
+    plt.tick_params(axis='both', which='both', bottom=False, top=False, left=False)
+    plt.box(False)
+
+    # Plot Events
+    plt.xlim(0, udata.simlength * 60 + 1)
+    plt.ylim(0, 50)
+    plt.grid(color="#cfd8dc")
+
+    # plot error values
+    err = error.tolist()[0]
+    plt.bar(t, err, 5, color="#CC0000", alpha=0.8, label="error")
+    plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+    # Plot Legend
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.tight_layout(pad=6)
+    plt.subplots_adjust(hspace=0.2)
+
+
     plt.savefig(resultPath + "optimizer/result-1.png", dpi=150)
 
 
