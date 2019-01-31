@@ -115,15 +115,15 @@ def checkAndPlot(data, udata, startTime, createPlots):
 
     # Run Prediction
     if createPlots:
-        data = predict.calculateBG(df_train, udata)
+        sim_bg = predict.calculateBG(df_train, udata)
         # Get prediction Value for last train value
-        prediction_last_train = np.array([data[0][time_last_train], data[5][time_last_train]])
+        prediction_last_train = np.array([sim_bg[0][time_last_train], sim_bg[5][time_last_train]])
         logger.debug("prediction train " + str(prediction_last_train))
         # Get prediction Value for last value
-        prediction_last_value = np.array([data[0][time_last_value], data[5][time_last_value]])
+        prediction_last_value = np.array([sim_bg[0][time_last_value], sim_bg[5][time_last_value]])
         logger.debug("prediction value " + str(prediction_last_value))
         # get prediction with optimized parameters
-        prediction_optimized = optimizer.optimize(data, df_train, udata, time_last_value)
+        prediction_optimized, optimized_curve = optimizer.optimize(data, df_train, udata, time_last_value, createPlots)
         logger.info("optimizer prediction " + str(prediction_optimized))
     else:
          # Get prediction Value for last train value
@@ -165,8 +165,8 @@ def checkAndPlot(data, udata, startTime, createPlots):
 
     if createPlots:
         # get values for prediction timeframe
-        prediction_vals = getPredictionVals(cgmX, cgmY, index_last_train, data[0])
-        prediction_vals_adv = getPredictionVals(cgmX, cgmY, index_last_train, data[5])
+        prediction_vals = getPredictionVals(cgmX, cgmY, index_last_train, sim_bg[0])
+        prediction_vals_adv = getPredictionVals(cgmX, cgmY, index_last_train, sim_bg[5])
 
         # Plot
 
@@ -208,15 +208,16 @@ def checkAndPlot(data, udata, startTime, createPlots):
         # Plot real blood glucose readings
         plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
         # Plot sim results
-        plt.plot(data[3], data[0], "#b71c1c", alpha=0.5, label="sim BG")
-        plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
-        plt.plot(data[3], data[5], "#4527a0", alpha=0.5, label="sim BG ADV")
-        plt.plot(range(int(cgmX[index_last_train]), len(data[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
+        plt.plot(sim_bg[3], sim_bg[0], "#b71c1c", alpha=0.5, label="sim BG")
+        plt.plot(range(int(cgmX[index_last_train]), len(sim_bg[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
+        plt.plot(sim_bg[3], sim_bg[5], "#4527a0", alpha=0.5, label="sim BG ADV")
+        plt.plot(range(int(cgmX[index_last_train]), len(sim_bg[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
         # Same value prediction
         plt.axhline(y=prediction_vals[0], xmin=(udata.simlength - udata.predictionlength/60) / udata.simlength, alpha=0.8, label="Same Value Prediction")
         # last 30 prediction value
         plt.plot([(udata.simlength -1 )* 60, udata.simlength * 60], [train_value, prediction30], "#388E3C", alpha=0.8, label="Last 30 Prediction")
-
+        # optimized prediction
+        plt.plot(optimized_curve, alpha=0.8, label="optimized curve")
         # Plot Legend
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.tight_layout(pad=6)

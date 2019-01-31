@@ -36,7 +36,7 @@ vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1, 2])
 
 
-def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserData, time_last_value: int) -> int:
+def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserData, time_last_value: int, createPlot: bool) -> int:
     # get start Time from first data point in data
     startTime = data.index[0]
     logger.info("start Time " + str(startTime))
@@ -113,7 +113,12 @@ def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserDat
     prediction_value = getPredictionValue(values.x, t, events, userData, time_last_value)
     logger.info("prediction value: " + str(prediction_value))
     logger.info("finished")
-    return prediction_value
+    if not createPlot:
+        return prediction_value
+    else:
+        prediction_curve = getPredictionCurve(values.x, t, events, userData)
+        return prediction_value, prediction_curve
+
 
 def predicter(inputs, real_values, insulin_values, p_cob):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
@@ -132,6 +137,17 @@ def predicter(inputs, real_values, insulin_values, p_cob):
 
     return error_sum
 
+def getPredictionCurve(carb_values: [float], t: [float], events: pandas.DataFrame, userData: UserData) -> [float]:
+    carbEvents = []
+    for i in range(0, len(carb_values)):
+        carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
+    carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
+    # logger.info(carb_events)
+    # remove original carb events from data
+    insulin_events = events[events.etype != 'carb']
+    allEvents = pandas.concat([insulin_events, carb_events])
+    values = predict.calculateBG(allEvents, userData)
+    return values[5]
 
 def getPredictionValue(carb_values: [float], t: [float], events: pandas.DataFrame, userData: UserData, time_last_value: float) -> float:
     carbEvents = []

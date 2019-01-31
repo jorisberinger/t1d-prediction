@@ -267,7 +267,7 @@ def calculateBG(uevent, udata):
 
     varsobject = init_vars(udata.sensf, udata.idur * 60)
 
-    uevent = correctBasalEvents(uevent, udata)
+    #uevent = correctBasalEvents(uevent, udata)
 
     for j in range(0, len(uevent)):
         if uevent.etype.values[j] != "":
