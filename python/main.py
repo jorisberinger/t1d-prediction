@@ -1,3 +1,4 @@
+import cProfile
 import logging
 import os
 import time
@@ -13,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data.csv"
+filename = path + "data/csv/data-o3.csv"
 
 
 
@@ -25,7 +26,7 @@ def predictFast(data, userdata, autotune_res, plotOption):
     summary = analyze.getSummary(res)
     analyze.createErrorPlots(summary)
 
-    gifmaker.makeGif("/t1d/results/plots/", data)
+    #gifmaker.makeGif("/t1d/results/plots/", data)
     logger.info("finished prediction")
 
 
@@ -60,5 +61,12 @@ def main():
 
 if __name__ == '__main__':
     start_time = time.process_time()
+    profile = False
+    if profile:
+        pr = cProfile.Profile()
+        pr.enable()
     main()
+    if profile:
+        pr.disable()
+        pr.dump_stats(path + "results/profiler/profile")
     logger.info(str(time.process_time() - start_time) + " seconds")

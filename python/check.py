@@ -10,6 +10,8 @@ import predict
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
 
+from Classes import PredictionWindow
+
 logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
@@ -82,91 +84,91 @@ def getCgmReading(data, startTime):
         return None, None
 
 
-def checkAndPlot(data, udata, startTime, createPlots):
+def checkAndPlot(predictionWindow: PredictionWindow):
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
-    cgmX, cgmY, cgmP = getCgmReading(data, startTime)
+    predictionWindow.cgmX, predictionWindow.cgmY, predictionWindow.cgmP = getCgmReading(predictionWindow.data, predictionWindow.startTime)
 
     # Check if there is data
-    if cgmX is None:
+    if predictionWindow.cgmX is None:
         return None
     # Check if there is data around the 5h mark
-    if not (cgmX[len(cgmX) - 1] >= (udata.simlength - 1) * 60):
+    if not (predictionWindow.cgmX[len(predictionWindow.cgmX) - 1] >= (predictionWindow.userData.simlength - 1) * 60):
         logger.warning("not able to predict")
         return None
 
     # Set initial Blood Glucose Level
-    udata.bginitial = cgmY[0]
+        predictionWindow.userData.bginitial = predictionWindow.cgmY[0]
 
     # Get Train Datapoint
-    index_last_train = getClosestIndex(cgmX, (udata.simlength - 1) * 60)
-    time_last_train = int(cgmX[index_last_train])
-    train_value = cgmY[index_last_train]
+    predictionWindow.index_last_train = getClosestIndex(predictionWindow.cgmX, (predictionWindow.userData.simlength - 1) * 60)
+    predictionWindow.time_last_train = int(predictionWindow.cgmX[predictionWindow.index_last_train])
+    predictionWindow.train_value = predictionWindow.cgmY[predictionWindow.index_last_train]
 
     # Get last Datapoint
-    index_last_value = len(cgmY) - 1  # TODO check if index l v - index l t is appr. 60 min
-    time_last_value = int(cgmX[index_last_value])
-    lastValue = cgmY[index_last_value]
+    predictionWindow.index_last_value = len(predictionWindow.cgmY) - 1  # TODO check if index l v - index l t is appr. 60 min
+    predictionWindow.time_last_value = int(predictionWindow.cgmX[predictionWindow.index_last_value])
+    predictionWindow.lastValue = predictionWindow.cgmY[predictionWindow.index_last_value]
 
     # Get Events for Prediction
-    events = extractor.getEvents(data)
-    converted = events.apply(lambda event: convertTimes(event, startTime))
+    events = extractor.getEvents(predictionWindow.data)
+    converted = events.apply(lambda event: convertTimes(event, predictionWindow.startTime))
     df = pandas.DataFrame([vars(e) for e in converted])
-    df_train = df[df.time < (udata.simlength - 1) * 60]
+    predictionWindow.df_train = df[df.time < (predictionWindow.userData.simlength - 1) * 60]
 
     # Run Prediction
-    if createPlots:
-        sim_bg = predict.calculateBG(df_train, udata)
+    if predictionWindow.plot:
+        sim_bg = predict.calculateBG(predictionWindow.df_train, predictionWindow.userData)
         # Get prediction Value for last train value
-        prediction_last_train = np.array([sim_bg[0][time_last_train], sim_bg[5][time_last_train]])
-        logger.debug("prediction train " + str(prediction_last_train))
+        prediction_last_train = np.array([sim_bg[0][predictionWindow.time_last_train], sim_bg[5][predictionWindow.time_last_train]])
+        #logger.debug("prediction train " + str(prediction_last_train))
         # Get prediction Value for last value
-        prediction_last_value = np.array([sim_bg[0][time_last_value], sim_bg[5][time_last_value]])
-        logger.debug("prediction value " + str(prediction_last_value))
+        prediction_last_value = np.array([sim_bg[0][predictionWindow.time_last_value], sim_bg[5][predictionWindow.time_last_value]])
+        #logger.debug("prediction value " + str(prediction_last_value))
         # get prediction with optimized parameters
-        prediction_optimized, optimized_curve = optimizer.optimize(data, df_train, udata, time_last_value, createPlots)
-        logger.info("optimizer prediction " + str(prediction_optimized))
+        prediction_optimized, optimized_curve = optimizer.optimize(predictionWindow)
+        #logger.info("optimizer prediction " + str(prediction_optimized))
     else:
          # Get prediction Value for last train value
-        prediction_last_train = np.array(predict.calculateBGAt2(time_last_train, df_train, udata))
-        logger.debug("prediction train " + str(prediction_last_train))
+        prediction_last_train = np.array(predict.calculateBGAt2(predictionWindow.time_last_train, predictionWindow.df_train, predictionWindow.userData))
+        #logger.debug("prediction train " + str(prediction_last_train))
         # Get prediction Value for last value
-        prediction_last_value = np.array(predict.calculateBGAt2(time_last_value, df_train, udata))
-        logger.debug("prediction value " + str(prediction_last_value))
-        prediction_optimized = optimizer.optimize(data, df_train, udata, time_last_value)
-        logger.info("optimizer prediction " + str(prediction_optimized))
+        prediction_last_value = np.array(predict.calculateBGAt2(predictionWindow.time_last_value, predictionWindow.df_train, predictionWindow.userData))
+        #logger.debug("prediction value " + str(prediction_last_value))
+        prediction_optimized = optimizer.optimize(predictionWindow)
+        #logger.info("optimizer prediction " + str(prediction_optimized))
         
  
 
     
     # Get Delta between train and last value
     prediction_delta = prediction_last_value - prediction_last_train
-    logger.debug("delta " + str(prediction_delta))
+    #logger.debug("delta " + str(prediction_delta))
     # add on last Train value
-    prediction = np.add(train_value, prediction_delta)
-    logger.debug("prediction " + str(prediction))
+    prediction = np.add(predictionWindow.train_value, prediction_delta)
+    #logger.debug("prediction " + str(prediction))
     # add same value prediction
-    prediction = np.append(prediction, train_value)
-    logger.debug("prediction " + str(prediction))
+    prediction = np.append(prediction, predictionWindow.train_value)
+    #logger.debug("prediction " + str(prediction))
     # add last 30 min prediction
-    prediction30 = train_value  # default value 
-    i = index_last_train
-    while (type(cgmP[i]) != str) and i > 0: # find last value with glucose annotation
+    prediction30 = predictionWindow.train_value  # default value
+    i = predictionWindow.index_last_train
+    while (type(predictionWindow.cgmP[i]) != str) and i > 0: # find last value with glucose annotation
         i = i -1
-    if "=" in cgmP[i]:
-        splits = cgmP[i].split('=')  # read field of glucose Annotation and split by '=' to get only signed value
-        prediction30delta = float(splits[len(splits) -1 ]) * udata.predictionlength / 30     # convert string to float and extend it to prediction length
-        prediction30 = train_value + prediction30delta
+    if "=" in predictionWindow.cgmP[i]:
+        splits = predictionWindow.cgmP[i].split('=')  # read field of glucose Annotation and split by '=' to get only signed value
+        prediction30delta = float(splits[len(splits) -1 ]) * predictionWindow.userData.predictionlength / 30     # convert string to float and extend it to prediction length
+        prediction30 = predictionWindow.train_value + prediction30delta
     prediction = np.append(prediction, prediction30)
-    prediction = np.append(prediction, prediction_optimized)
-    logger.debug("prediction " + str(prediction))
+    predictionWindow.prediction = np.append(prediction, prediction_optimized)
+    #logger.debug("prediction " + str(prediction))
     # calculate error
-    errors = np.subtract(lastValue, prediction)
-    logger.debug("errors " + str(errors))
+    predictionWindow.errors = np.subtract(predictionWindow.lastValue, predictionWindow.prediction)
+    #logger.debug("errors " + str(errors))
 
-    if createPlots:
+    if predictionWindow.plot:
         # get values for prediction timeframe
-        prediction_vals = getPredictionVals(cgmX, cgmY, index_last_train, sim_bg[0])
-        prediction_vals_adv = getPredictionVals(cgmX, cgmY, index_last_train, sim_bg[5])
+        prediction_vals = getPredictionVals(predictionWindow.cgmX, predictionWindow.cgmY, predictionWindow.index_last_train, sim_bg[0])
+        prediction_vals_adv = getPredictionVals(predictionWindow.cgmX, predictionWindow.cgmY, predictionWindow.index_last_train, sim_bg[5])
 
         # Plot
 
@@ -179,12 +181,12 @@ def checkAndPlot(data, udata, startTime, createPlots):
         #fig, ax = plt.subplots()
 
         ax = plt.subplot(gs[0])
-        plt.xlim(0, udata.simlength * 60 +1)
+        plt.xlim(0, predictionWindow.userData.simlength * 60 +1)
         plt.ylim(0, 400)
         plt.grid(color="#cfd8dc")
         # Major ticks every 20, minor ticks every 5
-        major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
-        minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
+        major_ticks_x = np.arange(0, predictionWindow.userData.simlength * 60 + 1, 60)
+        minor_ticks_x = np.arange(0, predictionWindow.userData.simlength * 60 + 1, 15)
         major_ticks_y = np.arange(0, 401, 50)
         #minor_ticks_x = np.arange(0, 400, 15)
 
@@ -204,18 +206,18 @@ def checkAndPlot(data, udata, startTime, createPlots):
 
 
         # Plot Line when prediction starts
-        plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+        plt.axvline(x=(predictionWindow.userData.simlength - 1) * 60, color="black")
         # Plot real blood glucose readings
-        plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
+        plt.plot(predictionWindow.cgmX, predictionWindow.cgmY, "#263238", alpha=0.8, label="real BG")
         # Plot sim results
         plt.plot(sim_bg[3], sim_bg[0], "#b71c1c", alpha=0.5, label="sim BG")
-        plt.plot(range(int(cgmX[index_last_train]), len(sim_bg[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
+        plt.plot(range(int(predictionWindow.cgmX[predictionWindow.index_last_train]), len(sim_bg[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
         plt.plot(sim_bg[3], sim_bg[5], "#4527a0", alpha=0.5, label="sim BG ADV")
-        plt.plot(range(int(cgmX[index_last_train]), len(sim_bg[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
+        plt.plot(range(int(predictionWindow.cgmX[predictionWindow.index_last_train]), len(sim_bg[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
         # Same value prediction
-        plt.axhline(y=prediction_vals[0], xmin=(udata.simlength - udata.predictionlength/60) / udata.simlength, alpha=0.8, label="Same Value Prediction")
+        plt.axhline(y=prediction_vals[0], xmin=(predictionWindow.userData.simlength - predictionWindow.userData.predictionlength/60) / predictionWindow.userData.simlength, alpha=0.8, label="Same Value Prediction")
         # last 30 prediction value
-        plt.plot([(udata.simlength -1 )* 60, udata.simlength * 60], [train_value, prediction30], "#388E3C", alpha=0.8, label="Last 30 Prediction")
+        plt.plot([(predictionWindow.userData.simlength -1 )* 60, predictionWindow.userData.simlength * 60], [predictionWindow.train_value, prediction30], "#388E3C", alpha=0.8, label="Last 30 Prediction")
         # optimized prediction
         plt.plot(optimized_curve, alpha=0.8, label="optimized curve")
         # Plot Legend
@@ -229,8 +231,8 @@ def checkAndPlot(data, udata, startTime, createPlots):
 
         ax = plt.subplot(gs[1])
 
-        major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
-        minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
+        major_ticks_x = np.arange(0, predictionWindow.userData.simlength * 60 + 1, 60)
+        minor_ticks_x = np.arange(0, predictionWindow.userData.simlength * 60 + 1, 15)
         major_ticks_y = np.arange(0, 11, 2)
         # minor_ticks_x = np.arange(0, 400, 15)
 
@@ -245,7 +247,7 @@ def checkAndPlot(data, udata, startTime, createPlots):
         plt.box(False)
 
         # Plot Events
-        plt.xlim(0, udata.simlength * 60 +1)
+        plt.xlim(0, predictionWindow.userData.simlength * 60 +1)
         plt.ylim(0, 10)
         plt.grid(color="#cfd8dc")
         logger.debug(basalValues.values[0])
@@ -260,7 +262,7 @@ def checkAndPlot(data, udata, startTime, createPlots):
         #plt.plot(carbValues.time, [0] * len(carbValues), "go", alpha=0.8, label="carb event")
         #plt.plot(bolusValues.time, [0] * len(bolusValues), "ro", alpha=0.8, label="bolus evnet")
         # Plot Line when prediction starts
-        plt.axvline(x=(udata.simlength - 1) * 60, color="black")
+        plt.axvline(x=(predictionWindow.userData.simlength - 1) * 60, color="black")
         # Plot Legend
         plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         plt.tight_layout(pad=6)
@@ -271,7 +273,7 @@ def checkAndPlot(data, udata, startTime, createPlots):
             os.makedirs(directory)
         if not os.path.exists(directory + '/plots/'):
             os.makedirs(directory + '/plots/')
-        plt.savefig("/t1d/results/plots/result-"+startTime.strftime('%Y-%m-%d-%H-%M')+".png", dpi=75)
+        plt.savefig("/t1d/results/plots/result-"+predictionWindow.startTime.strftime('%Y-%m-%d-%H-%M')+".png", dpi=150)
         plt.close()
 
-    return errors.tolist()
+    return predictionWindow.errors.tolist()

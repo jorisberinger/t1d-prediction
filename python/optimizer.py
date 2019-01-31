@@ -9,7 +9,7 @@ import extractor
 import readData
 import rolling
 import predict
-from Classes import UserData, Event
+from Classes import UserData, Event, PredictionWindow
 from matplotlib import pyplot as plt, gridspec
 import numpy as np
 import cProfile
@@ -36,19 +36,13 @@ vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1, 2])
 
 
-def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserData, time_last_value: int, createPlot: bool) -> int:
-    # get start Time from first data point in data
-    startTime = data.index[0]
-    logger.info("start Time " + str(startTime))
-    # get all blood glucose readings
-    cgmX, cgmY, cgmP = check.getCgmReading(data, startTime)
-
+def optimize(predictionWindow) -> int:
 
     # set error time points
-    t_index = np.arange(0, len(cgmX), 3)
-    t = cgmX[t_index]
-    real_values = cgmY[t_index]
-    logger.info("real values " + str(real_values))
+    t_index = np.arange(0, len(predictionWindow.cgmX), 3)
+    t = predictionWindow.cgmX[t_index]
+    real_values = predictionWindow.cgmY[t_index]
+    #logger.info("real values " + str(real_values))
 
     # set number of parameters
     numberOfParameter = len(t)
@@ -58,21 +52,21 @@ def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserDat
     ub = 20
     lb = 0
     bounds = np.array([(lb, ub)] * numberOfParameter)
-    logger.debug("bounds " + str(bounds))
-    logger.info(str(numberOfParameter) + " parameters set")
+    #logger.debug("bounds " + str(bounds))
+    #logger.info(str(numberOfParameter) + " parameters set")
 
-    logger.info("check error at: " + str(t))
+    #logger.info("check error at: " + str(t))
     # enable profiling
-    logger.info("profiling enabled: " + str(profile))
+    #logger.info("profiling enabled: " + str(profile))
     if profile:
         pr = cProfile.Profile()
         pr.enable()
 
     # get Insulin Values
-    insulin_events = events[events.etype == 'bolus']
-    insulin_values = np.array([cgmY[0]] * len(t))
+    insulin_events = predictionWindow.df_train[predictionWindow.df_train.etype == 'bolus']
+    insulin_values = np.array([predictionWindow.cgmY[0]] * len(t))
     t_ = t[:, np.newaxis]
-    varsobject = predict.init_vars(udata.sensf, udata.idur * 60)
+    varsobject = predict.init_vars(predictionWindow.userData.sensf, predictionWindow.userData.idur * 60)
     for row in insulin_events.itertuples():
         iv = vec_get_insulin(row, udata, varsobject, t_).flatten()
         insulin_values = insulin_values + iv
@@ -83,15 +77,15 @@ def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserDat
     for i in t:
         times.append(predict.vec_cob1(t - i, carb_duration))
     cob_matrix = np.matrix(times)
-    logger.debug(cob_matrix)
-    logger.info(t.shape)
+    #logger.debug(cob_matrix)
+    #logger.info(t.shape)
 
     # get patient coefficient
     patient_coefficient = udata.sensf / udata.cratio
 
     # multiply patient_coefficient with cob_matrix
     patient_carb_matrix = patient_coefficient * cob_matrix
-    logger.debug(patient_carb_matrix)
+    #logger.debug(patient_carb_matrix)
 
     # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
     values = minimize(predicter, x0, args=(real_values, insulin_values, patient_carb_matrix), method='L-BFGS-B', bounds=bounds,
@@ -102,7 +96,7 @@ def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserDat
         pr.disable()
         pr.dump_stats(resultPath + "optimizer/profile")
     # output values which minimize predictor
-    logger.info("x_min" + str(values.x))
+    #logger.info("x_min" + str(values.x))
     # make a plot, comparing the real values with the predicter
     #plot(values.x, t)
     # save x_min values
@@ -110,13 +104,13 @@ def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserDat
         file.write(json.dumps(values.x.tolist()))
         file.close()
 
-    prediction_value = getPredictionValue(values.x, t, events, userData, time_last_value)
-    logger.info("prediction value: " + str(prediction_value))
-    logger.info("finished")
-    if not createPlot:
+    prediction_value = getPredictionValue(values.x, t, predictionWindow)
+    #logger.info("prediction value: " + str(prediction_value))
+    #logger.info("finished")
+    if not predictionWindow.plot:
         return prediction_value
     else:
-        prediction_curve = getPredictionCurve(values.x, t, events, userData)
+        prediction_curve = getPredictionCurve(values.x, t, predictionWindow)
         return prediction_value, prediction_curve
 
 
@@ -137,28 +131,28 @@ def predicter(inputs, real_values, insulin_values, p_cob):
 
     return error_sum
 
-def getPredictionCurve(carb_values: [float], t: [float], events: pandas.DataFrame, userData: UserData) -> [float]:
+def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: PredictionWindow) -> [float]:
     carbEvents = []
     for i in range(0, len(carb_values)):
         carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
     carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
     # logger.info(carb_events)
     # remove original carb events from data
-    insulin_events = events[events.etype != 'carb']
+    insulin_events = predictionWindow.df_train[predictionWindow.df_train.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
-    values = predict.calculateBG(allEvents, userData)
+    values = predict.calculateBG(allEvents, predictionWindow.userData)
     return values[5]
 
-def getPredictionValue(carb_values: [float], t: [float], events: pandas.DataFrame, userData: UserData, time_last_value: float) -> float:
+def getPredictionValue(carb_values: [float], t: [float], predictionWindow: PredictionWindow) -> float:
     carbEvents = []
     for i in range(0, len(carb_values)):
         carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
     carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
     # logger.info(carb_events)
     # remove original carb events from data
-    insulin_events = events[events.etype != 'carb']
+    insulin_events = predictionWindow.df_train[predictionWindow.df_train.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
-    value = predict.calculateBGAt2(time_last_value, allEvents, userData)
+    value = predict.calculateBGAt2(predictionWindow.time_last_value, allEvents, predictionWindow.userData)
     return value[1]
 
 

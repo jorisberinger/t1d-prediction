@@ -1,6 +1,8 @@
 import pandas
 import logging
 from datetime import datetime, timedelta
+
+from Classes import PredictionWindow
 from autotune_prep import convertTime
 import check
 
@@ -9,20 +11,27 @@ logger = logging.getLogger(__name__)
 
 # make rolling prediction and call checkWindow for every data window
 def rolling(data, delta, udata, autotune_res, plotOption):
+    predictionWindow = PredictionWindow()
+    predictionWindow.data = data
+
     # select starting point as first data point, always start at 15 minute intervals
     startTime = data.index[0]
-    startTime = startTime.replace(minute= startTime.minute // int(udata.predictionlength))
+    startTime = startTime.replace(minute= data.index[0].minute // int(udata.predictionlength))
+
     endTime = data.index[len(data)-1]
+    predictionWindow.endTime = data.index[len(data)-1]
     results = []
     i = 0
     # loop through the data
     while startTime < endTime - timedelta(hours=udata.simlength):
         logger.info("#" + str(i))
         i += 1
-
+        predictionWindow.startTime = startTime
+        predictionWindow.endTime = startTime + timedelta(hours=udata.simlength)
         # select data for this window
         subset = data.loc[startTime <= data.index]
-        subset = subset.loc[startTime + timedelta(hours=udata.simlength) > subset.index]
+        subset = subset.loc[predictionWindow.endTime > subset.index]
+        predictionWindow.data = subset
 
         # Set Sensitivity factor and CarbRatio
         arStart = autotune_res[subset.date.values[0]]
@@ -32,9 +41,10 @@ def rolling(data, delta, udata, autotune_res, plotOption):
         udata.sensf = arStart['sens'][0]['sensitivity']
         udata.basalProfile = arStart['basal']
         logger.debug("date " + subset.date.values[0] + "\cratio " + str(udata.cratio) + "\tsensf " + str(udata.sensf))
-
+        predictionWindow.userData = udata
+        predictionWindow.plot = plotOption
         # call the prediction method
-        res = check.checkAndPlot(subset, udata, startTime, plotOption)
+        res = check.checkAndPlot(predictionWindow)
         if res is not None:
             results.append(res)
         startTime += delta  # delta determines the time between two predictions
