@@ -214,7 +214,7 @@ def plot(values, t):
 
     major_ticks_x = np.arange(0, udata.simlength * 60 + 1, 60)
     minor_ticks_x = np.arange(0, udata.simlength * 60 + 1, 15)
-    major_ticks_y = np.arange(0, 11, 2)
+    major_ticks_y = np.arange(0, 21, 4)
     # minor_ticks_x = np.arange(0, 400, 15)
 
     ax.set_xticks(major_ticks_x)
@@ -229,7 +229,7 @@ def plot(values, t):
 
     # Plot Events
     plt.xlim(0, udata.simlength * 60 + 1)
-    plt.ylim(0, 10)
+    plt.ylim(0, 20)
     plt.grid(color="#cfd8dc")
     if (len(basalValues) > 0):
         plt.bar(basalValues.time, basalValues.dbdt, 5, alpha=0.8, label="basal event (not used)")
@@ -237,6 +237,8 @@ def plot(values, t):
         plt.bar(carbValues.time, carbValues.grams, 5, alpha=0.8, label="carb event")
     if len(bolusValues) > 0:
         plt.bar(bolusValues.time, bolusValues.units, 5, alpha=0.8, label="bolus event")
+    plt.bar(original_carbs.time, original_carbs.grams, 5, alpha=0.8, label="original Carb")
+
     # plt.bar(basalValues.time, [0] * len(basalValues), "bo", alpha=0.8, label="basal event (not used)")
     # plt.plot(carbValues.time, [0] * len(carbValues), "go", alpha=0.8, label="carb event")
     # plt.plot(bolusValues.time, [0] * len(bolusValues), "ro", alpha=0.8, label="bolus evnet")
@@ -306,6 +308,8 @@ def loadData():
     df = pandas.DataFrame([vars(e) for e in converted])
 
     # Remove Carb events and tempbasal
+    global original_carbs
+    original_carbs = df[df['etype'] == 'carb']
     df = df[df['etype'] != "carb"]
     df = df[df['etype'] != "tempbasal"]
 
