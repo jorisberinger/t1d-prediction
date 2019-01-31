@@ -4,8 +4,6 @@ from datetime import timedelta
 import time
 import pandas
 from scipy.optimize import minimize
-from sklearn import metrics
-
 import check
 import extractor
 import readData
@@ -127,28 +125,13 @@ def optimize():
 def predicter(inputs, t, insulin_values, p_cob):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
     # Update inputs
-    logger.debug("inputs " + str(inputs))
-    logger.debug("P_co " + str(p_cob))
-    logger.debug(inputs.shape)
-    logger.debug(p_cob.shape)
-
     carb_values = np.matmul(inputs.T , p_cob).flatten()
-    logger.debug(carb_values.shape)
-    logger.debug(carb_values)
 
-
-    #carb_prediction  = vec_get_carb(t, ev, udata).flatten()
     predictions = carb_values + insulin_values
-    logger.debug(predictions)
 
     global error
     error = abs(real_values - predictions)
     error_sum = error.sum()
-    #logger.info(real_values)
-
-    #error_sum  = metrics.mean_squared_error(real_values, predictions)
-    #error_sum = metrics.mean_absolute_error(real_values, predictions)
-    logger.debug("error: " + str(error_sum))
     return error_sum
 
 
