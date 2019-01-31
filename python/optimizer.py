@@ -18,7 +18,6 @@ import os
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-docker = False
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/data.csv"
 resultPath = path + "results/"
@@ -32,10 +31,122 @@ profile = False
 # Set carb duration
 carb_duration = 90
 
+# get vectorized forms of function for predicter
+vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[0, 1, 2])
+vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1, 2])
 
-vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[0,1,2])
-vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1,2])
-def optimize():
+
+def optimize(data: pandas.DataFrame, events: pandas.DataFrame, userData: UserData, time_last_value: int) -> int:
+    # get start Time from first data point in data
+    startTime = data.index[0]
+    logger.info("start Time " + str(startTime))
+    # get all blood glucose readings
+    cgmX, cgmY, cgmP = check.getCgmReading(data, startTime)
+
+
+    # set error time points
+    t_index = np.arange(0, len(cgmX), 3)
+    t = cgmX[t_index]
+    real_values = cgmY[t_index]
+    logger.info("real values " + str(real_values))
+
+    # set number of parameters
+    numberOfParameter = len(t)
+    # set inital guess to 0 for all input parameters
+    x0 = np.array([1] * numberOfParameter)
+    # set all bounds to 0 - 1
+    ub = 20
+    lb = 0
+    bounds = np.array([(lb, ub)] * numberOfParameter)
+    logger.debug("bounds " + str(bounds))
+    logger.info(str(numberOfParameter) + " parameters set")
+
+    logger.info("check error at: " + str(t))
+    # enable profiling
+    logger.info("profiling enabled: " + str(profile))
+    if profile:
+        pr = cProfile.Profile()
+        pr.enable()
+
+    # get Insulin Values
+    insulin_events = events[events.etype == 'bolus']
+    insulin_values = np.array([cgmY[0]] * len(t))
+    t_ = t[:, np.newaxis]
+    varsobject = predict.init_vars(udata.sensf, udata.idur * 60)
+    for row in insulin_events.itertuples():
+        iv = vec_get_insulin(row, udata, varsobject, t_).flatten()
+        insulin_values = insulin_values + iv
+
+
+    # create Time Matrix
+    times = []
+    for i in t:
+        times.append(predict.vec_cob1(t - i, carb_duration))
+    cob_matrix = np.matrix(times)
+    logger.debug(cob_matrix)
+    logger.info(t.shape)
+
+    # get patient coefficient
+    patient_coefficient = udata.sensf / udata.cratio
+
+    # multiply patient_coefficient with cob_matrix
+    patient_carb_matrix = patient_coefficient * cob_matrix
+    logger.debug(patient_carb_matrix)
+
+    # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
+    values = minimize(predicter, x0, args=(real_values, insulin_values, patient_carb_matrix), method='L-BFGS-B', bounds=bounds,
+                      options={'disp': False, 'maxiter': 1000})  # Set maxiter higher if you have Time
+    # values = minimize(predicter, x0, args=(t_, insulin_values, patient_carb_matrix), method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 1000})
+
+    if profile:
+        pr.disable()
+        pr.dump_stats(resultPath + "optimizer/profile")
+    # output values which minimize predictor
+    logger.info("x_min" + str(values.x))
+    # make a plot, comparing the real values with the predicter
+    #plot(values.x, t)
+    # save x_min values
+    with open(resultPath + "optimizer/values-1.json", "w") as file:
+        file.write(json.dumps(values.x.tolist()))
+        file.close()
+
+    prediction_value = getPredictionValue(values.x, t, events, userData, time_last_value)
+    logger.info("prediction value: " + str(prediction_value))
+    logger.info("finished")
+    return prediction_value
+
+def predicter(inputs, real_values, insulin_values, p_cob):
+    # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
+    # Update inputs
+    #logger.info("real values " + str(real_values))
+    carb_values = np.matmul(inputs.T, p_cob).flatten()
+    #logger.info("carb values" + str(carb_values))
+    #logger.info("insulin values " + str(insulin_values))
+    predictions = carb_values + insulin_values
+    #logger.info("prediction " + str(predictions))
+    global error
+    error = abs(real_values - predictions)
+    #logger.info("errors " + str(error))
+    error_sum = error.sum()
+    #logger.info("ERROR " + str(error_sum))
+
+    return error_sum
+
+
+def getPredictionValue(carb_values: [float], t: [float], events: pandas.DataFrame, userData: UserData, time_last_value: float) -> float:
+    carbEvents = []
+    for i in range(0, len(carb_values)):
+        carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
+    carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
+    # logger.info(carb_events)
+    # remove original carb events from data
+    insulin_events = events[events.etype != 'carb']
+    allEvents = pandas.concat([insulin_events, carb_events])
+    value = predict.calculateBGAt2(time_last_value, allEvents, userData)
+    return value[1]
+
+
+def optimizeMain():
     logger.info("start optimizing")
     # load data and select time frame
     loadData()
@@ -104,7 +215,7 @@ def optimize():
     logger.debug(p_cob)
 
     # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
-    values = minimize(predicter, x0, args=(t_, insulin_values, p_cob), method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 1000})  # Set maxiter higher if you have Time
+    values = minimize(predicter, x0, args=(real_values, insulin_values, p_cob), method='L-BFGS-B', bounds=bounds, options = {'disp': True, 'maxiter': 1000})  # Set maxiter higher if you have Time
     #values = minimize(predicter, x0, args=(t_, insulin_values, p_cob), method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 1000})
 
     if profile:
@@ -122,17 +233,7 @@ def optimize():
     logger.info("finished")
 
 
-def predicter(inputs, t, insulin_values, p_cob):
-    # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
-    # Update inputs
-    carb_values = np.matmul(inputs.T , p_cob).flatten()
 
-    predictions = carb_values + insulin_values
-
-    global error
-    error = abs(real_values - predictions)
-    error_sum = error.sum()
-    return error_sum
 
 
 def plot(values, t):
@@ -281,7 +382,7 @@ def loadData():
     global cgmY
     global cgmX_train
     global cgmY_train
-    cgmX , cgmY, cgmP = check.getCgmReading(subset, startTime)
+    cgmX, cgmY, cgmP = check.getCgmReading(subset, startTime)
     cgmX_train , cgmY_train, cgmP_train = check.getCgmReading(subset_train, startTime)
     udata.bginitial = cgmY[0]
     # Extract events
@@ -299,5 +400,5 @@ def loadData():
 
 if __name__ == '__main__':
     start_time = time.process_time()
-    optimize()
+    optimizeMain()
     logger.info(str(time.process_time() - start_time) + " seconds")

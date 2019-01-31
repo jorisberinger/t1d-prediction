@@ -48,6 +48,7 @@ def getSummary(res):
     res_adv_series = pandas.Series(df[1])
     res_same_value = pandas.Series(df[2])
     res_30_value = pandas.Series(df[3])
+    res_optimized = pandas.Series(df[4])
     mean = res_series.mean(skipna=True)
     median = res_series.median(skipna=True)
     mean_adv = res_adv_series.mean(skipna=True)
@@ -56,17 +57,23 @@ def getSummary(res):
     median_same_value = res_same_value.median(skipna=True)
     mean_30_value = res_30_value.mean(skipna=True)
     median_30_value = res_30_value.median(skipna=True)
-    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value), "mean_30_value": float(mean_30_value),
+    mean_opt = res_optimized.mean(skipna=True)
+    median_opt = res_optimized.median(skipna=True)
+
+    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value),
+                  "mean_30_value": float(mean_30_value), "mean_optimized": float(mean_opt),
                   "median": float(median), "median_adv": float(median_adv),
                   "median_same_value": float(median_same_value),"median_30_value": float(median_30_value),
+                  "median_optimized": float(median_opt),
                   "data": res}
 
-    logger.info(
-        "Results: mean: " + str(mean) + "\tmean_adv: " + str(mean_adv) + "\tmean_same_value: " + str(
-            mean_same_value) + "\tmedian: " + str(median) + "\tmedian_adv: " + str(
-            median_adv) + "\tmedian_same_value: " + str(median_same_value))
+    json_output = jsonobject.copy()
+    del json_output['data']
+    logger.info(json_output)
     file = open("/t1d/results/result-" + str(setNumber) + ".json", 'w')
     file.write(json.dumps(jsonobject))
+
+
     return jsonobject
 
 

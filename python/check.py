@@ -4,6 +4,8 @@ from datetime import datetime
 import extractor
 import numpy as np
 import pandas
+
+import optimizer
 import predict
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
@@ -70,7 +72,8 @@ def getCgmReading(data, startTime):
     cgmtrue = data[data['cgmValue'].notnull()]
     logger.debug("Length: " + str(len(cgmtrue)))
     if len(cgmtrue) > 0:
-        cgmtrue['delta'] = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
+        deltas = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
+        cgmtrue = cgmtrue.assign(delta=deltas.values)
         cgmX = cgmtrue['delta'].values
         cgmY = cgmtrue['cgmValue'].values
         cgmP = cgmtrue['glucoseAnnotation'].values
@@ -78,59 +81,6 @@ def getCgmReading(data, startTime):
     else:
         return None, None
 
-def checkFast(data, udata, startTime):
-
-    # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
-    cgmX, cgmY = getCgmReading(data, startTime)
-    # Check if there is data
-    if cgmX is None:
-        return None
-    # Check if there is data around the 5h mark
-    if not (cgmX[len(cgmX) - 1] >= (udata.simlength - 1) * 60):
-        logger.warning("not able to predict")
-        return None
-
-    # Set initial Blood Glucose Level
-    udata.bginitial = cgmY[0]
-
-    # Get Train Datapoint
-    index_last_train = getClosestIndex(cgmX, (udata.simlength - 1) * 60)
-    time_last_train = cgmX[index_last_train]
-    train_value = cgmY[index_last_train]
-
-    # Get last Datapoint
-    index_last_value = len(cgmY) - 1  # TODO check if index l v - index l t is appr. 60 min
-    time_last_value = cgmX[index_last_value]
-    lastValue = cgmY[index_last_value]
-
-    # Get Events for Prediction
-    events = extractor.getEvents(data)
-    converted = events.apply(lambda event: convertTimes(event, startTime))
-    df = pandas.DataFrame([vars(e) for e in converted])
-    df_train = df[df.time < (udata.simlength - 1) * 60]
-
-    logger.debug("index train " + str(index_last_train))
-    logger.debug("index last " + str(index_last_value))
-    # Get prediction Value for last train value
-    prediction_last_train = np.array(predict.calculateBGAt(time_last_train, df_train, udata))
-    logger.debug("prediction train " + str(prediction_last_train))
-    # Get prediction Value for last value
-    prediction_last_value = np.array(predict.calculateBGAt(time_last_value, df_train, udata))
-    logger.debug("prediction value " + str(prediction_last_value))
-    # Get Delta between train and last value
-    prediction_delta = prediction_last_value - prediction_last_train
-    logger.debug("delta " + str(prediction_delta))
-    # add on last Train value
-    prediction = np.add(train_value, prediction_delta)
-    logger.debug("prediction " + str(prediction))
-    # add same value prediction
-    prediction = np.append(prediction, train_value)
-    logger.debug("prediction " + str(prediction))
-    # calculate error
-    errors = np.subtract(lastValue, prediction)
-    logger.debug("errors " + str(errors))
-
-    return errors.tolist()
 
 def checkAndPlot(data, udata, startTime, createPlots):
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
@@ -172,13 +122,18 @@ def checkAndPlot(data, udata, startTime, createPlots):
         # Get prediction Value for last value
         prediction_last_value = np.array([data[0][time_last_value], data[5][time_last_value]])
         logger.debug("prediction value " + str(prediction_last_value))
+        # get prediction with optimized parameters
+        prediction_optimized = optimizer.optimize(data, df_train, udata, time_last_value)
+        logger.info("optimizer prediction " + str(prediction_optimized))
     else:
          # Get prediction Value for last train value
-        prediction_last_train = np.array(predict.calculateBGAt(time_last_train, df_train, udata))
+        prediction_last_train = np.array(predict.calculateBGAt2(time_last_train, df_train, udata))
         logger.debug("prediction train " + str(prediction_last_train))
         # Get prediction Value for last value
-        prediction_last_value = np.array(predict.calculateBGAt(time_last_value, df_train, udata))
+        prediction_last_value = np.array(predict.calculateBGAt2(time_last_value, df_train, udata))
         logger.debug("prediction value " + str(prediction_last_value))
+        prediction_optimized = optimizer.optimize(data, df_train, udata, time_last_value)
+        logger.info("optimizer prediction " + str(prediction_optimized))
         
  
 
@@ -202,6 +157,7 @@ def checkAndPlot(data, udata, startTime, createPlots):
         prediction30delta = float(splits[len(splits) -1 ]) * udata.predictionlength / 30     # convert string to float and extend it to prediction length
         prediction30 = train_value + prediction30delta
     prediction = np.append(prediction, prediction30)
+    prediction = np.append(prediction, prediction_optimized)
     logger.debug("prediction " + str(prediction))
     # calculate error
     errors = np.subtract(lastValue, prediction)

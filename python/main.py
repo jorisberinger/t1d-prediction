@@ -1,18 +1,19 @@
+import logging
+import os
+import time
 import analyze
-import check
+import autotune
+import autotune_prep
+import gifmaker
+import rolling
 from Classes import UserData
 from readData import read_data
-import rolling
-import autotune_prep
-import autotune
-import logging
-import time
-import gifmaker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-filenameDocker = "/t1d/data/csv/data.csv"
+path = os.getenv('T1DPATH', '../')
+filename = path + "data/csv/data.csv"
 
 
 
@@ -20,7 +21,6 @@ filenameDocker = "/t1d/data/csv/data.csv"
 def predictFast(data, userdata, autotune_res, plotOption):
     # make a rolling prediction
     res = rolling.predictRolling(data, userdata, autotune_res, plotOption)
-
     # analyse data and prepare for output
     summary = analyze.getSummary(res)
     analyze.createErrorPlots(summary)
@@ -38,12 +38,12 @@ def runAutotune(data):
 
 def main():
     # SELECT OPTIONS
-    run_autotune = True   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
-    create_plots = True  # Select True if you want a plot for every prediction window
+    run_autotune = False   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
+    create_plots = False  # Select True if you want a plot for every prediction window
 
     logger.info("Start Main!")
 
-    data = read_data(filenameDocker)
+    data = read_data(filename)
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=11, predictionlength=60, stats=None)
 
     logger.info("Run Autotune? " + str(run_autotune))
