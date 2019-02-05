@@ -3,9 +3,8 @@ import logging
 import os
 import time
 import analyze
-import autotune
-import autotune_prep
-import gifmaker
+from autotune import autotune
+from autotune import autotune_prep
 import rolling
 from Classes import UserData
 import readData
@@ -30,12 +29,7 @@ def predictFast(data, userdata, autotune_res, plotOption):
     logger.info("finished prediction")
 
 
-def runAutotune(data):
-    logger.debug("Prep glucose and insulin history for autotune as json")
-    autotune_prep.prep_for_autotune(data)
-    logger.debug("Run autotune")
-    res = autotune.run_autotune(data)
-    return res
+
 
 def main():
     # SELECT OPTIONS
@@ -49,7 +43,7 @@ def main():
 
     logger.info("Run Autotune? " + str(run_autotune))
     if run_autotune:
-        autotune_res = runAutotune(data)
+        autotune_res = autotune.runAutotune(data)
     else:
         autotune_res = autotune.getAllSensAndCR(data)
 

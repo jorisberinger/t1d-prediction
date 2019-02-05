@@ -3,6 +3,8 @@ import subprocess
 import json
 import os
 
+from autotune import autotune_prep
+
 logger = logging.getLogger(__name__)
 
 folder = "/t1d/data/input/"
@@ -11,6 +13,14 @@ prepjs = "/autotune/oref0/bin/oref0-autotune-prep.js"
 corejs = "/autotune/oref0/bin/oref0-autotune-core.js"
 profilejson = folder + "profile.json"
 profilepumpjson = folder + "profile.pump.json"
+
+def runAutotune(data):
+    logger.debug("Prep glucose and insulin history for autotune as json")
+    autotune_prep.prep_for_autotune(data)
+    logger.debug("Run autotune")
+    res = run_autotune(data)
+    return res
+
 
 
 def run_autotune(data):
