@@ -1,6 +1,5 @@
 import json
 
-from readData import read_data
 import extractor
 import uuid
 from datetime import datetime
@@ -13,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
 timeZone = "+0100"
-pathDocker = "/t1d/data/input/1/"
+
+path = os.getenv('T1DPATH', '../')
+folder_path = path + "data/input/1/"
 
 # Convert Time from String to Datetime object
 def convertTime(dateandtime):
@@ -22,7 +23,7 @@ def convertTime(dateandtime):
 
 # write Json data in file. Filename is appended to path variable to get relative path of file
 def writeJson(jsonarray, filename):
-    file = open(pathDocker + filename + '.json', 'w')
+    file = open(folder_path + filename + '.json', 'w')
     file.write(json.dumps(jsonarray))
 
 
@@ -119,7 +120,7 @@ def createPumphistoryJson(events):
 # read data and create json files for autotune
 def prep_for_autotune(data):
     logger.info("prep for autotune - start")
-    directory = os.path.dirname(pathDocker)
+    directory = os.path.dirname(folder_path)
     if not os.path.exists(directory):
         os.makedirs(directory)
 

@@ -6,7 +6,7 @@ import pandas
 from scipy.optimize import minimize
 import check
 import extractor
-import readData
+from data import readData
 import rolling
 import predict
 from Classes import UserData, Event, PredictionWindow
@@ -15,7 +15,6 @@ import numpy as np
 import cProfile
 import os
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 path = os.getenv('T1DPATH', '../')

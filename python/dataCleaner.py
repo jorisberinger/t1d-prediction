@@ -1,6 +1,6 @@
 import logging
 import os
-import readData
+from data import readData
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

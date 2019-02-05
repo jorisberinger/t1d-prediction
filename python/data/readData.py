@@ -2,12 +2,7 @@
 import pandas as pd
 
 
-
-def add(a, b: int):
-    return a + b
-
-
-def read_data(filename):
+def read_data(filename: str):
     data = pd.read_csv(filename, low_memory=False)
     return data
 
