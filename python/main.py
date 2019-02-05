@@ -8,7 +8,7 @@ import autotune_prep
 import gifmaker
 import rolling
 from Classes import UserData
-from readData import read_data
+import readData
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,11 +40,11 @@ def runAutotune(data):
 def main():
     # SELECT OPTIONS
     run_autotune = False   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
-    create_plots = True  # Select True if you want a plot for every prediction window
+    create_plots = False  # Select True if you want a plot for every prediction window
 
     logger.info("Start Main!")
 
-    data = read_data(filename)
+    data = readData.read_data(filename)
     udata = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=11, predictionlength=60, stats=None)
 
     logger.info("Run Autotune? " + str(run_autotune))

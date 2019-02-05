@@ -62,7 +62,7 @@ class PredictionWindow:
     index_last_value = None
     time_last_value = None
     lastValue = None
-    df_train = None
+    events = None
     prediction = None
     errors = None
 

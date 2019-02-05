@@ -36,7 +36,7 @@ vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1, 2])
 
 
-def optimize(predictionWindow) -> int:
+def optimize(predictionWindow: PredictionWindow) -> int:
 
     # set error time points
     t_index = np.arange(0, len(predictionWindow.cgmX), 3)
@@ -63,7 +63,7 @@ def optimize(predictionWindow) -> int:
         pr.enable()
 
     # get Insulin Values
-    insulin_events = predictionWindow.df_train[predictionWindow.df_train.etype == 'bolus']
+    insulin_events = predictionWindow.events[predictionWindow.events.etype == 'bolus']
     insulin_values = np.array([predictionWindow.cgmY[0]] * len(t))
     t_ = t[:, np.newaxis]
     varsobject = predict.init_vars(predictionWindow.userData.sensf, predictionWindow.userData.idur * 60)
@@ -100,9 +100,9 @@ def optimize(predictionWindow) -> int:
     # make a plot, comparing the real values with the predicter
     #plot(values.x, t)
     # save x_min values
-    with open(resultPath + "optimizer/values-1.json", "w") as file:
-        file.write(json.dumps(values.x.tolist()))
-        file.close()
+    #with open(resultPath + "optimizer/values-1.json", "w") as file:
+    #    file.write(json.dumps(values.x.tolist()))
+    #    file.close()
 
     prediction_value = getPredictionValue(values.x, t, predictionWindow)
     #logger.info("prediction value: " + str(prediction_value))
@@ -118,13 +118,12 @@ def predicter(inputs, real_values, insulin_values, p_cob):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
     # Update inputs
     #logger.info("real values " + str(real_values))
-    carb_values = np.matmul(inputs.T, p_cob).flatten()
+    carb_values = np.array(np.matmul(inputs, p_cob))
     #logger.info("carb values" + str(carb_values))
     #logger.info("insulin values " + str(insulin_values))
     predictions = carb_values + insulin_values
     #logger.info("prediction " + str(predictions))
-    global error
-    error = abs(real_values - predictions)
+    error = np.absolute(real_values - predictions)
     #logger.info("errors " + str(error))
     error_sum = error.sum()
     #logger.info("ERROR " + str(error_sum))
@@ -138,7 +137,7 @@ def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: Predi
     carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
     # logger.info(carb_events)
     # remove original carb events from data
-    insulin_events = predictionWindow.df_train[predictionWindow.df_train.etype != 'carb']
+    insulin_events = predictionWindow.events[predictionWindow.events.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
     values = predict.calculateBG(allEvents, predictionWindow.userData)
     return values[5]
@@ -150,7 +149,7 @@ def getPredictionValue(carb_values: [float], t: [float], predictionWindow: Predi
     carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
     # logger.info(carb_events)
     # remove original carb events from data
-    insulin_events = predictionWindow.df_train[predictionWindow.df_train.etype != 'carb']
+    insulin_events = predictionWindow.events[predictionWindow.events.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
     value = predict.calculateBGAt2(predictionWindow.time_last_value, allEvents, predictionWindow.userData)
     return value[1]
