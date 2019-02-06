@@ -35,12 +35,13 @@ vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes=[float], excluded=[
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1, 2])
 
 
-def optimize(predictionWindow: PredictionWindow) -> int:
+def optimize(pw: PredictionWindow) -> int:
 
     # set error time points
-    t_index = np.arange(0, len(predictionWindow.cgmX), 3)
-    t = predictionWindow.cgmX[t_index]
-    real_values = predictionWindow.cgmY[t_index]
+    t = np.arange(0,pw.userData.simlength * 60 - pw.userData.predictionlength + 1, 15)
+    logger.debug(t)
+    t_index = 0
+    real_values = np.array(pw.cgmY.loc[t])
     #logger.info("real values " + str(real_values))
 
     # set number of parameters
@@ -62,10 +63,10 @@ def optimize(predictionWindow: PredictionWindow) -> int:
         pr.enable()
 
     # get Insulin Values
-    insulin_events = predictionWindow.events[predictionWindow.events.etype == 'bolus']
-    insulin_values = np.array([predictionWindow.cgmY[0]] * len(t))
+    insulin_events = pw.events[pw.events.etype == 'bolus']
+    insulin_values = np.array([pw.cgmY[0]] * len(t))
     t_ = t[:, np.newaxis]
-    varsobject = predict.init_vars(predictionWindow.userData.sensf, predictionWindow.userData.idur * 60)
+    varsobject = predict.init_vars(pw.userData.sensf, pw.userData.idur * 60)
     for row in insulin_events.itertuples():
         iv = vec_get_insulin(row, udata, varsobject, t_).flatten()
         insulin_values = insulin_values + iv
@@ -103,30 +104,23 @@ def optimize(predictionWindow: PredictionWindow) -> int:
     #    file.write(json.dumps(values.x.tolist()))
     #    file.close()
 
-    prediction_value = getPredictionValue(values.x, t, predictionWindow)
+    prediction_value = getPredictionValue(values.x, t, pw)
     #logger.info("prediction value: " + str(prediction_value))
     #logger.info("finished")
-    if not predictionWindow.plot:
+    if not pw.plot:
         return prediction_value
     else:
-        prediction_curve = getPredictionCurve(values.x, t, predictionWindow)
+        prediction_curve = getPredictionCurve(values.x, t, pw)
         return prediction_value, prediction_curve
 
 
 def predicter(inputs, real_values, insulin_values, p_cob):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
     # Update inputs
-    #logger.info("real values " + str(real_values))
     carb_values = np.array(np.matmul(inputs, p_cob))
-    #logger.info("carb values" + str(carb_values))
-    #logger.info("insulin values " + str(insulin_values))
     predictions = carb_values + insulin_values
-    #logger.info("prediction " + str(predictions))
-    error = np.absolute(real_values - predictions)
-    #logger.info("errors " + str(error))
+    error = np.absolute(real_values - predictions.flatten())
     error_sum = error.sum()
-    #logger.info("ERROR " + str(error_sum))
-
     return error_sum
 
 def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: PredictionWindow) -> [float]:
@@ -150,7 +144,7 @@ def getPredictionValue(carb_values: [float], t: [float], predictionWindow: Predi
     # remove original carb events from data
     insulin_events = predictionWindow.events[predictionWindow.events.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
-    value = predict.calculateBGAt2(predictionWindow.time_last_value, allEvents, predictionWindow.userData)
+    value = predict.calculateBGAt2(predictionWindow.userData.simlength * 60, allEvents, predictionWindow.userData)
     return value[1]
 
 

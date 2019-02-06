@@ -15,7 +15,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data-o3.csv"
+filename = path + "data/csv/data_17_5.csv"
+#filename = path + "data/csv/data-o3.csv"
 
 def main():
     # SELECT OPTIONS
@@ -34,6 +35,9 @@ def main():
     # CLEAN UP DATA FRAME
     data = convertData.convert(data)
 
+    # INTERPOLATE CGM MEASURES
+    data = convertData.interpolate_cgm(data)
+    logger.debug(data['glucoseAnnotation'])
 
     # GET SENSITIVITY FACTOR AND CARBRATIO FOR EVERY DAY
     logger.info("Run Autotune? " + str(run_autotune))
@@ -43,7 +47,7 @@ def main():
         autotune_res = autotune.getAllSensAndCR(data)
 
     # DROP DATE AND TIME STRINGS
-    data = convertData.drop_date_and_time(data)
+    # data = convertData.drop_date_and_time(data)
     # MAKE A ROLLING PREDICTION
     logger.debug("Run Prediciton")
     prediction_result = rolling.rolling(data, pd.Timedelta('15 minutes'), user_data, autotune_res, create_plots)

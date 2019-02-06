@@ -2,7 +2,7 @@ from unittest import TestCase
 from data import readData, convertData
 import pandas as pd
 import numpy as np
-filename = "../../data/csv/data-o3.csv"
+filename = "../../data/csv/data_17_5.csv"
 class TestConvertData(TestCase):
     def test_select_columns(self):
         data = readData.read_data(filename)
@@ -32,3 +32,12 @@ class TestConvertData(TestCase):
         self.assertIsInstance(data['glucoseAnnotation'][0], str)
         data = convertData.convert_glucose_annotation(data)
         self.assertIsInstance(data['glucoseAnnotation'][0], float)
+
+    def test_interpolate_cgm(self):
+        data = readData.read_data(filename)
+        data = convertData.select_columns(data)
+        data = convertData.create_time_index(data)
+        data = convertData.convert_glucose_annotation(data)
+        self.assertGreater(data['cgmValue'].isna().sum(), 10)
+        data = convertData.interpolate_cgm(data)
+        self.assertEqual(0, data['cgmValue'].isna().sum())

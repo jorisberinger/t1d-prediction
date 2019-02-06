@@ -144,13 +144,7 @@ def calculateBGAt2(index, uevent, udata):
 
     simbg = udata.bginitial
     simbg_adv = udata.bginitial
-    simbgc = 0
-    simbgi = 0
-    simbgi_adv = 0
-
-    dt = 1 # dt must be 1, 1 minute intervals
-    i = index
-    values = uevent.apply(calcEvent, args=([i, udata, varsobject]), axis=1, result_type='expand')  
+    values = uevent.apply(calcEvent, args=([index, udata, varsobject]), axis=1, result_type='expand')
     sums = values.sum()
     simbg_res = simbg + sums[0] + sums[1]
     simbg_adv = simbg_adv + sums[0] + sums[2]
@@ -161,12 +155,13 @@ def calcEvent(event,i, udata, varsobject):
     simbgc = 0.0
     simbgi = 0.0
     simbgi_adv = 0.0
+    logger.debug("i: " + str(i) + "\tindex: " + str(event.name))
     if etype != "":
         if etype == "carb":
-            simbgc = deltaBGC(i - event.time, udata.sensf, udata.cratio, event.grams, event.ctype)
+            simbgc = deltaBGC(i - event.name, udata.sensf, udata.cratio, event.grams, event.ctype)
         elif etype == "bolus":
-            simbgi = deltaBGI(i  - event.time, event.units, udata.sensf, udata.idur)
-            simbgi_adv = deltaBGI_adv(i  - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
+            simbgi = deltaBGI(i  - event.name, event.units, udata.sensf, udata.idur)
+            simbgi_adv = deltaBGI_adv(i  - event.name, event.units, udata.sensf, udata.idur * 60, varsobject)
     return simbgc, simbgi, simbgi_adv
 
 
@@ -202,7 +197,7 @@ def calculateBIAt(event, udata, varsobject, index):
     dt = 1  # dt must be 1, 1 minute intervals
     simbgi_adv = 0
     #simbgi = simbgi + deltaBGI(i * dt - event.time, event.units, udata.sensf, udata.idur)
-    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.time, event.units, udata.sensf, udata.idur * 60, varsobject)
+    simbgi_adv = simbgi_adv + deltaBGI_adv(i * dt - event.Index, event.units, udata.sensf, udata.idur * 60, varsobject)
     return simbgi_adv
 
 def calculateBGAt0(index, uevent, udata):

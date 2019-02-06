@@ -28,11 +28,10 @@ def getTimeDelta(row, start):
         return timeDifference.seconds / 60
 
 
-def getClosestIndex(cgmX, number):
-    res = 0
-    while cgmX[res] <= number:
-        res += 1
-    return res - 1
+def getClosestIndex(cgmY, number):
+    smaller = cgmY[cgmY.index <= number]
+    closest = smaller.index[-1]
+    return closest
 
 
 def getPredictionVals(cgmX, cgmY, index,  simData):
@@ -70,29 +69,28 @@ def convertTimes(event, start):
         event.t2 = eventTime
     return event
 
-def getCgmReading(data, startTime):
+def getCgmReading(data):
     cgmtrue = data[data['cgmValue'].notnull()]
-    #logger.debug("Length: " + str(len(cgmtrue)))
     if len(cgmtrue) > 0:
-        deltas = cgmtrue.apply(lambda row: getTimeDelta(row, startTime), axis=1)
-        cgmtrue = cgmtrue.assign(delta=deltas.values)
-        cgmX = cgmtrue['delta'].values
-        cgmY = cgmtrue['cgmValue'].values
+        cgmY = cgmtrue['cgmValue']
         cgmP = cgmtrue['glucoseAnnotation'].values
-        return cgmX, cgmY, cgmP
+        return cgmY, cgmP
     else:
         return None, None
 
 
+
 def checkAndPlot(pw: PredictionWindow):
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
-    pw.cgmX, pw.cgmY, pw.cgmP = getCgmReading(pw.data, pw.startTime)
+    pw.cgmY, pw.cgmP = getCgmReading(pw.data)
 
     # Check if there is data
-    if pw.cgmX is None:
+    if pw.cgmY is None:
         return None
-    # Check if there is data around the 5h mark
-    if not (pw.cgmX[len(pw.cgmX) - 1] >= (pw.userData.simlength - 1) * 60):
+    # Check if there is data around the 10h mark
+    logger.debug(type(pw.cgmY))
+    if not (pw.cgmY.index[-1] >= (pw.userData.simlength - 1) * 60):
+        logger.info(pw.cgmY)
         logger.warning("not able to predict")
         return None
 
@@ -100,20 +98,22 @@ def checkAndPlot(pw: PredictionWindow):
         pw.userData.bginitial = pw.cgmY[0]
 
     # Get Train Datapoint
-    pw.index_last_train = getClosestIndex(pw.cgmX, (pw.userData.simlength - 1) * 60)
-    pw.time_last_train = int(pw.cgmX[pw.index_last_train])
-    pw.train_value = pw.cgmY[pw.index_last_train]
+    pw.train_value = pw.data.at[float(pw.userData.simlength * 60 - pw.userData.predictionlength), 'cgmValue']
 
     # Get last Datapoint
-    pw.index_last_value = len(pw.cgmY) - 1  # TODO check if index l v - index l t is appr. 60 min
-    pw.time_last_value = int(pw.cgmX[pw.index_last_value])
-    pw.lastValue = pw.cgmY[pw.index_last_value]
+    pw.lastValue = pw.data.at[float(pw.userData.simlength * 60), 'cgmValue']
+    logger.debug(pw.train_value)
+    logger.debug(pw.lastValue)
 
     # Get Events for Prediction
     events = extractor.getEvents(pw.data)
-    converted = events.apply(lambda event: convertTimes(event, pw.startTime))
-    df = pandas.DataFrame([vars(e) for e in converted])
-    pw.events = df[df.time < (pw.userData.simlength - 1) * 60]
+    if events.empty:
+        logger.warning("No events found")
+        return None
+    # convert to dataframe
+    events = pandas.DataFrame([vars(e) for e in events], index=events.index)
+    # Only select events which are not in the prediction timeframe
+    pw.events = events[events.index < pw.userData.simlength * 60 - pw.userData.predictionlength]
 
     # Run Prediction
     if pw.plot:
@@ -129,10 +129,10 @@ def checkAndPlot(pw: PredictionWindow):
         #logger.info("optimizer prediction " + str(prediction_optimized))
     else:
          # Get prediction Value for last train value
-        prediction_last_train = np.array(predict.calculateBGAt2(pw.time_last_train, pw.events, pw.userData))
+        prediction_last_train = np.array(predict.calculateBGAt2(pw.userData.simlength * 60 - pw.userData.predictionlength, pw.events, pw.userData))
         #logger.debug("prediction train " + str(prediction_last_train))
         # Get prediction Value for last value
-        prediction_last_value = np.array(predict.calculateBGAt2(pw.time_last_value, pw.events, pw.userData))
+        prediction_last_value = np.array(predict.calculateBGAt2(pw.userData.simlength * 60, pw.events, pw.userData))
         #logger.debug("prediction value " + str(prediction_last_value))
         prediction_optimized = optimizer.optimize(pw)
         #logger.info("optimizer prediction " + str(prediction_optimized))
@@ -150,14 +150,14 @@ def checkAndPlot(pw: PredictionWindow):
     prediction = np.append(prediction, pw.train_value)
     #logger.debug("prediction " + str(prediction))
     # add last 30 min prediction
-    prediction30 = pw.train_value  # default value
-    i = pw.index_last_train
-    while (type(pw.cgmP[i]) != str) and i > 0: # find last value with glucose annotation
-        i = i -1
-    if "=" in pw.cgmP[i]:
-        splits = pw.cgmP[i].split('=')  # read field of glucose Annotation and split by '=' to get only signed value
-        prediction30delta = float(splits[len(splits) -1 ]) * pw.userData.predictionlength / 30     # convert string to float and extend it to prediction length
-        prediction30 = pw.train_value + prediction30delta
+    i = pw.userData.simlength * 60. - pw.userData.predictionlength
+    logger.debug(pw.data.at[i, 'glucoseAnnotation'])
+    logger.debug(type(pw.data.at[i, 'glucoseAnnotation']))
+    while pw.data.at[i, 'glucoseAnnotation'] is not None and i > 0: # find last value with glucose annotation
+        i = i - 15
+
+    prediction30delta = pw.data.at[i, 'glucoseAnnotation'] * pw.userData.predictionlength / 30     # convert string to float and extend it to prediction length
+    prediction30 = pw.train_value + prediction30delta
     prediction = np.append(prediction, prediction30)
     pw.prediction = np.append(prediction, prediction_optimized)
     #logger.debug("prediction " + str(prediction))
