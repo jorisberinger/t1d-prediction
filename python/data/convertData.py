@@ -29,7 +29,7 @@ def select_columns(data: pd.DataFrame) -> pd.DataFrame:
 def create_time_index(data: pd.DataFrame) -> pd.DataFrame:
     logger.info("create time index")
     # create time index from date and time
-    data = data.set_index(pd.to_datetime(data['date'] + " " + data['time']))
+    data = data.set_index(pd.to_datetime(data['date'] + " " + data['time'], dayfirst=True))
     return data
 
 
