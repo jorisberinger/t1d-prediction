@@ -12,14 +12,13 @@ path = os.getenv('T1DPATH', '../')
 def convert(data: pd.DataFrame) -> pd.DataFrame:
     data = select_columns(data)
     data = create_time_index(data)
-    data = convert_glucose_annotation(data)
     #save_data(data)
     return data
 
 def select_columns(data: pd.DataFrame) -> pd.DataFrame:
     logger.info("select columns")
     # Drop all unneccessary columns to save memory
-    data = data.drop(['bgValue', 'cgmRawValue', 'cgmAlertValue', 'pumpCgmPredictionValue',
+    data = data.drop(['bgValue', 'cgmRawValue', 'glucoseAnnotation', 'cgmAlertValue', 'pumpCgmPredictionValue',
      'basalAnnotation', 'bolusAnnotation', 'bolusCalculationValue',
      'pumpAnnotation', 'exerciseTimeValue', 'exerciseAnnotation', 'heartRateValue',
      'heartRateVariabilityValue', 'stressBalanceValue', 'stressValue', 'sleepValue', 'sleepAnnotation',
@@ -39,12 +38,17 @@ def drop_date_and_time(data: pd.DataFrame) -> pd.DataFrame:
 
 # remove leading chars and convert value to float
 def convert_glucose_annotation(data: pd.DataFrame) -> pd.DataFrame:
+    logger.info("data " + str(data))
+    logger.info("data g a " + str(data['glucoseAnnotation']))
+    exit()
     index = ~data['glucoseAnnotation'].isna()
     values = data.loc[index]['glucoseAnnotation']
     index2 = values.str.match("^GLUCOSE_ELEVATION_30=-?\d+\.\d+$", na=False)
     values = values.loc[index2].str[21:].astype(float)
+    logger.info("values: " + str(values))
     values.loc[~index2] = np.nan
     data['glucoseAnnotation'] = values
+    logger.info(data['glucoseAnnotation'])
     return data
 
 def save_data(data: pd.DataFrame):

@@ -55,7 +55,6 @@ class PredictionWindow:
     plot = None
     cgmX = None
     cgmY = None
-    cgmP = None
     index_last_train = None
     time_last_train = None
     train_value = None

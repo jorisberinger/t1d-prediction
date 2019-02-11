@@ -73,16 +73,15 @@ def getCgmReading(data):
     cgmtrue = data[data['cgmValue'].notnull()]
     if len(cgmtrue) > 0:
         cgmY = cgmtrue['cgmValue']
-        cgmP = cgmtrue['glucoseAnnotation'].values
-        return cgmY, cgmP
+        return cgmY
     else:
-        return None, None
+        return None
 
 
 
 def checkAndPlot(pw: PredictionWindow):
     # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
-    pw.cgmY, pw.cgmP = getCgmReading(pw.data)
+    pw.cgmY = getCgmReading(pw.data)
 
     # Check if there is data
     if pw.cgmY is None:
@@ -114,6 +113,12 @@ def checkAndPlot(pw: PredictionWindow):
     events = pandas.DataFrame([vars(e) for e in events], index=events.index)
     # Only select events which are not in the prediction timeframe
     pw.events = events[events.index < pw.userData.simlength * 60 - pw.userData.predictionlength]
+
+    # check if events are in prediction frame, if yes, return none because we want only data without these events
+    events_in_prediction = events[events.index >= pw.userData.simlength * 60 - pw.userData.predictionlength]
+    events_in_prediction = events_in_prediction[events_in_prediction['etype'] != 'tempbasal']
+    if not events_in_prediction.empty:
+        return None
 
     # Run Prediction
     if pw.plot:
@@ -150,13 +155,8 @@ def checkAndPlot(pw: PredictionWindow):
     prediction = np.append(prediction, pw.train_value)
     #logger.debug("prediction " + str(prediction))
     # add last 30 min prediction
-    i = pw.userData.simlength * 60. - pw.userData.predictionlength
-    logger.debug(pw.data.at[i, 'glucoseAnnotation'])
-    logger.debug(type(pw.data.at[i, 'glucoseAnnotation']))
-    while pw.data.at[i, 'glucoseAnnotation'] is not None and i > 0: # find last value with glucose annotation
-        i = i - 15
-
-    prediction30delta = pw.data.at[i, 'glucoseAnnotation'] * pw.userData.predictionlength / 30     # convert string to float and extend it to prediction length
+    last30delta = pw.train_value - pw.cgmY[pw.userData.simlength * 60 - pw.userData.predictionlength - 30]
+    prediction30delta = last30delta * pw.userData.predictionlength / 30     # convert string to float and extend it to prediction length
     prediction30 = pw.train_value + prediction30delta
     prediction = np.append(prediction, prediction30)
     pw.prediction = np.append(prediction, prediction_optimized)

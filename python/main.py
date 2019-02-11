@@ -37,7 +37,6 @@ def main():
 
     # INTERPOLATE CGM MEASURES
     data = convertData.interpolate_cgm(data)
-    logger.debug(data['glucoseAnnotation'])
 
     # GET SENSITIVITY FACTOR AND CARBRATIO FOR EVERY DAY
     logger.info("Run Autotune? " + str(run_autotune))
