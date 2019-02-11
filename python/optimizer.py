@@ -39,8 +39,8 @@ def optimize(pw: PredictionWindow) -> int:
 
     # set error time points
     t = np.arange(0,pw.userData.simlength * 60 - pw.userData.predictionlength , 15)
-    logger.debug(t)
-    t_index = 0
+    #logger.info(t)
+
     real_values = np.array(pw.cgmY.loc[t])
     #logger.info("real values " + str(real_values))
 
@@ -107,6 +107,9 @@ def optimize(pw: PredictionWindow) -> int:
     prediction_value = getPredictionValue(values.x, t, pw)
     #logger.info("prediction value: " + str(prediction_value))
     #logger.info("finished")
+    #plot(values.x, t, pw)
+
+
     if not pw.plot:
         return prediction_value
     else:
@@ -128,13 +131,13 @@ def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: Predi
     for i in range(0, len(carb_values)):
         carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
     carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
-    logger.info("carb Events")
-    logger.info(carb_events)
+    #logger.info("carb Events")
+    #logger.info(carb_events)
     # remove original carb events from data
     insulin_events = predictionWindow.events[predictionWindow.events.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
-    logger.info("all events")
-    logger.info(allEvents)
+    #logger.info("all events")
+    #logger.info(allEvents)
     values = predict.calculateBG(allEvents, predictionWindow.userData)
     return values[5]
 
@@ -241,14 +244,16 @@ def optimizeMain():
 
 
 
-def plot(values, t):
+def plot(values, t, pw: PredictionWindow):
     logger.debug(values)
     carbEvents = []
     for i in range(0, len(values)):
         carbEvents.append(Event.createCarb(t[i], values[i]/12, carb_duration))
     ev = pandas.DataFrame([vars(e) for e in carbEvents])
     # logger.info(ev)
-    allEvents = pandas.concat([df, ev])
+    insulin_events = pw.events[pw.events.etype != 'carb']
+    original_carbs = pw.events[pw.events.etype == 'carb']
+    allEvents = pandas.concat([insulin_events, ev])
     # logger.info(allEvents)
 
     sim = predict.calculateBG(allEvents, udata)
@@ -290,7 +295,7 @@ def plot(values, t):
     # Plot Line when prediction starts
     plt.axvline(x=(udata.simlength - 1) * 60, color="black")
     # Plot real blood glucose readings
-    plt.plot(cgmX, cgmY, "#263238", alpha=0.8, label="real BG")
+    plt.plot(pw.cgmY, "#263238", alpha=0.8, label="real BG")
     # Plot sim results
     plt.plot(sim[5], "g", alpha=0.8, label="sim BG")
 
@@ -361,16 +366,15 @@ def plot(values, t):
     plt.grid(color="#cfd8dc")
 
     # plot error values
-    err = error.tolist()[0]
-    plt.bar(t, err, 5, color="#CC0000", alpha=0.8, label="error")
+    #err = error.tolist()[0]
+    #plt.bar(t, err, 5, color="#CC0000", alpha=0.8, label="error")
     plt.axvline(x=(udata.simlength - 1) * 60, color="black")
     # Plot Legend
     plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout(pad=6)
     plt.subplots_adjust(hspace=0.2)
 
-
-    plt.savefig(resultPath + "optimizer/result-1.png", dpi=150)
+    plt.savefig(resultPath + "optimizer/result-" + str(pw.startTime) + ".png", dpi=150)
 
 
 def loadData():
@@ -387,7 +391,7 @@ def loadData():
     global cgmY
     global cgmX_train
     global cgmY_train
-    cgmX, cgmY, cgmP = check.getCgmReading(subset, startTime)
+    cgmX, cgmY = check.getCgmReading(subset)
     cgmX_train , cgmY_train, cgmP_train = check.getCgmReading(subset_train, startTime)
     udata.bginitial = cgmY[0]
     # Extract events

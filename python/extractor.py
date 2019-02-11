@@ -1,8 +1,25 @@
-from Classes import Event
+from Classes import Event, PredictionWindow
 import pandas as pd
 import logging
 
 logger = logging.getLogger(__name__)
+
+def getEventsAsDataFrame(pw: PredictionWindow) -> pd.DataFrame:
+    events = getEvents(pw.data)
+    if events.empty:
+        logger.warning("No events found")
+        return pd.DataFrame()
+    # convert to dataframe
+    events = pd.DataFrame([vars(e) for e in events], index=events.index)
+    # Only select events which are not in the prediction timeframe
+    events = events[events.index < pw.userData.simlength * 60 - pw.userData.predictionlength]
+
+    # check if events are in prediction frame, if yes, return none because we want only data without these events
+    events_in_prediction = events[events.index >= pw.userData.simlength * 60 - pw.userData.predictionlength]
+    events_in_prediction = events_in_prediction[events_in_prediction['etype'] != 'tempbasal']
+    if not events_in_prediction.empty:
+        return pd.DataFrame()
+    return events
 
 def getEvents(data: pd.DataFrame) -> pd.Series:
     events = pd.Series()

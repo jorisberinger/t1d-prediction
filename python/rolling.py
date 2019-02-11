@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import logging
 from datetime import timedelta
-
+import os
 from Classes import PredictionWindow, UserData
 from autotune.autotune_prep import convertTime
 import check
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # make rolling prediction and call checkWindow for every data window
 def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotune_res: dict, plotOption: bool):
-
+    checkDiretories()
     predictionWindow = PredictionWindow()
 
     # select starting point as first data point, always start at 15 minute intervals
@@ -25,7 +25,7 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
     results = []
     i = 0
     # loop through the data
-    while startTime < endTime - timedelta(hours=user_data.simlength) and len(results) < 1000:
+    while startTime < endTime - timedelta(hours=user_data.simlength) and len(results) < 100:
         logger.info("#" + str(i))
         logger.info("#r " + str(len(results)))
         i += 1
@@ -49,7 +49,7 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
             # Set minute index
             subset.index = (subset.index - subset.index[0]).seconds / 60
             predictionWindow.data = subset
-            logger.debug(subset)
+            # logger.debug(subset)
             if checkData.check_window(subset, user_data):
                 res = check.checkAndPlot(predictionWindow)
                 if res is not None:
@@ -61,4 +61,9 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
     logger.debug("length of result " + str(len(results)))
     return results
 
-
+def checkDiretories():
+    directory = os.path.dirname("/t1d/results/")
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    if not os.path.exists(directory + '/plots/'):
+        os.makedirs(directory + '/plots/')
