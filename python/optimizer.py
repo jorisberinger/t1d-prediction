@@ -38,14 +38,14 @@ vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes=[float], excluded=[1
 def optimize(pw: PredictionWindow) -> int:
 
     # set error time points
-    t = np.arange(0,pw.userData.simlength * 60 - pw.userData.predictionlength + 1, 15)
+    t = np.arange(0,pw.userData.simlength * 60 - pw.userData.predictionlength , 15)
     logger.debug(t)
     t_index = 0
     real_values = np.array(pw.cgmY.loc[t])
     #logger.info("real values " + str(real_values))
 
     # set number of parameters
-    numberOfParameter = len(t)
+    numberOfParameter = 40
     # set inital guess to 0 for all input parameters
     x0 = np.array([1] * numberOfParameter)
     # set all bounds to 0 - 1
@@ -128,10 +128,13 @@ def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: Predi
     for i in range(0, len(carb_values)):
         carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
     carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
-    # logger.info(carb_events)
+    logger.info("carb Events")
+    logger.info(carb_events)
     # remove original carb events from data
     insulin_events = predictionWindow.events[predictionWindow.events.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
+    logger.info("all events")
+    logger.info(allEvents)
     values = predict.calculateBG(allEvents, predictionWindow.userData)
     return values[5]
 

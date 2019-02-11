@@ -34,11 +34,11 @@ def getClosestIndex(cgmY, number):
     return closest
 
 
-def getPredictionVals(cgmX, cgmY, index,  simData):
-    zero = simData[int(cgmX[index])]
-    start = cgmY[index]
+def getPredictionVals(pw: PredictionWindow,  simData):
+    zero = simData[pw.userData.simlength * 60 - pw.userData.predictionlength]
+    start = pw.cgmY[pw.userData.simlength * 60 - pw.userData.predictionlength]
     res = []
-    for i in range(int(cgmX[index]), len(simData)):
+    for i in range(int(pw.userData.simlength * 60 - pw.userData.predictionlength), int(pw.userData.simlength * 60)):
         res.append(start + simData[i] - zero)
     return res
 
@@ -167,14 +167,14 @@ def checkAndPlot(pw: PredictionWindow):
 
     if pw.plot:
         # get values for prediction timeframe
-        prediction_vals = getPredictionVals(pw.cgmX, pw.cgmY, pw.index_last_train, sim_bg[0])
-        prediction_vals_adv = getPredictionVals(pw.cgmX, pw.cgmY, pw.index_last_train, sim_bg[5])
+        prediction_vals = getPredictionVals(pw, sim_bg[0])
+        prediction_vals_adv = getPredictionVals(pw, sim_bg[5])
 
         # Plot
 
-        basalValues = df[df.etype == 'tempbasal']
-        carbValues = df[df.etype == 'carb']
-        bolusValues = df[df.etype == 'bolus']
+        basalValues = pw.events[pw.events.etype == 'tempbasal']
+        carbValues = pw.events[pw.events.etype == 'carb']
+        bolusValues = pw.events[pw.events.etype == 'bolus']
 
         fig = plt.figure(figsize=(10, 7))
         gs = gridspec.GridSpec(2, 1, height_ratios=[3, 1])
@@ -208,12 +208,12 @@ def checkAndPlot(pw: PredictionWindow):
         # Plot Line when prediction starts
         plt.axvline(x=(pw.userData.simlength - 1) * 60, color="black")
         # Plot real blood glucose readings
-        plt.plot(pw.cgmX, pw.cgmY, "#263238", alpha=0.8, label="real BG")
+        plt.plot(pw.cgmY, "#263238", alpha=0.8, label="real BG")
         # Plot sim results
         plt.plot(sim_bg[3], sim_bg[0], "#b71c1c", alpha=0.5, label="sim BG")
-        plt.plot(range(int(pw.cgmX[pw.index_last_train]), len(sim_bg[3])), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
+        plt.plot(range(600,660), prediction_vals, "#b71c1c", alpha=0.8, label="SIM BG Pred")
         plt.plot(sim_bg[3], sim_bg[5], "#4527a0", alpha=0.5, label="sim BG ADV")
-        plt.plot(range(int(pw.cgmX[pw.index_last_train]), len(sim_bg[3])), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
+        plt.plot(range(600,660), prediction_vals_adv, "#4527a0", alpha=0.8, label="SIM BG Pred ADV")
         # Same value prediction
         plt.axhline(y=prediction_vals[0], xmin=(pw.userData.simlength - pw.userData.predictionlength / 60) / pw.userData.simlength, alpha=0.8, label="Same Value Prediction")
         # last 30 prediction value
