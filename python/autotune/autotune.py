@@ -7,7 +7,10 @@ from autotune import autotune_prep
 
 logger = logging.getLogger(__name__)
 
-folder = "/t1d/data/input/"
+path = os.getenv('T1DPATH', '../')
+folder = path + "data/input/"
+
+
 path = folder + "1/"
 prepjs = "/autotune/oref0/bin/oref0-autotune-prep.js"
 corejs = "/autotune/oref0/bin/oref0-autotune-core.js"
