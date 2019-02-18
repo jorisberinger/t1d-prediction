@@ -16,7 +16,8 @@ import coloredlogs
 #    datefmt='%Y-%m-%d:%H:%M:%S')
 logger = logging.getLogger(__name__)
 
-coloredlogs.install(level='INFO', fmt='%(asctime)s,%(msecs)03d %(name)s[%(process)d] %(levelname)s %(message)s')
+#coloredlogs.install(level='INFO', fmt='%(asctime)s,%(msecs)03d %(name)s[%(process)d] %(levelname)s %(message)s')
+coloredlogs.install(level='INFO')
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/data_17_5.csv"
@@ -25,7 +26,7 @@ filename = path + "data/csv/data_17_5.csv"
 def main():
     # SELECT OPTIONS
     run_autotune: bool = False   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
-    create_plots: bool = True  # Select True if you want a plot for every prediction window
+    create_plots: bool = False  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
     user_data = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=11,
