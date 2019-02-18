@@ -10,9 +10,13 @@ import rolling
 from Classes import UserData
 from autotune import autotune
 from data import readData, convertData
+import coloredlogs
 
-logging.basicConfig(level=logging.INFO)
+#logging.basicConfig(level=logging.INFO, format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
+#    datefmt='%Y-%m-%d:%H:%M:%S')
 logger = logging.getLogger(__name__)
+
+coloredlogs.install(level='INFO', fmt='%(asctime)s,%(msecs)03d %(name)s[%(process)d] %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/data_17_5.csv"
