@@ -16,7 +16,8 @@ RUN npm link
 RUN npm link oref0
 RUN npm install -g nodemon
 
-RUN pip install pandas matplotlib coloredlogs imageio scipy sklearn statsmodels
+COPY python/requirements.txt /
+RUN pip install -r /requirements.txt
 
 ENV T1DPATH=/t1d/
 
