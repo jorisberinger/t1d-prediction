@@ -1,0 +1,6 @@
+imageio
+pmdarima
+numpy
+pandas
+matplotlib
+coloredlogs

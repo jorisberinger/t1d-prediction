@@ -2,35 +2,36 @@ import cProfile
 import logging
 import os
 import time
+
+import coloredlogs
 import pandas as pd
-import numpy as np
+
 import analyze
 import gifmaker
 import rolling
 from Classes import UserData
+from arima import get_arima_prediction
 from autotune import autotune
 from data import readData, convertData
-import coloredlogs
 
-#logging.basicConfig(level=logging.INFO, format='%(asctime)s,%(msecs)d %(levelname)-8s [%(filename)s:%(lineno)d] %(message)s',
-#    datefmt='%Y-%m-%d:%H:%M:%S')
 logger = logging.getLogger(__name__)
 
-#coloredlogs.install(level='INFO', fmt='%(asctime)s,%(msecs)03d %(name)s[%(process)d] %(levelname)s %(message)s')
-coloredlogs.install(level='INFO')
+coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/data_17_5.csv"
-#filename = path + "data/csv/data-o3.csv"
+
+
+# filename = path + "data/csv/data-o3.csv"
 
 def main():
     # SELECT OPTIONS
-    run_autotune: bool = False   # Select True if autotune should run. If data set has been run before, set to False to improve speed.
+    run_autotune: bool = False  # Select True if autotune should run. If data set has been run before, set to False to improve speed.
     create_plots: bool = False  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
-    user_data = UserData(bginitial=100.0, cratio=5, idur=4, inputeeffect=None, sensf=41, simlength=11,
-                        predictionlength=60, stats=None)
+    user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 11,
+                         predictionlength = 60, stats = None)
 
     logger.info("Start Main!")
 
@@ -42,6 +43,9 @@ def main():
 
     # INTERPOLATE CGM MEASURES
     data = convertData.interpolate_cgm(data)
+
+    # run arima
+    get_arima_prediction(data)
 
     # GET SENSITIVITY FACTOR AND CARBRATIO FOR EVERY DAY
     logger.info("Run Autotune? " + str(run_autotune))
