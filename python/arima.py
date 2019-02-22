@@ -1,37 +1,84 @@
 import logging
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-import pmdarima as pm
+from pmdarima import auto_arima
+from sklearn.metrics import mean_squared_error
+from statsmodels.tsa.arima_model import ARIMAResults, ARIMA
+
+from Classes import PredictionWindow
 
 logger = logging.getLogger(__name__)
+sampleTime = 5
+index = pd.timedelta_range(start = '0 hour', end = '10 hours', freq = str(sampleTime) + 'min')
 
 
-def get_arima_prediction(data) -> float:
+def get_arima_prediction(pw: PredictionWindow) -> float:
+    window = pw.data.iloc[::sampleTime]['cgmValue']
+    # get train values
+    train = window[0:(pw.userData.simlength * 60 - pw.userData.predictionlength)]
+    test = window[(pw.userData.simlength * 60 - pw.userData.predictionlength):(pw.userData.simlength * 60)]
+    model = ARIMA(train, order = [2, 2, 2])
+    res: ARIMAResults = model.fit(disp = False)
+    prediction: pd.Series = res.predict(len(train), len(train) + len(test) - 2)
+    logger.info("prediction")
+    logger.info(prediction)
+    logger.info("test")
+    logger.info(test)
+    logger.info("return " + str(prediction.iat[-1]))
+    return prediction.iat[-1]
+
+
+def get_arima_prediction_plot(data) -> float:
     logger.info("start arima " + '-' * 50)
 
     # logger.info(data.head())
     data = data['cgmValue']
     # logger.info(data.head())
     # logger.info(data.describe())
-    train = data[0:600]
+    time = 800
+    window = data[time:time + 600 + 60]
+    logger.info(window.head())
+    # Resample to 15 min slots
+    window = window.iloc[::10]
+    logger.info(window.head())
+    train = window[0:6 * 10 + 1]
     # logger.info(train.describe())
-    test = data[600:660]
+    test = window[6 * 10: 6 * 10 + 6]
     # logger.info(test.describe())
     # fit stepwise auto-ARIMA
-    stepwise_fit = pm.auto_arima(train, start_p = 1, start_q = 1,
-                                 max_p = 3, max_q = 3, m = 7,
-                                 start_P = 0, seasonal = True,
-                                 trace = True,
-                                 error_action = 'ignore',  # don't want to know if an order does not work
-                                 suppress_warnings = True,  # don't want convergence warnings
-                                 stepwise = True)  # set to stepwise
+    stepwise_fit = auto_arima(train, start_p = 20, start_q = 5, max_p = 40, max_q = 15, seasonal = False,
+                              trace = True, max_order = 100, d = 0,
+                              error_action = 'ignore', suppress_warnings = False, stepwise = True)
 
     logger.info(stepwise_fit.summary())
-    prediction = pd.Series(stepwise_fit.predict(60), test.index)
-    train.plot()
-    prediction.plot()
-    test.plot()
+
+    preds, conf_int = stepwise_fit.predict(n_periods = 6, return_conf_int = True)
+    logger.info("Test RMSE: %.3f" % np.sqrt(mean_squared_error(test, preds)))
+
+    prediction = pd.Series(preds, index = test.index)
+    logger.info(prediction)
+    train.plot(label = "train", legend = True)
+    prediction.plot(label = "prediction", legend = True)
+    test.plot(label = "test", legend = True)
+    plt.show()
+
+    return -1
+    # model = ARIMA(train, order = [1, 1, 1])
+    res: ARIMAResults = model.fit()
+    fig, ax = plt.subplots()
+    ax = window.plot(label = "original", ax = ax)
+    fig = res.plot_predict(2, 4 * 10 + 4, exog = test, ax = ax)
+
+    # arr = model.fit_predict(train, n_periods = 10)
+    # logger.info(arr)
+    # res = pd.Series(arr, test.index)
+    # res.plot(label = "arima", legend = True)
+    ## prediction = pd.Series(stepwise_fit.predict(60), test.index)
+    # train.plot(label = "train", legend = True)
+    ## prediction.plot(label = "prediction", legend = True)
+    # test.plot(label = "test", legend = True)
     plt.show()
     exit()
     return -1

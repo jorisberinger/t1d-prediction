@@ -10,7 +10,6 @@ import analyze
 import gifmaker
 import rolling
 from Classes import UserData
-from arima import get_arima_prediction
 from autotune import autotune
 from data import readData, convertData
 
@@ -43,9 +42,6 @@ def main():
 
     # INTERPOLATE CGM MEASURES
     data = convertData.interpolate_cgm(data)
-
-    # run arima
-    get_arima_prediction(data)
 
     # GET SENSITIVITY FACTOR AND CARBRATIO FOR EVERY DAY
     logger.info("Run Autotune? " + str(run_autotune))

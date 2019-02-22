@@ -4,6 +4,7 @@ from datetime import datetime
 import numpy as np
 from matplotlib import gridspec, pyplot as plt
 
+import arima
 import extractor
 import optimizer
 import predict
@@ -105,6 +106,8 @@ def checkAndPlot(pw: PredictionWindow):
         # get prediction with optimized parameters
         prediction_optimized, optimized_curve = optimizer.optimize(pw)
         # logger.info("optimizer prediction " + str(prediction_optimized))
+
+        # TODO get Arima plot
     else:
         # Get prediction Value for last train value
         prediction_last_train = np.array(
@@ -115,6 +118,8 @@ def checkAndPlot(pw: PredictionWindow):
         # logger.debug("prediction value " + str(prediction_last_value))
         prediction_optimized = optimizer.optimize(pw)
         # logger.info("optimizer prediction " + str(prediction_optimized))
+        prediction_arima = arima.get_arima_prediction(pw)
+        logger.info("arima prediction " + str(prediction_arima))
 
     # Get Delta between train and last value
     prediction_delta = prediction_last_value - prediction_last_train
@@ -124,13 +129,15 @@ def checkAndPlot(pw: PredictionWindow):
     # logger.debug("prediction " + str(prediction))
     # add same value prediction
     prediction = np.append(prediction, pw.train_value)
+
     # logger.debug("prediction " + str(prediction))
     # add last 30 min prediction
     last30delta = pw.train_value - pw.cgmY[pw.userData.simlength * 60 - pw.userData.predictionlength - 30]
     prediction30delta = last30delta * pw.userData.predictionlength / 30
     prediction30 = pw.train_value + prediction30delta
     prediction = np.append(prediction, prediction30)
-    pw.prediction = np.append(prediction, prediction_optimized)
+    prediction = np.append(prediction, prediction_optimized)
+    pw.prediction = np.append(prediction, prediction_arima)
     # logger.debug("prediction " + str(prediction))
     # calculate error
     pw.errors = np.subtract(pw.lastValue, pw.prediction)
