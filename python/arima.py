@@ -1,6 +1,8 @@
 import logging
 
-from pmdarima import auto_arima
+import matplotlib.pyplot as plt
+import pandas as pd
+import pmdarima as pm
 
 logger = logging.getLogger(__name__)
 
@@ -8,17 +10,29 @@ logger = logging.getLogger(__name__)
 def get_arima_prediction(data) -> float:
     logger.info("start arima " + '-' * 50)
 
-    logger.info(data.head())
+    # logger.info(data.head())
     data = data['cgmValue']
-    logger.info(data.head())
+    # logger.info(data.head())
+    # logger.info(data.describe())
+    train = data[0:600]
+    # logger.info(train.describe())
+    test = data[600:660]
+    # logger.info(test.describe())
+    # fit stepwise auto-ARIMA
+    stepwise_fit = pm.auto_arima(train, start_p = 1, start_q = 1,
+                                 max_p = 3, max_q = 3, m = 7,
+                                 start_P = 0, seasonal = True,
+                                 trace = True,
+                                 error_action = 'ignore',  # don't want to know if an order does not work
+                                 suppress_warnings = True,  # don't want convergence warnings
+                                 stepwise = True)  # set to stepwise
 
-    stepwise_model = auto_arima(data, start_p = 1, start_q = 1,
-                                max_p = 5, max_q = 5, seasonal = False,
-                                trace = True,
-                                error_action = 'ignore',
-                                suppress_warnings = True,
-                                stepwise = True, n_jobs = -1)
-    logger.info(stepwise_model.aic())
+    logger.info(stepwise_fit.summary())
+    prediction = pd.Series(stepwise_fit.predict(60), test.index)
+    train.plot()
+    prediction.plot()
+    test.plot()
+    plt.show()
     exit()
     return -1
 
