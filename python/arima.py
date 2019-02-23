@@ -5,28 +5,50 @@ import numpy as np
 import pandas as pd
 from pmdarima import auto_arima
 from sklearn.metrics import mean_squared_error
-from statsmodels.tsa.arima_model import ARIMAResults, ARIMA
+from statsmodels.tsa.arima_model import ARIMAResults
 
 from Classes import PredictionWindow
 
 logger = logging.getLogger(__name__)
 sampleTime = 5
-index = pd.timedelta_range(start = '0 hour', end = '10 hours', freq = str(sampleTime) + 'min')
+index_train = pd.timedelta_range(start = '0 hour', end = '10 hours', freq = str(sampleTime) + 'min')
+index_test = pd.timedelta_range(start = '10 hours', end = '11 hours', freq = str(sampleTime) + 'min')
 
 
 def get_arima_prediction(pw: PredictionWindow) -> float:
     window = pw.data.iloc[::sampleTime]['cgmValue']
+    # logger.info("window")
+    # logger.info(window)
     # get train values
     train = window[0:(pw.userData.simlength * 60 - pw.userData.predictionlength)]
+    train.index = pd.to_datetime(index_train)
+    # logger.info("train")
+    # logger.info(train)
     test = window[(pw.userData.simlength * 60 - pw.userData.predictionlength):(pw.userData.simlength * 60)]
-    model = ARIMA(train, order = [2, 2, 2])
-    res: ARIMAResults = model.fit(disp = False)
-    prediction: pd.Series = res.predict(len(train), len(train) + len(test) - 2)
-    logger.info("prediction")
-    logger.info(prediction)
-    logger.info("test")
-    logger.info(test)
-    logger.info("return " + str(prediction.iat[-1]))
+    test.index = pd.to_datetime(index_test)
+    # model = ARIMA(train, order = [3, 1, 2])
+    # res: ARIMAResults = model.fit(disp = False)
+    # logger.info("preidct " + str(len(train)) + "    " + str(len(train) + len(test) - 2))
+    # prediction: pd.Series = res.predict(120, 132)
+
+    stepwise_fit = auto_arima(train, start_p = 1, start_q = 1, max_p = 10, max_q = 10, seasonal = False,
+                              trace = True, max_order = 100,
+                              error_action = 'ignore', suppress_warnings = True, stepwise = True)
+
+    preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
+    prediction = pd.Series(preds, index = test.index)
+    # logger.info("prediction")
+    # logger.info(prediction)
+    # logger.info("test")
+    # logger.info(test)
+    # logger.info("return " + str(prediction.iat[-1]))
+    # logger.info("test index" + str(test.index))
+    train.plot(label = "train", legend = True)
+    test.plot(label = "test", legend = True)
+    prediction.plot(label = "prediction", legend = True)
+
+    plt.show()
+
     return prediction.iat[-1]
 
 
