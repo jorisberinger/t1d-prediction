@@ -49,7 +49,7 @@ def get_arima_prediction(pw: PredictionWindow) -> float:
 
     # plt.show()
 
-    return prediction.iat[-1], stepwise_fit.order
+    return prediction, stepwise_fit.order
 
 
 def get_arima_prediction_plot(data) -> float:
