@@ -140,7 +140,7 @@ def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: Predi
     allEvents = pandas.concat([insulin_events, carb_events])
     # logger.info("all events")
     # logger.info(allEvents)
-    values = predict.calculateBG(allEvents, predictionWindow.userData)
+    values, iob, cob = predict.calculateBG(allEvents, predictionWindow.userData)
     return values[5]
 
 

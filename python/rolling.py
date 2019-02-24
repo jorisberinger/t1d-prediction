@@ -27,7 +27,7 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
     orders = []
     i = 0
     # loop through the data
-    while startTime < endTime - timedelta(hours = user_data.simlength) and len(results) < 10:
+    while startTime < endTime - timedelta(hours = user_data.simlength) and len(results) < 50:
         logger.info("#" + str(i))
         logger.info("#r " + str(len(results)))
         i += 1

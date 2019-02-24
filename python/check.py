@@ -99,7 +99,15 @@ def checkAndPlot(pw: PredictionWindow):
 
     # Run Prediction
     if pw.plot:
-        sim_bg = predict.calculateBG(pw.events, pw.userData)
+        sim_bg, iob, cob = predict.calculateBG(pw.events, pw.userData)
+        # logger.info("IOB")
+        # logger.info(iob)
+        # logger.info("COB")
+        # logger.info(cob)
+        plt.plot(iob, label = "iob")
+        plt.plot(cob, label = "cob")
+        plt.legend()
+        plt.show()
         # Get prediction Value for last train value
         prediction_last_train = np.array([sim_bg[0][pw.time_last_train], sim_bg[5][pw.time_last_train]])
         # logger.debug("prediction train " + str(prediction_last_train))
