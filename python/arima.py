@@ -43,13 +43,13 @@ def get_arima_prediction(pw: PredictionWindow) -> float:
     # logger.info(test)
     # logger.info("return " + str(prediction.iat[-1]))
     # logger.info("test index" + str(test.index))
-    train.plot(label = "train", legend = True)
-    test.plot(label = "test", legend = True)
-    prediction.plot(label = "prediction", legend = True)
+    # train.plot(label = "train", legend = True)
+    # test.plot(label = "test", legend = True)
+    # prediction.plot(label = "prediction", legend = True)
 
-    plt.show()
+    # plt.show()
 
-    return prediction.iat[-1]
+    return prediction.iat[-1], stepwise_fit.order
 
 
 def get_arima_prediction_plot(data) -> float:

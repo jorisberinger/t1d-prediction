@@ -118,7 +118,7 @@ def checkAndPlot(pw: PredictionWindow):
         # logger.debug("prediction value " + str(prediction_last_value))
         prediction_optimized = optimizer.optimize(pw)
         # logger.info("optimizer prediction " + str(prediction_optimized))
-        prediction_arima = arima.get_arima_prediction(pw)
+        prediction_arima, order = arima.get_arima_prediction(pw)
         logger.info("arima prediction " + str(prediction_arima))
 
     # Get Delta between train and last value
@@ -146,7 +146,7 @@ def checkAndPlot(pw: PredictionWindow):
     if pw.plot:
         plot_graph(pw, sim_bg, optimized_curve, prediction30)
 
-    return pw.errors.tolist()
+    return pw.errors.tolist(), order
 
 
 def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int):
