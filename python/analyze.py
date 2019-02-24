@@ -1,10 +1,13 @@
 import json
 import logging
+import os
 
 import matplotlib.pyplot as plt
 import pandas
 
 logger = logging.getLogger(__name__)
+
+path = os.getenv('T1DPATH', '../')
 
 
 def analyzeFile(filename):
@@ -32,14 +35,14 @@ def createErrorPlots(inputData):
     plt.grid(color = "#cfd8dc")
     plt.legend()
     plt.title("error plot data")
-    plt.savefig("/t1d/results/errorPlot.png", dpi = 600)
+    plt.savefig(path + "results/errorPlot.png", dpi = 600)
 
     plt.figure()
     plt.boxplot([data[0], data[1], data[2], data[3], data[4]],
                 labels = ["standard", "adv", "same value", "last 30", "optimized"])
     plt.grid(color = "#cfd8dc")
     plt.title("Boxplot Comparison data")
-    plt.savefig("/t1d/results/boxplot.png", dpi = 600)
+    plt.savefig(path + "results/boxplot.png", dpi = 600)
 
 
 def getSummary(res):
@@ -77,7 +80,7 @@ def getSummary(res):
     json_output = jsonobject.copy()
     del json_output['data']
     logger.info(json_output)
-    file = open("/t1d/results/result-" + str(setNumber) + ".json", 'w')
+    file = open(path + "results/result-" + str(setNumber) + ".json", 'w')
     file.write(json.dumps(jsonobject))
 
     return jsonobject

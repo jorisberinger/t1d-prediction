@@ -65,7 +65,7 @@ def main():
 
     # CREATE A GIF OUT OF THE PREDICTION PLOTS
     if create_plots:
-        gifmaker.makeGif("/t1d/results/plots/", data)
+        gifmaker.makeGif(path + "results/plots/", data)
 
     logger.info("Main finished!")
 
