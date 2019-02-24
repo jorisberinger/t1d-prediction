@@ -110,12 +110,12 @@ def optimize(pw: PredictionWindow) -> int:
     # logger.info("prediction value: " + str(prediction_value))
     # logger.info("finished")
     # plot(values.x, t, pw)
-
+    carb_events = pandas.Series(values.x, index = t)
     if not pw.plot:
         return prediction_value
     else:
         prediction_curve = getPredictionCurve(values.x, t, pw)
-        return prediction_value, prediction_curve
+        return prediction_value, prediction_curve, carb_events
 
 
 def predicter(inputs, real_values, insulin_values, p_cob):

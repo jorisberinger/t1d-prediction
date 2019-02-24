@@ -1,4 +1,5 @@
 import logging
+import os
 from datetime import datetime
 
 import numpy as np
@@ -14,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
 timeZone = "+0100"
+
+path = os.getenv('T1DPATH', '../')
 
 
 def getTimeDelta(row, start):
@@ -104,7 +107,7 @@ def checkAndPlot(pw: PredictionWindow):
         prediction_last_value = np.array([sim_bg[0][pw.time_last_value], sim_bg[5][pw.time_last_value]])
         # logger.debug("prediction value " + str(prediction_last_value))
         # get prediction with optimized parameters
-        prediction_optimized, optimized_curve = optimizer.optimize(pw)
+        prediction_optimized, optimized_curve, optimized_carb_events = optimizer.optimize(pw)
         # logger.info("optimizer prediction " + str(prediction_optimized))
     else:
         # Get prediction Value for last train value
@@ -135,7 +138,6 @@ def checkAndPlot(pw: PredictionWindow):
     prediction = np.append(prediction, prediction_optimized)
     # Ger ARIMA prediction
     prediction_arima, order = arima.get_arima_prediction(pw)
-    logger.info("arima prediction " + str(prediction_arima))
     pw.prediction = np.append(prediction, prediction_arima.iat[-1])
     # logger.debug("prediction " + str(prediction))
     # calculate error
@@ -143,7 +145,7 @@ def checkAndPlot(pw: PredictionWindow):
     # logger.debug("errors " + str(errors))
 
     if pw.plot:
-        plot_graph(pw, sim_bg, optimized_curve, prediction30, prediction_arima)
+        plot_graph(pw, sim_bg, optimized_curve, optimized_carb_events, prediction30, prediction_arima)
 
     return pw.errors.tolist(), order
 
@@ -173,7 +175,7 @@ def plotLegend():
     plt.tight_layout(pad = 6)
 
 
-def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, prediction30, arima_values):
+def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_events, prediction30, arima_values):
     # get values for prediction timeframe
     prediction_vals = getPredictionVals(pw, sim_bg[0])
     prediction_vals_adv = getPredictionVals(pw, sim_bg[5])
@@ -231,11 +233,13 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, prediction30, arim
         plt.bar(carbValues.time, carbValues.grams, 5, alpha = 0.8, label = "carb event")
     if not bolusValues.empty:
         plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
+    if not optimized_carb_events.empty:
+        plt.bar(optimized_carb_events.index, optimized_carb_events, 5, alpha = 0.8, label = "optimized carb event")
 
     plotLegend()
     plt.subplots_adjust(hspace = 0.2)
     # ---------------------------------------------------------------------
 
     # Save plot as svgz (smallest format, able to open with chrome)
-    plt.savefig("/t1d/results/plots/result-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 150)
+    plt.savefig(path + "results/plots/result-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 150)
     plt.close()

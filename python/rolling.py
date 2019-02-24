@@ -9,6 +9,7 @@ from Classes import PredictionWindow, UserData
 from data import checkData
 
 logger = logging.getLogger(__name__)
+path = os.getenv('T1DPATH', '../')
 
 
 # make rolling prediction and call checkWindow for every data window
@@ -64,7 +65,7 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
 
 
 def checkDiretories():
-    directory = os.path.dirname("/t1d/results/")
+    directory = os.path.dirname(path + "results/")
     if not os.path.exists(directory):
         os.makedirs(directory)
     if not os.path.exists(directory + '/plots/'):
