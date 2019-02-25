@@ -1,8 +1,10 @@
-import pandas as pd
 import logging
-import numpy as np
 
-from Classes import UserData
+import numpy as np
+import pandas as pd
+
+from Classes import UserData, PredictionWindow
+
 logger = logging.getLogger(__name__)
 
 
@@ -14,3 +16,7 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
     nas = selected['cgmValue'].isna()
     # check that there are events in the
     return not nas.any()
+
+
+def check_bolus(pw: PredictionWindow) -> bool:
+    return "bolus" in pw.events['etype']

@@ -10,6 +10,7 @@ import extractor
 import optimizer
 import predict
 from Classes import PredictionWindow
+from data.checkData import check_bolus
 
 logger = logging.getLogger(__name__)
 
@@ -95,7 +96,15 @@ def checkAndPlot(pw: PredictionWindow):
     # Get Events for Prediction
     pw.events = extractor.getEventsAsDataFrame(pw)
     if pw.events.empty:
-        return None
+        return None, None
+
+    if not check_bolus(pw):
+        return None, None
+
+    logger.info("found only basal")
+    logger.info(pw.events)
+    logger.info(pw)
+    exit()
 
     # Run Prediction
     if pw.plot:
