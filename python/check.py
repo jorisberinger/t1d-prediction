@@ -100,14 +100,7 @@ def checkAndPlot(pw: PredictionWindow):
     # Run Prediction
     if pw.plot:
         sim_bg, iob, cob = predict.calculateBG(pw.events, pw.userData)
-        # logger.info("IOB")
-        # logger.info(iob)
-        # logger.info("COB")
-        # logger.info(cob)
-        plt.plot(iob, label = "iob")
-        plt.plot(cob, label = "cob")
-        plt.legend()
-        plt.show()
+
         # Get prediction Value for last train value
         prediction_last_train = np.array([sim_bg[0][pw.time_last_train], sim_bg[5][pw.time_last_train]])
         # logger.debug("prediction train " + str(prediction_last_train))
@@ -153,7 +146,7 @@ def checkAndPlot(pw: PredictionWindow):
     # logger.debug("errors " + str(errors))
 
     if pw.plot:
-        plot_graph(pw, sim_bg, optimized_curve, optimized_carb_events, prediction30, prediction_arima)
+        plot_graph(pw, sim_bg, optimized_curve, optimized_carb_events, prediction30, prediction_arima, iob, cob)
 
     return pw.errors.tolist(), order
 
@@ -183,7 +176,8 @@ def plotLegend():
     plt.tight_layout(pad = 6)
 
 
-def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_events, prediction30, arima_values):
+def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_events, prediction30, arima_values, iob,
+               cob):
     # get values for prediction timeframe
     prediction_vals = getPredictionVals(pw, sim_bg[0])
     prediction_vals_adv = getPredictionVals(pw, sim_bg[5])
@@ -194,8 +188,8 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_eve
     bolusValues = pw.events[pw.events.etype == 'bolus']
 
     # set figure size
-    fig = plt.figure(figsize = (10, 7))
-    gs = gridspec.GridSpec(2, 1, height_ratios = [3, 1])
+    fig = plt.figure(figsize = (10, 10))
+    gs = gridspec.GridSpec(3, 1, height_ratios = [3, 1, 1])
     # fig, ax = plt.subplots()
 
     # ------------------------- GRAPHS --------------------------------------------
@@ -243,6 +237,15 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_eve
         plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
     if not optimized_carb_events.empty:
         plt.bar(optimized_carb_events.index, optimized_carb_events, 5, alpha = 0.8, label = "optimized carb event")
+
+    plotLegend()
+    plt.subplots_adjust(hspace = 0.2)
+    # ---------------------------- IOB COB -----------------------------------------
+    ax = plt.subplot(gs[2])
+    setupPlot(ax, pw, 3, 0.5)
+
+    plt.plot(iob, label = "Insulin on Board")
+    plt.plot(cob, label = "Carbs on Board")
 
     plotLegend()
     plt.subplots_adjust(hspace = 0.2)
