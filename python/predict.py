@@ -287,14 +287,19 @@ def calculateBG(uevent, udata):
                         iob_vals[i] = iob_vals[i] + uevent.units.values[j] * iob(i * dt - uevent.time.values[j],
                                                                                  udata.idur) / 100.0
 
-                    # else:
-                #    simbgi[i] = simbgi[i]+deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
-                #    simbgi_adv[i] = simbgi[i] + deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur, uevent.t1.values[j], uevent.t1.values[j] + 60)
+                else:
+                    simbgi[i] = simbgi[i] + deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, udata.idur,
+                                                         uevent.time.values[j], uevent.time.values[j] + 60)
+                    simbgi_adv[i] = simbgi[i] + deltatempBGI((i * dt), uevent.dbdt.values[j], udata.sensf, 1,
+                                                             uevent.time.values[j], uevent.time.values[j] + 60)
+                    if i * dt - uevent.time.values[j] >= 0:
+                        iob_vals[i] = iob_vals[i] + uevent.dbdt.values[j] * iob(i * dt - uevent.time.values[j],
+                                                                                 1) / 100.0
 
     simbg_res = simbg + simbgc + simbgi
     simbg_adv = simbg_adv + simbgc + simbgi_adv
     x = np.linspace(0, n, n)
-    return [simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv], iob_vals / 100, cob_vals
+    return [simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv], iob_vals , cob_vals
 
 
 # compare two different IOB functions

@@ -26,11 +26,11 @@ filename = path + "data/csv/data_17.csv"
 def main():
     # SELECT OPTIONS
     run_autotune: bool = False  # Select True if autotune should run. If data set has been run before, set to False to improve speed.
-    create_plots: bool = False  # Select True if you want a plot for every prediction window
+    create_plots: bool = True  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
-    user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, sensf = 41, simlength = 10,
-                         predictionlength = 1, stats = None)
+    user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, sensf = 41, simlength = 11,
+                         predictionlength = 60, stats = None)
 
     logger.info("Start Main!")
 
