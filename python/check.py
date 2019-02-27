@@ -95,10 +95,13 @@ def checkAndPlot(pw: PredictionWindow):
 
     # Get Events for Prediction
     pw.events = extractor.getEventsAsDataFrame(pw)
+    logger.info(pw.events)
     if pw.events.empty:
+        logger.info("events empty")
         return None, None
 
-    if not check_bolus(pw):
+    if check_bolus(pw):
+        logger.info("found bolus")
         return None, None
 
     logger.info("found only basal")

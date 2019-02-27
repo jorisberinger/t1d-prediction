@@ -19,4 +19,5 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
 
 
 def check_bolus(pw: PredictionWindow) -> bool:
-    return "bolus" in pw.events['etype']
+    logger.info("found bolus: " + str("bolus" in pw.events['etype'].values))
+    return "bolus" in pw.events['etype'].values
