@@ -30,15 +30,13 @@ udata = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, s
 
 # Set True if minimizer should get profiled
 profile = False
-# Set carb duration
-carb_duration = 90
 
 # get vectorized forms of function for predicter
 vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes = [float], excluded = [0, 1, 2])
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes = [float], excluded = [1, 2])
 
 
-def optimize(pw: PredictionWindow) -> int:
+def optimize(pw: PredictionWindow, carb_duration: int) -> int:
     # set error time points
     t = np.arange(0, pw.userData.simlength * 60 - pw.userData.predictionlength, 15)
     # logger.info(t)
@@ -106,7 +104,7 @@ def optimize(pw: PredictionWindow) -> int:
     #    file.write(json.dumps(values.x.tolist()))
     #    file.close()
 
-    prediction_value = getPredictionValue(values.x, t, pw)
+    prediction_value = getPredictionValue(values.x, t, pw, carb_duration)
     # logger.info("prediction value: " + str(prediction_value))
     # logger.info("finished")
     # plot(values.x, t, pw)
@@ -114,7 +112,7 @@ def optimize(pw: PredictionWindow) -> int:
     if not pw.plot:
         return prediction_value
     else:
-        prediction_curve = getPredictionCurve(values.x, t, pw)
+        prediction_curve = getPredictionCurve(values.x, t, pw, carb_duration)
         return prediction_value, prediction_curve, carb_events
 
 
@@ -128,7 +126,7 @@ def predicter(inputs, real_values, insulin_values, p_cob):
     return error_sum
 
 
-def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: PredictionWindow) -> [float]:
+def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: PredictionWindow, carb_duration: int) -> [float]:
     carbEvents = []
     for i in range(0, len(carb_values)):
         carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
@@ -144,7 +142,7 @@ def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: Predi
     return values[5]
 
 
-def getPredictionValue(carb_values: [float], t: [float], predictionWindow: PredictionWindow) -> float:
+def getPredictionValue(carb_values: [float], t: [float], predictionWindow: PredictionWindow, carb_duration: int) -> float:
     carbEvents = []
     for i in range(0, len(carb_values)):
         carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
