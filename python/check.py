@@ -109,9 +109,9 @@ def checkAndPlot(pw: PredictionWindow):
         # logger.debug("prediction value " + str(prediction_last_value))
         # get prediction with optimized parameters
         prediction_optimized, optimized_curve, optimized_carb_events = optimizer.optimize_mix(pw)
-        prediction_optimized_60, optimized_curve_60, optimized_carb_events_60 = optimizer.optimize(pw, 60)
-        prediction_optimized_90, optimized_curve_90, optimized_carb_events_90 = optimizer.optimize(pw, 90)
-        prediction_optimized_120, optimized_curve_120, optimized_carb_events_120 = optimizer.optimize(pw, 120)
+        #prediction_optimized_60, optimized_curve_60, optimized_carb_events_60 = optimizer.optimize(pw, 60)
+        #prediction_optimized_90, optimized_curve_90, optimized_carb_events_90 = optimizer.optimize(pw, 90)
+        #prediction_optimized_120, optimized_curve_120, optimized_carb_events_120 = optimizer.optimize(pw, 120)
         # logger.info("optimizer prediction " + str(prediction_optimized))
     else:
         # Get prediction Value for last train value
@@ -122,9 +122,9 @@ def checkAndPlot(pw: PredictionWindow):
         prediction_last_value = np.array(predict.calculateBGAt2(pw.userData.simlength * 60, pw.events, pw.userData))
         # logger.debug("prediction value " + str(prediction_last_value))
         prediction_optimized = optimizer.optimize_mix(pw)
-        prediction_optimized_60 = optimizer.optimize(pw, 60)
-        prediction_optimized_90 = optimizer.optimize(pw, 90)
-        prediction_optimized_120 = optimizer.optimize(pw, 120)
+        #prediction_optimized_60 = optimizer.optimize(pw, 60)
+        #prediction_optimized_90 = optimizer.optimize(pw, 90)
+        #prediction_optimized_120 = optimizer.optimize(pw, 120)
 
         # logger.info("optimizer prediction " + str(prediction_optimized))
 
@@ -143,21 +143,22 @@ def checkAndPlot(pw: PredictionWindow):
     prediction30delta = last30delta * pw.userData.predictionlength / 30
     prediction30 = pw.train_value + prediction30delta
     prediction = np.append(prediction, prediction30)
-    prediction = np.append(prediction, prediction_optimized_60)
-    prediction = np.append(prediction, prediction_optimized_90)
-    prediction = np.append(prediction, prediction_optimized_120)
+    prediction = np.append(prediction, prediction_optimized)
+    #prediction = np.append(prediction, prediction_optimized_90)
+    #prediction = np.append(prediction, prediction_optimized_120)
     # Get ARIMA prediction
-    prediction_arima, order = arima.get_arima_prediction(pw)
-    pw.prediction = np.append(prediction, prediction_arima.iat[-1])
+    #prediction_arima, order = arima.get_arima_prediction(pw)
+    #pw.prediction = np.append(prediction, prediction_arima.iat[-1])
     # logger.debug("prediction " + str(prediction))
     # calculate error
+    pw.prediction = prediction
     pw.errors = np.subtract(pw.lastValue, pw.prediction)
     # logger.debug("errors " + str(errors))
 
     if pw.plot:
-        plot_graph(pw, sim_bg, optimized_curve, optimized_carb_events, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, prediction_arima, iob, cob)
+        plot_graph(pw, sim_bg, optimized_curve, optimized_carb_events, None, None, None, None, None, None, prediction30, None, iob, cob)
 
-    return pw.errors.tolist(), order
+    return pw.errors.tolist(), None
 
 
 def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int):
@@ -233,10 +234,10 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_eve
              alpha = 0.8, label = "Last 30 Prediction")
 
     # arima prediction
-    index = np.arange(pw.userData.simlength * 60 - pw.userData.predictionlength, pw.userData.simlength * 60 + 1,
-                      pw.userData.predictionlength / (len(arima_values) - 1))
-    arima_values.index = index
-    plt.plot(arima_values, alpha = 0.8, label = "arima prediction")
+    #index = np.arange(pw.userData.simlength * 60 - pw.userData.predictionlength, pw.userData.simlength * 60 + 1,
+    #                  pw.userData.predictionlength / (len(arima_values) - 1))
+    #arima_values.index = index
+    #plt.plot(arima_values, alpha = 0.8, label = "arima prediction")
 
     # Plot Legend
     plotLegend()
@@ -248,9 +249,9 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_eve
     plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
 
     # optimized prediction
-    plt.plot(optimized_curve_60, alpha = 0.8, label = "optimized curve 60")
-    plt.plot(optimized_curve_90, alpha = 0.8, label = "optimized curve 90")
-    plt.plot(optimized_curve_120, alpha = 0.8, label = "optimized curve 120")
+    #plt.plot(optimized_curve_60, alpha = 0.8, label = "optimized curve 60")
+    #plt.plot(optimized_curve_90, alpha = 0.8, label = "optimized curve 90")
+    #plt.plot(optimized_curve_120, alpha = 0.8, label = "optimized curve 120")
     plt.plot(optimized_curve, alpha = 0.8, label = "optimized curve mix")
 
     # Plot Legend
@@ -269,10 +270,10 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_eve
         plt.bar(carbValues.time, carbValues.grams, 5, alpha = 0.8, label = "carb event")
     if not bolusValues.empty:
         plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
-    if not optimized_carb_events_60.empty:
-        plt.bar(optimized_carb_events_60.index, optimized_carb_events_60, 5, alpha = 0.8, label = "optimized carb event")
+    #if not optimized_carb_events_60.empty:
+    #    plt.bar(optimized_carb_events_60.index, optimized_carb_events_60, 5, alpha = 0.8, label = "optimized carb event")
     if not optimized_carb_events.empty:
-        plt.bar(optimized_carb_events.index, optimized_carb_events, 5, alpha = 0.8,
+        plt.bar(optimized_carb_events.index, optimized_carb_events.grams, 5, alpha = 0.8,
                 label = "optimized carb event mixed")
 
     plotLegend()

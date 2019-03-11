@@ -58,14 +58,14 @@ def main():
     logger.info("Finished prediction")
 
     # ANALYSE PREDICTION RESULTS
-    summary = analyze.getSummary(prediction_result)
+    #summary = analyze.getSummary(prediction_result)
 
     # CREATE PLOTS FOR ANALYSE SUMMARY
-    analyze.createErrorPlots(summary)
+    #analyze.createErrorPlots(summary)
 
     # CREATE A GIF OUT OF THE PREDICTION PLOTS
-    if create_plots:
-        gifmaker.makeGif(path + "results/plots/", data)
+    #if create_plots:
+    #    gifmaker.makeGif(path + "results/plots/", data)
 
     logger.info("Main finished!")
 

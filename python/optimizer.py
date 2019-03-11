@@ -41,13 +41,14 @@ carb_types:[int] = [30, 90, 120, 240]
 def optimize_mix(pw: PredictionWindow) -> (int, pandas.DataFrame, pandas.DataFrame):
     # Set time steps where to calculate the error between real_values and prediction
     # Every 15 minutes including start and end
-    t_error = get_time_steps(pw, 15)
+    t_error = get_error_time_steps(pw, 10)
 
     # Get Real Values
     real_values = get_real_values(pw, t_error)
 
     # Number of Parameters per Carb Type
-    parameter_count = int(pw.userData.train_length() / 15) * len(carb_types)
+    t_carb_events = get_carb_time_steps(pw, 15)
+    parameter_count = len(t_carb_events) * len(carb_types)
 
     # Array to hold input variables, one for every carb event at every time step and for every carb type
     # set initial guess to 0 for all input parameters
@@ -61,15 +62,43 @@ def optimize_mix(pw: PredictionWindow) -> (int, pandas.DataFrame, pandas.DataFra
     insulin_events, insulin_values = get_insulin_events(pw, t_error)
 
     # Create carbs on Board Matrix
-    cob_matrix = get_cob_matrix(t_error, carb_types)
+    cob_matrix = get_cob_matrix(t_carb_events, t_error, carb_types)
 
-    exit()
-    return None, None, None
+    # multiply patient_coefficient with cob_matrix
+    patient_carb_matrix = udata.sensf / udata.cratio * cob_matrix
 
+    # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
+    values = minimize(predictor, x0, args = (real_values, insulin_values, patient_carb_matrix), method = 'L-BFGS-B',
+                      bounds = bounds, options = {'disp': False, 'maxiter': 1000, 'maxfun': 1000000, 'maxls': 200})
+
+    carb_values = pandas.Series(values.x)
+    prediction_value = getPredictionValue(carb_values, t_carb_events, pw, carb_types)
+
+    logger.info("success {}".format(values.success))
+    if not pw.plot:
+        return prediction_value, None, None
+    else:
+        prediction_curve, carb_events = getPredictionCurve(values.x, t_carb_events, pw, carb_types)
+        return prediction_value, prediction_curve, carb_events
+
+
+def predictor(inputs, real_values, insulin_values, p_cob):
+    # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
+    # Update inputs
+    carb_values = np.array(np.matmul(inputs, p_cob))
+    predictions = carb_values + insulin_values
+    error = np.absolute(real_values - predictions.flatten())
+    error_sum = error.sum()
+    return error_sum
 
 # return time steps with step size step_size in the range from sim_length training period
-def get_time_steps(pw: PredictionWindow, step_size: int) -> np.array:
+def get_error_time_steps(pw: PredictionWindow, step_size: int) -> np.array:
     t = np.arange(0, pw.userData.simlength * 60 - pw.userData.predictionlength + 1, step_size)
+    return t
+
+# return time steps with step size step_size in the range from sim_length training period
+def get_carb_time_steps(pw: PredictionWindow, step_size: int) -> np.array:
+    t = np.arange(0, pw.userData.simlength * 60 - pw.userData.predictionlength, step_size)
     return t
 
 
@@ -95,11 +124,11 @@ def get_insulin_events(pw: PredictionWindow, t: np.array) -> (np.array, np.array
 
 
 # creates matrix with Carb on Board value for every carb event at every error check timestep
-def get_cob_matrix(t: np.array, carb_durations: [int]) -> np.matrix:
+def get_cob_matrix(t_carb: np.array, t_error: np.array, carb_durations: [int]) -> np.matrix:
     cob_values = []
     for carb_duration in carb_durations:
-        for i in t:
-            cob_values.append(predict.vec_cob1(t - i, carb_duration))
+        for i in t_carb:
+            cob_values.append(predict.vec_cob1(t_error - i, carb_duration))
 
     return np.matrix(cob_values)
 
@@ -154,7 +183,7 @@ def optimize(pw: PredictionWindow, carb_duration: int) -> int:
     # logger.debug(patient_carb_matrix)
 
     # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
-    values = minimize(predicter, x0, args = (real_values, insulin_values, patient_carb_matrix), method = 'L-BFGS-B',
+    values = minimize(predictor, x0, args = (real_values, insulin_values, patient_carb_matrix), method = 'L-BFGS-B',
                       bounds = bounds,
                       options = {'disp': False, 'maxiter': 1000})  # Set maxiter higher if you have Time
     # values = minimize(predicter, x0, args=(t_, insulin_values, patient_carb_matrix), method='TNC', bounds=bounds, options = {'disp': True, 'maxiter': 1000})
@@ -183,43 +212,36 @@ def optimize(pw: PredictionWindow, carb_duration: int) -> int:
         return prediction_value, prediction_curve, carb_events
 
 
-def predicter(inputs, real_values, insulin_values, p_cob):
-    # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
-    # Update inputs
-    carb_values = np.array(np.matmul(inputs, p_cob))
-    predictions = carb_values + insulin_values
-    error = np.absolute(real_values - predictions.flatten())
-    error_sum = error.sum()
-    return error_sum
 
 
-def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: PredictionWindow, carb_duration: int) -> [float]:
-    carbEvents = []
-    for i in range(0, len(carb_values)):
-        carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
-    carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
-    # logger.info("carb Events")
-    # logger.info(carb_events)
+
+def getPredictionCurve(carb_values: [float], t: [float], predictionWindow: PredictionWindow, carb_durations: [int]) -> ([float], pandas.DataFrame):
+    carb_events = get_carb_events(carb_values, carb_durations, t)
     # remove original carb events from data
     insulin_events = predictionWindow.events[predictionWindow.events.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
-    # logger.info("all events")
-    # logger.info(allEvents)
+
     values, iob, cob = predict.calculateBG(allEvents, predictionWindow.userData)
-    return values[5]
+    return values[5], carb_events
 
 
-def getPredictionValue(carb_values: [float], t: [float], predictionWindow: PredictionWindow, carb_duration: int) -> float:
-    carbEvents = []
-    for i in range(0, len(carb_values)):
-        carbEvents.append(Event.createCarb(t[i], carb_values[i] / 12, carb_duration))
-    carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
+def getPredictionValue(carb_values: [float], t: [float], predictionWindow: PredictionWindow, carb_durations: [int]) -> float:
+    carb_events = get_carb_events(carb_values, carb_durations, t)
     # logger.info(carb_events)
     # remove original carb events from data
     insulin_events = predictionWindow.events[predictionWindow.events.etype != 'carb']
     allEvents = pandas.concat([insulin_events, carb_events])
     value = predict.calculateBGAt2(predictionWindow.userData.simlength * 60, allEvents, predictionWindow.userData)
     return value[1]
+
+
+def get_carb_events(carb_values, carb_durations, t) -> pandas.DataFrame:
+    carbEvents = []
+    for i in range(0, int(len(carb_values) / len(carb_durations))):
+        for index, carb_duration in enumerate(carb_durations):
+            carbEvents.append(Event.createCarb(t[i], carb_values[i * index] / 12, carb_duration))
+    carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
+    return carb_events
 
 
 def optimizeMain():
