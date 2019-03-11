@@ -47,6 +47,9 @@ class UserData:
         self.stats = stats
         self.basalprofile = None
 
+    def train_length(self) -> int:
+        return self.simlength * 60 - self.predictionlength
+
 class PredictionWindow:
     data: pandas.DataFrame = None
     startTime = None

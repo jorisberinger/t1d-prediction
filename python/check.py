@@ -108,6 +108,7 @@ def checkAndPlot(pw: PredictionWindow):
         prediction_last_value = np.array([sim_bg[0][pw.time_last_value], sim_bg[5][pw.time_last_value]])
         # logger.debug("prediction value " + str(prediction_last_value))
         # get prediction with optimized parameters
+        prediction_optimized, optimized_curve, optimized_carb_events = optimizer.optimize_mix(pw)
         prediction_optimized_60, optimized_curve_60, optimized_carb_events_60 = optimizer.optimize(pw, 60)
         prediction_optimized_90, optimized_curve_90, optimized_carb_events_90 = optimizer.optimize(pw, 90)
         prediction_optimized_120, optimized_curve_120, optimized_carb_events_120 = optimizer.optimize(pw, 120)
@@ -120,9 +121,11 @@ def checkAndPlot(pw: PredictionWindow):
         # Get prediction Value for last value
         prediction_last_value = np.array(predict.calculateBGAt2(pw.userData.simlength * 60, pw.events, pw.userData))
         # logger.debug("prediction value " + str(prediction_last_value))
+        prediction_optimized = optimizer.optimize_mix(pw)
         prediction_optimized_60 = optimizer.optimize(pw, 60)
         prediction_optimized_90 = optimizer.optimize(pw, 90)
         prediction_optimized_120 = optimizer.optimize(pw, 120)
+
         # logger.info("optimizer prediction " + str(prediction_optimized))
 
     # Get Delta between train and last value
@@ -152,7 +155,7 @@ def checkAndPlot(pw: PredictionWindow):
     # logger.debug("errors " + str(errors))
 
     if pw.plot:
-        plot_graph(pw, sim_bg, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, prediction_arima, iob, cob)
+        plot_graph(pw, sim_bg, optimized_curve, optimized_carb_events, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, prediction_arima, iob, cob)
 
     return pw.errors.tolist(), order
 
@@ -182,7 +185,7 @@ def plotLegend():
     plt.tight_layout(pad = 6)
 
 
-def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, arima_values, iob,
+def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_events, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, arima_values, iob,
                cob):
     # get values for prediction timeframe
     prediction_vals = getPredictionVals(pw, sim_bg[0])
@@ -248,6 +251,7 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve_60, optimized_carb_
     plt.plot(optimized_curve_60, alpha = 0.8, label = "optimized curve 60")
     plt.plot(optimized_curve_90, alpha = 0.8, label = "optimized curve 90")
     plt.plot(optimized_curve_120, alpha = 0.8, label = "optimized curve 120")
+    plt.plot(optimized_curve, alpha = 0.8, label = "optimized curve mix")
 
     # Plot Legend
     plotLegend()
@@ -267,6 +271,9 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve_60, optimized_carb_
         plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
     if not optimized_carb_events_60.empty:
         plt.bar(optimized_carb_events_60.index, optimized_carb_events_60, 5, alpha = 0.8, label = "optimized carb event")
+    if not optimized_carb_events.empty:
+        plt.bar(optimized_carb_events.index, optimized_carb_events, 5, alpha = 0.8,
+                label = "optimized carb event mixed")
 
     plotLegend()
     plt.subplots_adjust(hspace = 0.2)

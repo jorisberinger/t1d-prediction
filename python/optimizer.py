@@ -35,6 +35,73 @@ profile = False
 vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes = [float], excluded = [0, 1, 2])
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes = [float], excluded = [1, 2])
 
+carb_types:[int] = [30, 90, 120, 240]
+
+
+def optimize_mix(pw: PredictionWindow) -> (int, pandas.DataFrame, pandas.DataFrame):
+    # Set time steps where to calculate the error between real_values and prediction
+    # Every 15 minutes including start and end
+    t_error = get_time_steps(pw, 15)
+
+    # Get Real Values
+    real_values = get_real_values(pw, t_error)
+
+    # Number of Parameters per Carb Type
+    parameter_count = int(pw.userData.train_length() / 15) * len(carb_types)
+
+    # Array to hold input variables, one for every carb event at every time step and for every carb type
+    # set initial guess to 0 for all input parameters
+    x0 = np.array([0] * parameter_count)
+
+    # Define lower and upper bound for variables
+    lb, ub = 0, 20
+    bounds = np.array([(lb, ub)] * parameter_count)
+
+    # Get Insulin Values
+    insulin_events, insulin_values = get_insulin_events(pw, t_error)
+
+    # Create carbs on Board Matrix
+    cob_matrix = get_cob_matrix(t_error, carb_types)
+
+    exit()
+    return None, None, None
+
+
+# return time steps with step size step_size in the range from sim_length training period
+def get_time_steps(pw: PredictionWindow, step_size: int) -> np.array:
+    t = np.arange(0, pw.userData.simlength * 60 - pw.userData.predictionlength + 1, step_size)
+    return t
+
+
+# returns the real cgm values at the times steps given
+def get_real_values(pw: PredictionWindow, time_steps: np.array) -> np.array:
+    return np.array(pw.cgmY.loc[time_steps])
+
+
+# calculates insulin values and extracts insulin events include initial value
+def get_insulin_events(pw: PredictionWindow, t: np.array) -> (np.array, np.array):
+    # extract all bolus events from all events
+    insulin_events = pw.events[pw.events.etype == 'bolus']
+    # set insulin values to initial blood glucose level
+    insulin_values = np.array([pw.cgmY[0]] * len(t))
+
+    t_ = t[:, np.newaxis]
+    varsobject = predict.init_vars(pw.userData.sensf, pw.userData.idur * 60)
+    for row in insulin_events.itertuples():
+        iv = vec_get_insulin(row, udata, varsobject, t_).flatten()
+        insulin_values = insulin_values + iv
+
+    return insulin_events, insulin_values
+
+
+# creates matrix with Carb on Board value for every carb event at every error check timestep
+def get_cob_matrix(t: np.array, carb_durations: [int]) -> np.matrix:
+    cob_values = []
+    for carb_duration in carb_durations:
+        for i in t:
+            cob_values.append(predict.vec_cob1(t - i, carb_duration))
+
+    return np.matrix(cob_values)
 
 def optimize(pw: PredictionWindow, carb_duration: int) -> int:
     # set error time points
@@ -167,7 +234,7 @@ def optimizeMain():
     # set error time points
     t_index = np.arange(0, len(cgmX_train), 3)
     t = cgmX_train[t_index]
-    global real_values
+    #global real_values
     real_values = cgmY_train[t_index]
     logger.info(real_values)
 
@@ -407,3 +474,5 @@ if __name__ == '__main__':
     start_time = time.process_time()
     optimizeMain()
     logger.info(str(time.process_time() - start_time) + " seconds")
+
+
