@@ -35,7 +35,8 @@ profile = False
 vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes = [float], excluded = [0, 1, 2])
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes = [float], excluded = [1, 2])
 
-carb_types:[int] = [30, 90, 120, 240]
+carb_types:[int] = [30, 60, 90, 120, 240]
+#carb_types:[int] = [60,120]
 
 
 def optimize_mix(pw: PredictionWindow) -> (int, pandas.DataFrame, pandas.DataFrame):
@@ -237,9 +238,10 @@ def getPredictionValue(carb_values: [float], t: [float], predictionWindow: Predi
 
 def get_carb_events(carb_values, carb_durations, t) -> pandas.DataFrame:
     carbEvents = []
-    for i in range(0, int(len(carb_values) / len(carb_durations))):
+    number_event_times = int(len(carb_values) / len(carb_durations))
+    for i in range(0, number_event_times):
         for index, carb_duration in enumerate(carb_durations):
-            carbEvents.append(Event.createCarb(t[i], carb_values[i * index] / 12, carb_duration))
+            carbEvents.append(Event.createCarb(t[i], carb_values[i + number_event_times * index] / 12, carb_duration))
     carb_events = pandas.DataFrame([vars(e) for e in carbEvents])
     return carb_events
 

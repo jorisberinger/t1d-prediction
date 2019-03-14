@@ -10,7 +10,7 @@ import extractor
 import optimizer
 import predict
 from Classes import PredictionWindow
-
+from matplotlib import cm
 logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
@@ -273,8 +273,16 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_eve
     #if not optimized_carb_events_60.empty:
     #    plt.bar(optimized_carb_events_60.index, optimized_carb_events_60, 5, alpha = 0.8, label = "optimized carb event")
     if not optimized_carb_events.empty:
-        plt.bar(optimized_carb_events.index, optimized_carb_events.grams, 5, alpha = 0.8,
-                label = "optimized carb event mixed")
+
+        ctypes = optimized_carb_events.ctype.unique()
+        colors = iter(cm.hsv(np.linspace(0,1,ctypes.size+1)))
+        positions = iter([-5.5, -3,0, 3, 5.5])
+        for ctype in ctypes:
+            events = optimized_carb_events[optimized_carb_events.ctype == ctype]
+            color = next(colors)
+            position = next(positions)
+            plt.bar(events.time + position, events.grams, 2, alpha = 0.8,
+                    label = "optimized carb event mixed: {}".format(ctype), color=color)
 
     plotLegend()
     plt.subplots_adjust(hspace = 0.2)

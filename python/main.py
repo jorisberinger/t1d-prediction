@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data_17_5.csv"
+filename = path + "data/csv/data_17_3-4.csv"
 
 
 # filename = path + "data/csv/data-o3.csv"
