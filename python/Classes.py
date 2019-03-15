@@ -1,6 +1,3 @@
-import pandas
-
-
 class Event:
     def __init__(self, time, etype, units=None, grams=None, ctype=None, dbdt=None, t1=None, t2=None):
         self.time = time
@@ -49,23 +46,5 @@ class UserData:
 
     def train_length(self) -> int:
         return self.simlength * 60 - self.predictionlength
-
-class PredictionWindow:
-    data: pandas.DataFrame = None
-    startTime = None
-    endTime = None
-    userData = None
-    plot = None
-    cgmX = None
-    cgmY = None
-    index_last_train = None
-    time_last_train = None
-    train_value = None
-    index_last_value = None
-    time_last_value = None
-    lastValue = None
-    events = None
-    prediction = None
-    errors = None
 
 

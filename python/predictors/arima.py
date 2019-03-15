@@ -7,7 +7,7 @@ from pmdarima import auto_arima
 from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.arima_model import ARIMAResults
 
-from Classes import PredictionWindow
+from PredictionWindow import PredictionWindow
 
 logger = logging.getLogger(__name__)
 sampleTime = 5

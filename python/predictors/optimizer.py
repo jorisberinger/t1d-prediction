@@ -12,9 +12,10 @@ from scipy.optimize import minimize
 
 import check
 import extractor
-import predict
+from predictors import predict
 import rolling
-from Classes import UserData, Event, PredictionWindow
+from Classes import UserData, Event
+from PredictionWindow import PredictionWindow
 from data import readData
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,7 @@ carb_types:[int] = [30, 60, 90, 120, 240]
 def optimize_mix(pw: PredictionWindow) -> (int, pandas.DataFrame, pandas.DataFrame):
     # Set time steps where to calculate the error between real_values and prediction
     # Every 15 minutes including start and end
-    t_error = get_error_time_steps(pw, 10)
+    t_error = get_error_time_steps(pw, 5)
 
     # Get Real Values
     real_values = get_real_values(pw, t_error)
@@ -89,7 +90,7 @@ def predictor(inputs, real_values, insulin_values, p_cob):
     carb_values = np.array(np.matmul(inputs, p_cob))
     predictions = carb_values + insulin_values
     error = np.absolute(real_values - predictions.flatten())
-    error_sum = error.sum()
+    error_sum = np.matmul(error, error)
     return error_sum
 
 # return time steps with step size step_size in the range from sim_length training period

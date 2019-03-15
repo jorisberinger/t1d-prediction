@@ -5,11 +5,8 @@ from datetime import datetime
 import numpy as np
 from matplotlib import gridspec, pyplot as plt
 
-import arima
-import extractor
-import optimizer
-import predict
-from Classes import PredictionWindow
+from predictors import optimizer, predict
+from PredictionWindow import PredictionWindow
 from matplotlib import cm
 logger = logging.getLogger(__name__)
 
@@ -71,33 +68,16 @@ def convertTimes(event, start):
     return event
 
 
-def getCgmReading(data):
-    cgmtrue = data[data['cgmValue'].notnull()]
-    if len(cgmtrue) > 0:
-        cgmY = cgmtrue['cgmValue']
-        return cgmY
-    else:
-        return None
-
-
-def checkAndPlot(pw: PredictionWindow):
-    # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
-    pw.cgmY = getCgmReading(pw.data)
-
-    # Set initial Blood Glucose Level
-    pw.userData.bginitial = pw.cgmY[0]
-
-    # Get Train Datapoint
-    pw.train_value = pw.data.at[float(pw.userData.simlength * 60 - pw.userData.predictionlength), 'cgmValue']
-    # Get last Datapoint
-    pw.lastValue = pw.data.at[float(pw.userData.simlength * 60), 'cgmValue']
-
-    # Get Events for Prediction
-    pw.events = extractor.getEventsAsDataFrame(pw)
+def check_and_plot(pw: PredictionWindow):
+    # Set values needed for calculations
+    pw.set_values()
+    # If there are no events stop, otherwise there will be errors TODO maby fix
     if pw.events.empty:
         return None
 
+
     # Run Prediction
+    # If plot option is on, we need the whole graph, not only the error checkpoints
     if pw.plot:
         sim_bg, iob, cob = predict.calculateBG(pw.events, pw.userData)
 
@@ -174,7 +154,7 @@ def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int):
     ax.grid(which = 'minor', alpha = 0.2)
     ax.grid(which = 'major', alpha = 0.5)
     # Plot Line when prediction starts
-    plt.axvline(x = (pw.userData.simlength - 1) * 60, color = "black")
+    plt.axvline(x = pw.userData.train_length(), color = "black")
 
     plt.tick_params(axis = 'both', which = 'both', bottom = False, top = False, left = False)
     plt.box(False)
@@ -227,10 +207,10 @@ def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_eve
     plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
     # Same value prediction
     plt.axhline(y = prediction_vals[0],
-                xmin = (pw.userData.simlength - pw.userData.predictionlength / 60) / pw.userData.simlength, alpha = 0.8,
+                xmin = (pw.userData.train_length() / 60) / pw.userData.simlength, alpha = 0.8,
                 label = "Same Value Prediction")
     # last 30 prediction value
-    plt.plot([(pw.userData.simlength - 1) * 60, pw.userData.simlength * 60], [pw.train_value, prediction30],
+    plt.plot([pw.userData.train_length(), pw.userData.simlength * 60], [pw.train_value, prediction30],
              alpha = 0.8, label = "Last 30 Prediction")
 
     # arima prediction

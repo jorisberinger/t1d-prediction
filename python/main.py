@@ -29,8 +29,8 @@ def main():
     create_plots: bool = True  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
-    user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 11,
-                         predictionlength = 60, stats = None)
+    user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
+                         predictionlength = 180, stats = None)
 
     logger.info("Start Main!")
 

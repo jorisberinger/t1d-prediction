@@ -1,4 +1,5 @@
-from Classes import Event, PredictionWindow
+from Classes import Event
+import PredictionWindow
 import pandas as pd
 import logging
 

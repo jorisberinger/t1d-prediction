@@ -5,7 +5,8 @@ from datetime import timedelta
 import pandas as pd
 
 import check
-from Classes import PredictionWindow, UserData
+from Classes import UserData
+from PredictionWindow import PredictionWindow
 from data import checkData
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
             predictionWindow.data = subset
             # logger.debug(subset)
             if checkData.check_window(subset, user_data):
-                res, order = check.checkAndPlot(predictionWindow)
+                res, order = check.check_and_plot(predictionWindow)
                 if res is not None:
                     orders.append(order)
                     results.append(res)
