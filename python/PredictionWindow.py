@@ -1,5 +1,7 @@
-import pandas
+import logging
 
+import pandas
+import numpy as np
 import extractor
 
 
@@ -20,8 +22,8 @@ class PredictionWindow:
     events = None
     prediction = None
     errors = None
-
-    def set_values(self):
+    real_values: [float] = None
+    def set_values(self, error_times: np.array):
         # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
         self.cgmY = get_cgm_reading(self.data)
 
@@ -36,6 +38,8 @@ class PredictionWindow:
         # Get Events for Prediction
         self.events = extractor.getEventsAsDataFrame(self)
 
+        # Get values at Error Times
+        self.real_values = self.cgmY[error_times + self.userData.train_length()]
 
 def get_cgm_reading(data):
         cgm_true = data[data['cgmValue'].notnull()]

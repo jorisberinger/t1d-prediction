@@ -14,6 +14,20 @@ sampleTime = 5
 index_train = pd.timedelta_range(start = '0 hour', end = '10 hours', freq = str(sampleTime) + 'min')
 index_test = pd.timedelta_range(start = '10 hours', end = '11 hours', freq = str(sampleTime) + 'min')
 
+class Arima:
+    name: str = "Arima Predictor"
+    pw: PredictionWindow
+    prediction_values: [float]
+    def __init__(self, pw):
+        logger.info("init Arima")
+        self.pw: PredictionWindow = pw
+
+    def calc_predictions(self, error_times: [int]) -> bool:
+        logger.info("get Errors at {}".format(error_times))
+
+    def get_errors_and_curve(self, error_times: [int]) -> bool:
+        logger.info("get Errors at {} and curve".format(error_times))
+
 
 def get_arima_prediction(pw: PredictionWindow) -> float:
     window = pw.data.iloc[::sampleTime]['cgmValue']

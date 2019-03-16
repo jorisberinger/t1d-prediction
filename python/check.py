@@ -8,6 +8,11 @@ from matplotlib import gridspec, pyplot as plt
 from predictors import optimizer, predict
 from PredictionWindow import PredictionWindow
 from matplotlib import cm
+
+from predictors.arima import Arima
+from predictors.math_model import MathPredictor
+from predictors.optimizer import Optimizer
+
 logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
@@ -68,13 +73,32 @@ def convertTimes(event, start):
     return event
 
 
+error_times = np.array([15, 30, 45, 60, 90, 120, 150, 180])
+
+
+
+
+
 def check_and_plot(pw: PredictionWindow):
     # Set values needed for calculations
-    pw.set_values()
+    pw.set_values(error_times)
     # If there are no events stop, otherwise there will be errors TODO maby fix
     if pw.events.empty:
         return None
 
+    predictors = [Optimizer(pw), Arima(pw), MathPredictor(pw)]
+    predictors = [Optimizer(pw)]
+
+    success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
+
+    errors = calculate_errors(predictors, pw)
+
+    if pw.plot:
+        graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
+        plot_graphs(pw, graphs)
+
+    logger.info("errors {}".format(errors))
+    exit()
 
     # Run Prediction
     # If plot option is on, we need the whole graph, not only the error checkpoints
@@ -160,11 +184,30 @@ def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int):
     plt.box(False)
 
 
+def calculate_errors(predictors: [], pw: PredictionWindow) -> []:
+    errors = []
+    for predictor in predictors:
+        error = {'predictor': predictor.name,
+                 'errors': pw.real_values - predictor.prediction_values}
+        errors.append(error)
+    return errors
+
 def plotLegend():
     # Plot Legend
     plt.legend(loc = 'center left', bbox_to_anchor = (1, 0.5))
     plt.tight_layout(pad = 6)
 
+
+def plot_graphs(pw: PredictionWindow, graphs):
+    ax = plt.subplot()
+    setupPlot(ax, pw, 400, 50)
+    # Plot real blood glucose readings
+    plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
+    for graph in graphs:
+        plt.plot(graph['values'], label=graph['label'])
+    plt.legend()
+    plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 150)
+    plt.close()
 
 def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_events, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, arima_values, iob,
                cob):
