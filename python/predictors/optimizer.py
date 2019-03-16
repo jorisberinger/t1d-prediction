@@ -37,10 +37,6 @@ profile = False
 vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes = [float], excluded = [0, 1, 2])
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes = [float], excluded = [1, 2])
 
-carb_types:[int] = [30, 60, 90, 120, 240]
-#carb_types:[int] = [60,120]
-
-
 class Optimizer(Predictor):
     carb_values: [float]
     pw:PredictionWindow
@@ -49,10 +45,12 @@ class Optimizer(Predictor):
     all_events: pandas.DataFrame
     name: str = "Optimizer Mixed Carb Types Predictor"
 
-    def __init__(self, pw: PredictionWindow):
+    def __init__(self, pw: PredictionWindow, carb_types: [int]):
         super().__init__()
         logger.info("init optimizer")
         self.pw: PredictionWindow = pw
+        self.carb_types = carb_types
+        self.name = self.name + ' ' + str(carb_types)
 
     def calc_predictions(self, error_times: [int]) -> bool:
         logger.info("get Errors at {}".format(error_times))
@@ -76,7 +74,7 @@ class Optimizer(Predictor):
 
         # Number of Parameters per Carb Type
         t_carb_events = get_carb_time_steps(self.pw, 15)
-        parameter_count = len(t_carb_events) * len(carb_types)
+        parameter_count = len(t_carb_events) * len(self.carb_types)
 
         # Array to hold input variables, one for every carb event at every time step and for every carb type
         # set initial guess to 0 for all input parameters
@@ -90,7 +88,7 @@ class Optimizer(Predictor):
         insulin_events, insulin_values = get_insulin_events(self.pw, t_error)
 
         # Create carbs on Board Matrix
-        cob_matrix = get_cob_matrix(t_carb_events, t_error, carb_types)
+        cob_matrix = get_cob_matrix(t_carb_events, t_error, self.carb_types)
 
         # multiply patient_coefficient with cob_matrix
         patient_carb_matrix = udata.sensf / udata.cratio * cob_matrix
@@ -110,7 +108,7 @@ class Optimizer(Predictor):
         return value[1]
 
     def get_prediction_values(self, error_times: np.array):
-        carb_events = get_carb_events(self.carb_values, carb_types, self.t_carb_events)
+        carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
         insulin_events = self.pw.events[self.pw.events.etype != 'carb']
         allEvents = pandas.concat([insulin_events, carb_events])
         self.prediction_values = list(map(lambda error_time: self.get_prediction_value(error_time, allEvents), error_times))

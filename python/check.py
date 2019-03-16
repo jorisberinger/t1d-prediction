@@ -9,6 +9,8 @@ from predictors import optimizer, predict
 from PredictionWindow import PredictionWindow
 from matplotlib import cm
 
+from predictors.LastNDelta import LastNDelta
+from predictors.SameValue import SameValue
 from predictors.arima import Arima
 from predictors.math_model import MathPredictor
 from predictors.optimizer import Optimizer
@@ -86,8 +88,8 @@ def check_and_plot(pw: PredictionWindow):
     if pw.events.empty:
         return None
 
-    predictors = [Optimizer(pw), Arima(pw), MathPredictor(pw)]
-    predictors = [Optimizer(pw), Arima(pw)]
+    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), MathPredictor(pw)]
+    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 180)]
 
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
 
@@ -98,7 +100,7 @@ def check_and_plot(pw: PredictionWindow):
         plot_graphs(pw, graphs)
 
     logger.info("errors {}".format(errors))
-    exit()
+    return None, None
 
     # Run Prediction
     # If plot option is on, we need the whole graph, not only the error checkpoints
@@ -199,7 +201,12 @@ def plotLegend():
 
 
 def plot_graphs(pw: PredictionWindow, graphs):
-    ax = plt.subplot()
+    # set figure size
+    fig = plt.figure(figsize = (10, 16))
+    gs = gridspec.GridSpec(4, 1, height_ratios = [3, 3, 1, 1])
+    subplot_iterator = iter(gs)
+
+    ax = plt.subplot(next(subplot_iterator))
     setupPlot(ax, pw, 400, 50)
     # Plot real blood glucose readings
     plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")

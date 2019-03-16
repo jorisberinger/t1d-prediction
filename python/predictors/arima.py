@@ -57,7 +57,7 @@ class Arima(Predictor):
 
     def get_graph(self) -> ({'label': str, 'values': [float]}):
 
-        return {'label': "Arima Prediction", 'values': self.prediction_values_all}
+        return {'label': self.name, 'values': self.prediction_values_all}
 
 
 
