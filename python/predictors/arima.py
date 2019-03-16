@@ -8,116 +8,60 @@ from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.arima_model import ARIMAResults
 
 from PredictionWindow import PredictionWindow
+from predictors.predictor import Predictor
 
 logger = logging.getLogger(__name__)
-sampleTime = 5
-index_train = pd.timedelta_range(start = '0 hour', end = '10 hours', freq = str(sampleTime) + 'min')
-index_test = pd.timedelta_range(start = '10 hours', end = '11 hours', freq = str(sampleTime) + 'min')
+sampleTime = 1
 
-class Arima:
+
+class Arima(Predictor):
     name: str = "Arima Predictor"
     pw: PredictionWindow
     prediction_values: [float]
+
     def __init__(self, pw):
+        super().__init__()
         logger.info("init Arima")
         self.pw: PredictionWindow = pw
+        self.sample_time = sampleTime
+        self.window = window = self.pw.data.iloc[::sampleTime]['cgmValue']
+        self.index_train = pd.timedelta_range(start = '0 hour',
+                                              end = '{} hours'.format(self.pw.userData.train_length() / 60),
+                                              freq = str(sampleTime) + 'min')
+        self.index_test = pd.timedelta_range(start = '{} minutes'.format(self.pw.userData.train_length() + self.sample_time),
+                                             end = '{} hours'.format(self.pw.userData.simlength),
+                                             freq = str(sampleTime) + 'min')
 
     def calc_predictions(self, error_times: [int]) -> bool:
         logger.info("get Errors at {}".format(error_times))
 
-    def get_errors_and_curve(self, error_times: [int]) -> bool:
-        logger.info("get Errors at {} and curve".format(error_times))
+        train = self.window[0:(self.pw.userData.simlength * 60 - self.pw.userData.predictionlength)]
+        train.index = pd.to_datetime(self.index_train)
+
+        test = self.window[(self.pw.userData.train_length() + self.sample_time):(self.pw.userData.simlength * 60)]
+        test.index = pd.to_datetime(self.index_test)
+
+        stepwise_fit = auto_arima(train, start_p = 1, start_q = 1, max_p = 10, max_q = 10, seasonal = False,
+                                  trace = True, max_order = 100,
+                                  error_action = 'ignore', suppress_warnings = True, stepwise = True)
+
+        preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
+        prediction = pd.Series(preds, index = test.index)
+        index = np.arange(self.pw.userData.train_length() + sampleTime, self.pw.userData.simlength * 60 + 1,
+                          self.sample_time)
+        self.prediction_values_all = prediction
+        self.prediction_values_all.index = index
+        self.prediction_values = self.prediction_values_all.loc[error_times + self.pw.userData.train_length()]
+        self.prediction_values = self.prediction_values.tolist()
 
 
-def get_arima_prediction(pw: PredictionWindow) -> float:
-    window = pw.data.iloc[::sampleTime]['cgmValue']
-    # logger.info("window")
-    # logger.info(window)
-    # get train values
-    train = window[0:(pw.userData.simlength * 60 - pw.userData.predictionlength)]
-    train.index = pd.to_datetime(index_train)
-    # logger.info("train")
-    # logger.info(train)
-    test = window[(pw.userData.simlength * 60 - pw.userData.predictionlength):(pw.userData.simlength * 60)]
-    test.index = pd.to_datetime(index_test)
-    # model = ARIMA(train, order = [3, 1, 2])
-    # res: ARIMAResults = model.fit(disp = False)
-    # logger.info("preidct " + str(len(train)) + "    " + str(len(train) + len(test) - 2))
-    # prediction: pd.Series = res.predict(120, 132)
+    def get_graph(self) -> ({'label': str, 'values': [float]}):
 
-    stepwise_fit = auto_arima(train, start_p = 1, start_q = 1, max_p = 10, max_q = 10, seasonal = False,
-                              trace = True, max_order = 100,
-                              error_action = 'ignore', suppress_warnings = True, stepwise = True)
-
-    preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
-    prediction = pd.Series(preds, index = test.index)
-    # logger.info("prediction")
-    # logger.info(prediction)
-    # logger.info("test")
-    # logger.info(test)
-    # logger.info("return " + str(prediction.iat[-1]))
-    # logger.info("test index" + str(test.index))
-    # train.plot(label = "train", legend = True)
-    # test.plot(label = "test", legend = True)
-    # prediction.plot(label = "prediction", legend = True)
-
-    # plt.show()
-
-    return prediction, stepwise_fit.order
+        return {'label': "Arima Prediction", 'values': self.prediction_values_all}
 
 
-def get_arima_prediction_plot(data) -> float:
-    logger.info("start arima " + '-' * 50)
 
-    # logger.info(data.head())
-    data = data['cgmValue']
-    # logger.info(data.head())
-    # logger.info(data.describe())
-    time = 800
-    window = data[time:time + 600 + 60]
-    logger.info(window.head())
-    # Resample to 15 min slots
-    window = window.iloc[::10]
-    logger.info(window.head())
-    train = window[0:6 * 10 + 1]
-    # logger.info(train.describe())
-    test = window[6 * 10: 6 * 10 + 6]
-    # logger.info(test.describe())
-    # fit stepwise auto-ARIMA
-    stepwise_fit = auto_arima(train, start_p = 20, start_q = 5, max_p = 40, max_q = 15, seasonal = False,
-                              trace = True, max_order = 100, d = 0,
-                              error_action = 'ignore', suppress_warnings = False, stepwise = True)
 
-    logger.info(stepwise_fit.summary())
-
-    preds, conf_int = stepwise_fit.predict(n_periods = 6, return_conf_int = True)
-    logger.info("Test RMSE: %.3f" % np.sqrt(mean_squared_error(test, preds)))
-
-    prediction = pd.Series(preds, index = test.index)
-    logger.info(prediction)
-    train.plot(label = "train", legend = True)
-    prediction.plot(label = "prediction", legend = True)
-    test.plot(label = "test", legend = True)
-    plt.show()
-
-    return -1
-    # model = ARIMA(train, order = [1, 1, 1])
-    res: ARIMAResults = model.fit()
-    fig, ax = plt.subplots()
-    ax = window.plot(label = "original", ax = ax)
-    fig = res.plot_predict(2, 4 * 10 + 4, exog = test, ax = ax)
-
-    # arr = model.fit_predict(train, n_periods = 10)
-    # logger.info(arr)
-    # res = pd.Series(arr, test.index)
-    # res.plot(label = "arima", legend = True)
-    ## prediction = pd.Series(stepwise_fit.predict(60), test.index)
-    # train.plot(label = "train", legend = True)
-    ## prediction.plot(label = "prediction", legend = True)
-    # test.plot(label = "test", legend = True)
-    plt.show()
-    exit()
-    return -1
 
 
 '''

@@ -87,7 +87,7 @@ def check_and_plot(pw: PredictionWindow):
         return None
 
     predictors = [Optimizer(pw), Arima(pw), MathPredictor(pw)]
-    predictors = [Optimizer(pw)]
+    predictors = [Optimizer(pw), Arima(pw)]
 
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
 

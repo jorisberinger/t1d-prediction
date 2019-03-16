@@ -17,6 +17,7 @@ import rolling
 from Classes import UserData, Event
 from PredictionWindow import PredictionWindow
 from data import readData
+from predictors.predictor import Predictor
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ carb_types:[int] = [30, 60, 90, 120, 240]
 #carb_types:[int] = [60,120]
 
 
-class Optimizer:
+class Optimizer(Predictor):
     carb_values: [float]
     pw:PredictionWindow
     prediction_values: [float]
@@ -49,6 +50,7 @@ class Optimizer:
     name: str = "Optimizer Mixed Carb Types Predictor"
 
     def __init__(self, pw: PredictionWindow):
+        super().__init__()
         logger.info("init optimizer")
         self.pw: PredictionWindow = pw
 
