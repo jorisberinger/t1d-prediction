@@ -97,7 +97,7 @@ def check_and_plot(pw: PredictionWindow):
 
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
-        plot_graphs(pw, graphs)
+        plot_graphs(pw, graphs, errors)
 
     logger.info("errors {}".format(errors))
     return None, None
@@ -200,7 +200,7 @@ def plotLegend():
     plt.tight_layout(pad = 6)
 
 
-def plot_graphs(pw: PredictionWindow, graphs):
+def plot_graphs(pw: PredictionWindow, graphs, errors):
     # set figure size
     fig = plt.figure(figsize = (10, 16))
     gs = gridspec.GridSpec(4, 1, height_ratios = [3, 3, 1, 1])
@@ -212,6 +212,13 @@ def plot_graphs(pw: PredictionWindow, graphs):
     plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
     for graph in graphs:
         plt.plot(graph['values'], label=graph['label'])
+
+    plt.legend()
+    ax = plt.subplot(next(subplot_iterator))
+
+    positions = iter([-6, -3, 0, 3, 6])
+    for error in errors:
+        plt.bar(error['errors'].index + next(positions), error['errors'].tolist(), 3, alpha=0.5, label=error['predictor'])
     plt.legend()
     plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 150)
     plt.close()

@@ -101,17 +101,15 @@ class Optimizer(Predictor):
         self.carb_values =  values.x
         self.t_carb_events = t_carb_events
 
-
-
     def get_prediction_value(self, error_time: int, all_events: pandas.DataFrame) -> float:
-        value = predict.calculateBGAt2(error_time, all_events, self.pw.userData)
+        value = predict.calculateBGAt0(error_time, all_events, self.pw.userData)
         return value[1]
 
     def get_prediction_values(self, error_times: np.array):
         carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
         insulin_events = self.pw.events[self.pw.events.etype != 'carb']
         allEvents = pandas.concat([insulin_events, carb_events])
-        self.prediction_values = list(map(lambda error_time: self.get_prediction_value(error_time, allEvents), error_times))
+        self.prediction_values = list(map(lambda error_time: self.get_prediction_value(error_time, allEvents), error_times + self.pw.userData.train_length()))
         self.all_events = allEvents
 
 
