@@ -100,7 +100,7 @@ def check_and_plot(pw: PredictionWindow):
         plot_graphs(pw, graphs, errors)
 
     logger.info("errors {}".format(errors))
-    return None, None
+    return errors, None
 
     # Run Prediction
     # If plot option is on, we need the whole graph, not only the error checkpoints
@@ -190,7 +190,7 @@ def calculate_errors(predictors: [], pw: PredictionWindow) -> []:
     errors = []
     for predictor in predictors:
         error = {'predictor': predictor.name,
-                 'errors': pw.real_values - predictor.prediction_values}
+                 'errors': predictor.prediction_values - pw.real_values}
         errors.append(error)
     return errors
 
@@ -200,22 +200,49 @@ def plotLegend():
     plt.tight_layout(pad = 6)
 
 
-def plot_graphs(pw: PredictionWindow, graphs, errors):
-    # set figure size
-    fig = plt.figure(figsize = (10, 16))
-    gs = gridspec.GridSpec(4, 1, height_ratios = [3, 3, 1, 1])
-    subplot_iterator = iter(gs)
-
-    ax = plt.subplot(next(subplot_iterator))
+def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
     setupPlot(ax, pw, 400, 50)
+    plt.title("Blood Glucose Level Prediction")
     # Plot real blood glucose readings
     plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
     for graph in graphs:
-        plt.plot(graph['values'], label=graph['label'])
+        plt.plot(graph['values'], label = graph['label'])
 
     plt.legend()
-    ax = plt.subplot(next(subplot_iterator))
 
+
+def plot_events(ax, pw: PredictionWindow):
+    setupPlot(ax, pw, 10, 2)
+    # get events
+    basalValues = pw.events[pw.events.etype == 'tempbasal']
+    carbValues = pw.events[pw.events.etype == 'carb']
+    bolusValues = pw.events[pw.events.etype == 'bolus']
+    # Plot Events
+    # logger.debug(basalValues.values[0])
+    if not basalValues.empty:
+        plt.bar(basalValues.time, basalValues.dbdt, 5, alpha = 0.8, label = "basal event")
+    # logger.debug(carbValues)
+    if not carbValues.empty:
+        plt.bar(carbValues.time, carbValues.grams, 5, alpha = 0.8, label = "carb event")
+    if not bolusValues.empty:
+        plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
+    plotLegend()
+
+def plot_graphs(pw: PredictionWindow, graphs, errors):
+    # set figure size
+    fig = plt.figure(figsize = (10, 16))
+    gs = gridspec.GridSpec(3, 1, height_ratios = [3, 1, 3])
+    subplot_iterator = iter(gs)
+
+    # BLOOD GLUCOSE PREDICTION
+    plot_bg_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
+
+    # EVENTS ORIGINAL
+    plot_events(plt.subplot(next(subplot_iterator)), pw)
+
+
+    ax = plt.subplot(next(subplot_iterator))
+    plt.title("Errors")
     positions = iter([-6, -3, 0, 3, 6])
     for error in errors:
         plt.bar(error['errors'].index + next(positions), error['errors'].tolist(), 3, alpha=0.5, label=error['predictor'])
