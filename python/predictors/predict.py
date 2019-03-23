@@ -294,7 +294,7 @@ def calculateBG(uevent, udata):
     simbg_res = simbg + simbgc + simbgi
     simbg_adv = simbg_adv + simbgc + simbgi_adv
     x = np.linspace(0, n, n)
-    return [simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv], iob_vals / 100, cob_vals
+    return [simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv], iob_vals , cob_vals
 
 
 # compare two different IOB functions

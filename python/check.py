@@ -14,6 +14,7 @@ from predictors.SameValue import SameValue
 from predictors.arima import Arima
 from predictors.math_model import MathPredictor
 from predictors.optimizer import Optimizer
+from predictors.predictor import Predictor
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +89,7 @@ def check_and_plot(pw: PredictionWindow):
     if pw.events.empty:
         return None
 
-    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), MathPredictor(pw)]
+    #predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), MathPredictor(pw)]
     predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 180)]
 
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
@@ -97,7 +98,7 @@ def check_and_plot(pw: PredictionWindow):
 
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
-        plot_graphs(pw, graphs, errors)
+        plot_graphs(pw, graphs, errors, predictors)
 
     logger.info("errors {}".format(errors))
     return errors, None
@@ -213,6 +214,7 @@ def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
 
 def plot_events(ax, pw: PredictionWindow):
     setupPlot(ax, pw, 10, 2)
+    plt.title("Events")
     # get events
     basalValues = pw.events[pw.events.etype == 'tempbasal']
     carbValues = pw.events[pw.events.etype == 'carb']
@@ -228,10 +230,60 @@ def plot_events(ax, pw: PredictionWindow):
         plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
     plotLegend()
 
-def plot_graphs(pw: PredictionWindow, graphs, errors):
+
+def plot_events_optimized(ax, pw, predictors):
+    opt = None
+    for predictor in predictors:
+        if isinstance(predictor, Optimizer):
+            opt = predictor
+            break
+    if not opt:
+        return
+    setupPlot(ax, pw, 10, 2)
+    plt.title("Events Optimized")
+    basalValues = opt.all_events[opt.all_events.etype == 'tempbasal']
+    carbValues = opt.all_events[opt.all_events.etype == 'carb']
+    bolusValues = opt.all_events[opt.all_events.etype == 'bolus']
+    # Plot Events
+    # logger.debug(basalValues.values[0])
+    if not basalValues.empty:
+        plt.bar(basalValues.time, basalValues.dbdt, 5, alpha = 0.8, label = "basal event")
+    # logger.debug(carbValues)
+    if not carbValues.empty:
+        plt.bar(carbValues.time, carbValues.grams, 5, alpha = 0.8, label = "carb event")
+    if not bolusValues.empty:
+        plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
+    plotLegend()
+
+
+def plot_iob_cob(ax, pw, predictors: [Predictor]):
+    opt = None
+    for predictor in predictors:
+        if isinstance(predictor, Optimizer):
+            opt = predictor
+            break
+    if not opt:
+        return
+    plt.title("IOB, COB Optimized")
+    setupPlot(ax, pw, 2, 0.4)
+    plt.plot(opt.iob, label="Insulin on Board")
+    plt.plot(opt.cob, label="Carbs on Board")
+    plt.legend()
+
+
+def plot_errors(ax, pw, errors):
+    plt.title("Errors")
+    positions = iter([-6, -3, 0, 3, 6])
+    for error in errors:
+        plt.bar(error['errors'].index + next(positions), error['errors'].tolist(), 3, alpha = 0.5,
+                label = error['predictor'])
+    plt.legend()
+
+
+def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     # set figure size
     fig = plt.figure(figsize = (10, 16))
-    gs = gridspec.GridSpec(3, 1, height_ratios = [3, 1, 3])
+    gs = gridspec.GridSpec(5, 1, height_ratios = [3, 1, 1, 1, 3])
     subplot_iterator = iter(gs)
 
     # BLOOD GLUCOSE PREDICTION
@@ -240,13 +292,16 @@ def plot_graphs(pw: PredictionWindow, graphs, errors):
     # EVENTS ORIGINAL
     plot_events(plt.subplot(next(subplot_iterator)), pw)
 
+    # EVENTS OPTIMIZED
+    plot_events_optimized(plt.subplot(next(subplot_iterator)), pw, predictors)
 
-    ax = plt.subplot(next(subplot_iterator))
-    plt.title("Errors")
-    positions = iter([-6, -3, 0, 3, 6])
-    for error in errors:
-        plt.bar(error['errors'].index + next(positions), error['errors'].tolist(), 3, alpha=0.5, label=error['predictor'])
-    plt.legend()
+    # IOB / COB
+    plot_iob_cob(plt.subplot(next(subplot_iterator)), pw, predictors)
+
+    # ERRORS
+    plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
+
+    # SAVE PLOT TO FILE
     plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 150)
     plt.close()
 

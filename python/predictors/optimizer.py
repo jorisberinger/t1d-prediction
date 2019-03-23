@@ -37,6 +37,7 @@ profile = False
 vec_get_insulin = np.vectorize(predict.calculateBIAt, otypes = [float], excluded = [0, 1, 2])
 vec_get_carb = np.vectorize(predict.calculateCarbAt, otypes = [float], excluded = [1, 2])
 
+
 class Optimizer(Predictor):
     carb_values: [float]
     pw:PredictionWindow
@@ -44,6 +45,8 @@ class Optimizer(Predictor):
     t_carb_events: [int]
     all_events: pandas.DataFrame
     name: str = "Optimizer Mixed Carb Types Predictor"
+    iob: []
+    cob: []
 
     def __init__(self, pw: PredictionWindow, carb_types: [int]):
         super().__init__()
@@ -62,6 +65,8 @@ class Optimizer(Predictor):
     def get_graph(self) -> ({'label': str, 'values': [float]}, {'label': str, 'events': [float]}):
         logger.info("get graph")
         values, iob, cob = predict.calculateBG(self.all_events, self.pw.userData)
+        self.iob = iob
+        self.cob = cob
         return {'label': self.name, 'values': values[5]}
 
     def optimize_mix(self) -> (int, pandas.DataFrame, pandas.DataFrame):
