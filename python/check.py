@@ -16,6 +16,8 @@ from predictors.math_model import MathPredictor
 from predictors.optimizer import Optimizer
 from predictors.predictor import Predictor
 
+import pandas as pd
+
 logger = logging.getLogger(__name__)
 
 timeFormat = "%d.%m.%y,%H:%M%z"
@@ -168,13 +170,21 @@ def check_and_plot(pw: PredictionWindow):
     return pw.errors.tolist(), None
 
 
-def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int):
-    plt.xlim(0, pw.userData.simlength * 60 + 1)
-    plt.ylim(0, y_height)
+def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int, short: bool = False, negative: bool = False):
+    x_start = 0
+    if short:
+        x_start = pw.userData.train_length()
+    x_end = pw.userData.simlength * 60 + 1.
+    y_start = 0
+    if negative:
+        y_start = - y_height - 1
+    y_end = y_height + 1
+    plt.xlim(x_start, x_end)
+    plt.ylim(y_start, y_height)
     plt.grid(color = "#cfd8dc")
-    major_ticks_x = np.arange(0, pw.userData.simlength * 60 + 1, 60)
-    minor_ticks_x = np.arange(0, pw.userData.simlength * 60 + 1, 15)
-    major_ticks_y = np.arange(0, y_height + 1, y_step)
+    major_ticks_x = np.arange(x_start, x_end, 60)
+    minor_ticks_x = np.arange(x_start, x_end, 15)
+    major_ticks_y = np.arange(y_start, y_end, y_step)
     ax.set_xticks(major_ticks_x)
     ax.set_xticks(minor_ticks_x, minor = True)
     ax.set_yticks(major_ticks_y)
@@ -209,7 +219,7 @@ def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
     for graph in graphs:
         plt.plot(graph['values'], label = graph['label'])
 
-    plt.legend()
+    plotLegend()
 
 
 def plot_events(ax, pw: PredictionWindow):
@@ -268,22 +278,37 @@ def plot_iob_cob(ax, pw, predictors: [Predictor]):
     setupPlot(ax, pw, 2, 0.4)
     plt.plot(opt.iob, label="Insulin on Board")
     plt.plot(opt.cob, label="Carbs on Board")
-    plt.legend()
+    plotLegend()
+
+
+def plot_graph_prediction(ax, pw, graphs):
+    setupPlot(ax, pw, 400, 50, short=True)
+    plt.title("Blood Glucose Level Prediction")
+    # Plot real blood glucose readings
+    plt.plot(pw.cgmY[pw.userData.train_length():], alpha = 0.8, label = "real BG")
+    for graph in graphs:
+        if 'optimizer' in graph['label']:
+            plt.plot(pd.Series(graph['values'])[pw.userData.train_length():], label = graph['label'])
+        else:
+            plt.plot(graph['values'], label = graph['label'])
+    plotLegend()
 
 
 def plot_errors(ax, pw, errors):
+    setupPlot(ax, pw, 400, 50, short = True, negative = True)
     plt.title("Errors")
     positions = iter([-6, -3, 0, 3, 6])
     for error in errors:
         plt.bar(error['errors'].index + next(positions), error['errors'].tolist(), 3, alpha = 0.5,
                 label = error['predictor'])
-    plt.legend()
+    plotLegend()
+
 
 
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     # set figure size
-    fig = plt.figure(figsize = (10, 16))
-    gs = gridspec.GridSpec(5, 1, height_ratios = [3, 1, 1, 1, 3])
+    fig = plt.figure(figsize = (20, 16))
+    gs = gridspec.GridSpec(6, 1, height_ratios = [3, 1, 1, 1, 3, 3])
     subplot_iterator = iter(gs)
 
     # BLOOD GLUCOSE PREDICTION
@@ -297,6 +322,9 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
 
     # IOB / COB
     plot_iob_cob(plt.subplot(next(subplot_iterator)), pw, predictors)
+
+    # PREDICTION PLOT
+    plot_graph_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
 
     # ERRORS
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
