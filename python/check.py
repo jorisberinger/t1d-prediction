@@ -103,7 +103,7 @@ def check_and_plot(pw: PredictionWindow):
         plot_graphs(pw, graphs, errors, predictors)
 
     logger.info("errors {}".format(errors))
-    return errors, None
+    return errors
 
     # Run Prediction
     # If plot option is on, we need the whole graph, not only the error checkpoints

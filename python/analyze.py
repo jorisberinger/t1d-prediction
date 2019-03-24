@@ -4,6 +4,9 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas
+from matplotlib import gridspec
+
+from check import setupPlot
 
 logger = logging.getLogger(__name__)
 
@@ -17,80 +20,46 @@ def analyzeFile(filename):
 
 
 def createErrorPlots(inputData):
-    data = inputData['data']
-    count = 0
-    for x in data:
-        if (x[0] == 0 or x[1] == 0):
-            count += 1
+    #fig = plt.figure(figsize = (10, 20))
+    #gs = gridspec.GridSpec(1 + inputData.shape[1], 1)
+    #ubplot_iterator = iter(gs)
 
-    data = pandas.DataFrame(data)
-    logger.info("number of results: " + str(len(data)))
-    logger.debug("number of zeros: " + str(count))
-
-    plt.plot(data[0], label = "Standard", alpha = 0.6)
-    plt.plot(data[1], label = "Adv", alpha = 0.6)
-    plt.plot(data[2], label = "Same Value", alpha = 0.6)
-    plt.plot(data[3], label = "Last 30 Prediction", alpha = 0.6)
-    plt.plot(data[4], label = "Optimized", alpha = 0.6)
-    plt.grid(color = "#cfd8dc")
+    #plt.subplot(next(subplot_iterator))
+    plt.title("MEAN Absolute Error")
+    for name, values in inputData.iterrows():
+        values.plot(label=name)
     plt.legend()
-    plt.title("error plot data")
-    plt.savefig(path + "results/errorPlot.png", dpi = 600)
 
-    plt.figure()
-    plt.boxplot([data[0], data[1], data[2], data[3], data[4]],
-                labels = ["standard", "adv", "same value", "last 30", "optimized"])
-    plt.grid(color = "#cfd8dc")
-    plt.title("Boxplot Comparison data")
-    plt.savefig(path + "results/boxplot.png", dpi = 600)
+    plt.savefig(path + "results/errorPlot.png", dpi = 600)
 
 
 def getSummary(res):
+    logger.info("in get Summary")
+
+
     setNumber = 1  # for debug
-    df = pandas.DataFrame(res)
-    df = df.apply(abs)
-    res_series = pandas.Series(df[0])
-    res_series = res_series.apply(abs)
-    res_adv_series = pandas.Series(df[1])
-    res_same_value = pandas.Series(df[2])
-    res_30_value = pandas.Series(df[3])
-    res_optimized_60 = pandas.Series(df[4])
-    res_optimized_90 = pandas.Series(df[5])
-    res_optimized_120 = pandas.Series(df[6])
-    res_arima = pandas.Series(df[7])
-    mean = res_series.mean(skipna = True)
-    median = res_series.median(skipna = True)
-    mean_adv = res_adv_series.mean(skipna = True)
-    median_adv = res_adv_series.median(skipna = True)
-    mean_same_value = res_same_value.mean(skipna = True)
-    median_same_value = res_same_value.median(skipna = True)
-    mean_30_value = res_30_value.mean(skipna = True)
-    median_30_value = res_30_value.median(skipna = True)
-    mean_opt_60 = res_optimized_60.mean(skipna = True)
-    median_opt_60 = res_optimized_60.median(skipna = True)
-    mean_opt_90 = res_optimized_90.mean(skipna = True)
-    median_opt_90 = res_optimized_90.median(skipna = True)
-    mean_opt_120 = res_optimized_120.mean(skipna = True)
-    median_opt_120 = res_optimized_120.median(skipna = True)
-    mean_arima = res_arima.mean(skipna = True)
-    median_arima = res_arima.median(skipna = True)
+    all_results = pandas.DataFrame(res)
+    summary = pandas.DataFrame()
+    for i in range(all_results.shape[1]):
+        predictor_results = all_results[i]
+        logger.info("Predictor Results {}".format(predictor_results))
+        result_matrix = pandas.DataFrame([], columns = predictor_results[0]['errors'].index)
+        for result in predictor_results:
+            result_matrix = result_matrix.append(result['errors'], ignore_index = True)
 
-    jsonobject = {"mean": float(mean), "mean_adv": float(mean_adv), "mean_same_value": float(mean_same_value),
-                  "mean_30_value": float(mean_30_value), "mean_optimized_60": float(mean_opt_60),"mean_optimized_90": float(mean_opt_90),"mean_optimized_120": float(mean_opt_120),
-                  "mean_arima": float(mean_arima),
-                  "median": float(median), "median_adv": float(median_adv),
-                  "median_same_value": float(median_same_value), "median_30_value": float(median_30_value),
-                  "median_optimized_60": float(median_opt_60),"median_optimized_90": float(median_opt_90),"median_optimized_120": float(median_opt_120), "median_arima": float(median_arima),
-                  "data": res}
+        print(result_matrix)
+        result_mean = abs(result_matrix).mean()
+        result_mean.name = predictor_results[0]['predictor']
+        summary = summary.append(result_mean)
 
-    json_output = jsonobject.copy()
-    del json_output['data']
-    plotTable(json_output)
-    logger.info(json_output)
-    file = open(path + "results/result-" + str(setNumber) + ".json", 'w')
-    file.write(json.dumps(jsonobject))
 
-    return jsonobject
+    logger.info("summary {}".format(summary))
+
+
+    with open(path + "results/result-" + str(setNumber) + ".json", 'w') as file:
+        file.write(summary.to_json())
+
+    return summary
 
 def plotTable(js):
     print(json.dumps(js, indent=6, sort_keys=True))
@@ -99,4 +68,6 @@ def plotTable(js):
 
 
 if __name__ == '__main__':
-    analyzeFile("result.json")
+    #analyzeFile("result.json")
+    fake = pandas.DataFrame.from_dict({"615":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":5.7418830286,"Arima Predictor":3.4889340636,"Same Value Predictor":20.6365766182,"Last 30 Predictor":30.0393075316,"Last 180 Predictor":23.5604726337},"630":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":17.1583154731,"Arima Predictor":13.3789857299,"Same Value Predictor":39.4005245877,"Last 30 Predictor":84.7310892092,"Last 180 Predictor":45.8222364182},"645":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":27.1973758113,"Arima Predictor":38.429852793,"Same Value Predictor":61.7469421348,"Last 30 Predictor":157.7533909061,"Last 180 Predictor":71.3795098805},"660":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":26.0808473835,"Arima Predictor":76.5243779316,"Same Value Predictor":87.6687635089,"Last 30 Predictor":231.3800983411,"Last 180 Predictor":104.6261893845},"690":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":5.300281884,"Arima Predictor":118.6210275392,"Same Value Predictor":115.4747729892,"Last 30 Predictor":331.0417752374,"Last 180 Predictor":140.9109118025},"720":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":61.550057383,"Arima Predictor":85.2233464262,"Same Value Predictor":77.2334110502,"Last 30 Predictor":364.6560807145,"Last 180 Predictor":111.1482628013},"750":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":150.434464277,"Arima Predictor":25.4038921191,"Same Value Predictor":15.1054529445,"Last 30 Predictor":359.5042086278,"Last 180 Predictor":42.6194362364},"780":{"Optimizer Mixed Carb Types Predictor [30, 60, 90, 120, 240]":198.1322300434,"Arima Predictor":24.3529502889,"Same Value Predictor":42.4152818219,"Last 30 Predictor":388.7187226746,"Last 180 Predictor":37.5196733528}})
+    createErrorPlots(fake)

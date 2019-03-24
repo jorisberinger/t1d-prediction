@@ -25,10 +25,9 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
     endTime = data.index[len(data) - 1]
     predictionWindow.endTime = data.index[len(data) - 1]
     results = []
-    orders = []
     i = 0
     # loop through the data
-    while startTime < endTime - timedelta(hours = user_data.simlength) and len(results) < 50: # TODO use a global variable
+    while startTime < endTime - timedelta(hours = user_data.simlength) and len(results) < 10: # TODO use a global variable
         logger.info("#" + str(i))
         logger.info("#r " + str(len(results)))
         i += 1
@@ -53,15 +52,12 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
             predictionWindow.data = subset
             # logger.debug(subset)
             if checkData.check_window(subset, user_data):
-                res, order = check.check_and_plot(predictionWindow)
+                res = check.check_and_plot(predictionWindow)
                 if res is not None:
-                    orders.append(order)
                     results.append(res)
 
         startTime += delta  # delta determines the time between two predictions
     logger.debug("length of result " + str(len(results)))
-    logger.info("Orders")
-    logger.info(orders)
     return results
 
 
