@@ -260,7 +260,15 @@ def plot_events_optimized(ax, pw, predictors):
         plt.bar(basalValues.time, basalValues.dbdt, 5, alpha = 0.8, label = "basal event")
     # logger.debug(carbValues)
     if not carbValues.empty:
-        plt.bar(carbValues.time, carbValues.grams, 5, alpha = 0.8, label = "carb event")
+        ctypes = carbValues.ctype.unique()
+        colors = iter(cm.hsv(np.linspace(0, 1, ctypes.size + 1)))
+        positions = iter([-5.5, -3, 0, 3, 5.5])
+        for ctype in ctypes:
+            events = carbValues[carbValues.ctype == ctype]
+            color = next(colors)
+            position = next(positions)
+            plt.bar(events.time + position, events.grams, 2, alpha = 0.8,
+                    label = "optimized carb event mixed: {}".format(ctype), color = color)
     if not bolusValues.empty:
         plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
     plotLegend()
@@ -330,7 +338,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 150)
+    plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_events, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, arima_values, iob,
