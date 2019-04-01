@@ -38,7 +38,7 @@ def check_and_plot(pw: PredictionWindow):
 
     #predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), MathPredictor(pw)]
     predictors = [Optimizer(pw, [30, 60, 90, 120, 240]),Optimizer(pw, [15, 30, 60, 90, 120, 240]), Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]), Arima(pw), SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw,15)]
-
+    #predictors = [Optimizer(pw, [30]), SameValue(pw)]
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
 
     errors = calculate_errors(predictors, pw)

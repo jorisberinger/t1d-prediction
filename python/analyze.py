@@ -19,47 +19,53 @@ def analyzeFile(filename):
     createErrorPlots(res)
 
 
-def createErrorPlots(inputData):
-    #fig = plt.figure(figsize = (10, 20))
-    #gs = gridspec.GridSpec(1 + inputData.shape[1], 1)
-    #ubplot_iterator = iter(gs)
+def createErrorPlots(means, all_errors):
+    fig = plt.figure(figsize = (10, len(all_errors) * 4 + 4))
+    gs = gridspec.GridSpec(1 + len(all_errors), 1)
+    subplot_iterator = iter(gs)
 
-    #plt.subplot(next(subplot_iterator))
+    plt.subplot(next(subplot_iterator))
     plt.title("MEAN Absolute Error")
-    for name, values in inputData.iterrows():
+    for name, values in means.iterrows():
         values.plot(label=name)
     plt.legend()
+
+    for name, values in all_errors.items():
+        plt.subplot(next(subplot_iterator))
+        plt.title(name)
+        plt.ylim(-400,400)
+        values.boxplot()
 
     plt.savefig(path + "results/errorPlot.png", dpi = 600)
 
 
 def getSummary(res):
-    logger.info("in get Summary")
-
-
+    logger.debug("in get Summary")
     setNumber = 1  # for debug
     all_results = pandas.DataFrame(res)
     summary = pandas.DataFrame()
+    all_data = {}
     for i in range(all_results.shape[1]):
         predictor_results = all_results[i]
-        logger.info("Predictor Results {}".format(predictor_results))
+        logger.debug("Predictor Results {}".format(predictor_results))
         result_matrix = pandas.DataFrame([], columns = predictor_results[0]['errors'].index)
         for result in predictor_results:
             result_matrix = result_matrix.append(result['errors'], ignore_index = True)
 
-        print(result_matrix)
         result_mean = abs(result_matrix).mean()
         result_mean.name = predictor_results[0]['predictor']
         summary = summary.append(result_mean)
 
+        result_matrix.name = predictor_results[0]['predictor']
+        all_data[result_matrix.name] = result_matrix
 
-    logger.info("summary {}".format(summary))
-
-
-    with open(path + "results/result-" + str(setNumber) + ".json", 'w') as file:
+    logger.debug("summary {}".format(summary))
+    with open(path + "results/result-summary-" + str(setNumber) + ".json", 'w') as file:
         file.write(summary.to_json())
+    #with open(path + "results/result-all-" + str(setNumber) + ".json", 'w') as file:
+    #    file.write(all_data.to_json())
+    return summary, all_data
 
-    return summary
 
 def plotTable(js):
     print(json.dumps(js, indent=6, sort_keys=True))
