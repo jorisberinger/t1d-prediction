@@ -32,7 +32,8 @@ class LastNDelta(Predictor):
         self.prediction_values = pd.Series(prediction_values,
                                            index=error_times + self.pw.userData.train_length())
         self.polynomial = polynomial
-
+        return True
+    
     def get_graph(self) -> ({'label': str, 'values': [float]}):
 
         res = self.prediction_values.append(pd.Series(self.pw.train_value, index = [self.pw.userData.train_length()]))

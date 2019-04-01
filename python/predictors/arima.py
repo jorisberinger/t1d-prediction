@@ -1,4 +1,5 @@
 import logging
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,7 +10,7 @@ from statsmodels.tsa.arima_model import ARIMAResults
 
 from PredictionWindow import PredictionWindow
 from predictors.predictor import Predictor
-
+path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
 sampleTime = 1
 
@@ -43,17 +44,20 @@ class Arima(Predictor):
 
         stepwise_fit = auto_arima(train, start_p = 1, start_q = 1, max_p = 10, max_q = 10, seasonal = False,
                                   trace = True, max_order = 100,
-                                  error_action = 'ignore', suppress_warnings = True, stepwise = True)
+                                  error_action = 'warn', suppress_warnings = True, stepwise = True)
 
-        preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
-        prediction = pd.Series(preds, index = test.index)
-        index = np.arange(self.pw.userData.train_length() + sampleTime, self.pw.userData.simlength * 60 + 1,
-                          self.sample_time)
-        self.prediction_values_all = prediction
-        self.prediction_values_all.index = index
-        self.prediction_values = self.prediction_values_all.loc[error_times + self.pw.userData.train_length()]
-        self.prediction_values = self.prediction_values.tolist()
-
+        if sum(stepwise_fit.order):
+            preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
+            prediction = pd.Series(preds, index = test.index)
+            index = np.arange(self.pw.userData.train_length() + sampleTime, self.pw.userData.simlength * 60 + 1,
+                              self.sample_time)
+            self.prediction_values_all = prediction
+            self.prediction_values_all.index = index
+            self.prediction_values = self.prediction_values_all.loc[error_times + self.pw.userData.train_length()]
+            self.prediction_values = self.prediction_values.tolist()
+            return True
+        else:
+            return False
 
     def get_graph(self) -> ({'label': str, 'values': [float]}):
 

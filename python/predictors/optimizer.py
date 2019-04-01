@@ -50,20 +50,21 @@ class Optimizer(Predictor):
 
     def __init__(self, pw: PredictionWindow, carb_types: [int]):
         super().__init__()
-        logger.info("init optimizer")
+        logger.debug("init optimizer")
         self.pw: PredictionWindow = pw
         self.carb_types = carb_types
         self.name = self.name + ' ' + str(carb_types)
 
     def calc_predictions(self, error_times: [int]) -> bool:
-        logger.info("get Errors at {}".format(error_times))
+        logger.debug("get Errors at {}".format(error_times))
         self.optimize_mix()
         self.get_prediction_values(error_times)
 
-        logger.info(self.prediction_values)
+        logger.debug(self.prediction_values)
+        return True
 
     def get_graph(self) -> ({'label': str, 'values': [float]}, {'label': str, 'events': [float]}):
-        logger.info("get graph")
+        logger.debug("get graph")
         values, iob, cob = predict.calculateBG(self.all_events, self.pw.userData)
         self.iob = iob
         self.cob = cob
@@ -102,7 +103,7 @@ class Optimizer(Predictor):
         values = minimize(predictor, x0, args = (real_values, insulin_values, patient_carb_matrix), method = 'L-BFGS-B',
                           bounds = bounds, options = {'disp': False, 'maxiter': 1000, 'maxfun': 1000000, 'maxls': 200})
 
-        logger.info("success {}".format(values.success))
+        logger.debug("success {}".format(values.success))
         self.carb_values =  values.x
         self.t_carb_events = t_carb_events
 
@@ -171,7 +172,7 @@ def get_cob_matrix(t_carb: np.array, t_error: np.array, carb_durations: [int]) -
 def optimize(pw: PredictionWindow, carb_duration: int) -> int:
     # set error time points
     t = np.arange(0, pw.userData.simlength * 60 - pw.userData.predictionlength, 15)
-    # logger.info(t)
+    # logger.debug(t)
 
     real_values = np.array(pw.cgmY.loc[t])
     # logger.info("real values " + str(real_values))

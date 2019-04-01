@@ -14,7 +14,7 @@ class SameValue(Predictor):
     def calc_predictions(self, error_times: [int]) -> bool:
         self.prediction_values = pd.Series([self.pw.train_value] * len(error_times),
                                            index=error_times + self.pw.userData.train_length())
-
+        return True
     def get_graph(self) -> ({'label': str, 'values': [float]}):
         res = self.prediction_values.append(pd.Series(self.pw.train_value, index = [self.pw.userData.train_length()]))
         return {'label': self.name, 'values': res}

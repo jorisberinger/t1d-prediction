@@ -40,15 +40,17 @@ def check_and_plot(pw: PredictionWindow):
     predictors = [Optimizer(pw, [30, 60, 90, 120, 240]),Optimizer(pw, [15, 30, 60, 90, 120, 240]), Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]), Arima(pw), SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw,15)]
     #predictors = [Optimizer(pw, [30]), SameValue(pw)]
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
+    if all(success):
+        errors = calculate_errors(predictors, pw)
 
-    errors = calculate_errors(predictors, pw)
+        if pw.plot:
+            graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
+            plot_graphs(pw, graphs, errors, predictors)
 
-    if pw.plot:
-        graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
-        plot_graphs(pw, graphs, errors, predictors)
-
-    logger.info("errors {}".format(errors))
-    return errors
+        logger.info("errors {}".format(errors))
+        return errors
+    else:
+        return None
 
 
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):

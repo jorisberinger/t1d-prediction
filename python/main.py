@@ -58,10 +58,11 @@ def main():
     logger.info("Finished prediction")
 
     # ANALYSE PREDICTION RESULTS
-    summary = analyze.getSummary(prediction_result)
+    summary, all_data = analyze.getSummary(prediction_result)
 
     # CREATE PLOTS FOR ANALYSE SUMMARY
-    analyze.createErrorPlots(summary)
+    analyze.createErrorPlots(summary, all_data)
+
 
     # CREATE A GIF OUT OF THE PREDICTION PLOTS
     #if create_plots:
