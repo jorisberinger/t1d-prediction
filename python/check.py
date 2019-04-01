@@ -51,35 +51,6 @@ def check_and_plot(pw: PredictionWindow):
     return errors
 
 
-def getTimeDelta(row, start):
-    time = row.datetime
-    if time < start:
-        timeDifference = start - time
-        return - timeDifference.seconds / 60
-    else:
-        timeDifference = time - start
-        return timeDifference.seconds / 60
-
-
-def getClosestIndex(cgmY, number):
-    smaller = cgmY[cgmY.index <= number]
-    closest = smaller.index[-1]
-    return closest
-
-
-def getPredictionVals(pw: PredictionWindow, simData):
-    zero = simData[pw.userData.simlength * 60 - pw.userData.predictionlength]
-    start = pw.cgmY[pw.userData.simlength * 60 - pw.userData.predictionlength]
-    res = []
-    for i in range(int(pw.userData.simlength * 60 - pw.userData.predictionlength), int(pw.userData.simlength * 60)):
-        res.append(start + simData[i] - zero)
-    return res
-
-
-def getPredictionAt(index_last_train, df_train, udata):
-    prediction = predict.calculateBGAt(index_last_train, df_train, udata, udata.simlength * 60)
-    return prediction
-
 
 def convertTimes(event, start):
     if isinstance(start, datetime):
@@ -101,11 +72,6 @@ def convertTimes(event, start):
         event.t1 = event.time
         event.t2 = eventTime
     return event
-
-
-
-
-
 
 
 def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int, short: bool = False, negative: bool = False):
@@ -142,6 +108,7 @@ def calculate_errors(predictors: [], pw: PredictionWindow) -> []:
                  'errors': predictor.prediction_values - pw.real_values}
         errors.append(error)
     return errors
+
 
 def plotLegend():
     # Plot Legend
@@ -250,7 +217,6 @@ def plot_errors(ax, pw, errors):
     plotLegend()
 
 
-
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     # set figure size
     fig = plt.figure(figsize = (20, 16))
@@ -277,119 +243,4 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
 
     # SAVE PLOT TO FILE
     plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
-    plt.close()
-
-def plot_graph(pw: PredictionWindow, sim_bg, optimized_curve, optimized_carb_events, optimized_curve_60, optimized_carb_events_60, optimized_curve_90, optimized_carb_events_90, optimized_curve_120, optimized_carb_events_120, prediction30, arima_values, iob,
-               cob):
-    # get values for prediction timeframe
-    prediction_vals = getPredictionVals(pw, sim_bg[0])
-    prediction_vals_adv = getPredictionVals(pw, sim_bg[5])
-
-    # get events
-    basalValues = pw.events[pw.events.etype == 'tempbasal']
-    carbValues = pw.events[pw.events.etype == 'carb']
-    bolusValues = pw.events[pw.events.etype == 'bolus']
-
-    # set figure size
-    fig = plt.figure(figsize = (10, 16))
-    gs = gridspec.GridSpec(5, 1, height_ratios = [3, 3, 3, 1, 1])
-    # fig, ax = plt.subplots()
-    subplot_iterator = iter(gs)
-
-    # ------------------------- GRAPHS Model --------------------------------------------
-    ax = plt.subplot(next(subplot_iterator))
-    setupPlot(ax, pw, 400, 50)
-
-    # Plot real blood glucose readings
-    plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
-    # Plot sim results
-    plt.plot(sim_bg[3], sim_bg[0], alpha = 0.5, label = "sim BG")
-    plt.plot(range(pw.userData.simlength * 60 - pw.userData.predictionlength, pw.userData.simlength * 60),
-             prediction_vals, alpha = 0.8, label = "SIM BG Pred")
-    plt.plot(sim_bg[3], sim_bg[5], alpha = 0.5, label = "sim BG ADV")
-    plt.plot(range(pw.userData.simlength * 60 - pw.userData.predictionlength, pw.userData.simlength * 60),
-             prediction_vals_adv, alpha = 0.8, label = "SIM BG Pred ADV")
-
-    # Plot Legend
-    plotLegend()
-    # ------------------------- GRAPHS Arima SV L30 --------------------------------------------
-    ax = plt.subplot(next(subplot_iterator))
-    setupPlot(ax, pw, 400, 50)
-
-    # Plot real blood glucose readings
-    plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
-    # Same value prediction
-    plt.axhline(y = prediction_vals[0],
-                xmin = (pw.userData.train_length() / 60) / pw.userData.simlength, alpha = 0.8,
-                label = "Same Value Prediction")
-    # last 30 prediction value
-    plt.plot([pw.userData.train_length(), pw.userData.simlength * 60], [pw.train_value, prediction30],
-             alpha = 0.8, label = "Last 30 Prediction")
-
-    # arima prediction
-    #index = np.arange(pw.userData.simlength * 60 - pw.userData.predictionlength, pw.userData.simlength * 60 + 1,
-    #                  pw.userData.predictionlength / (len(arima_values) - 1))
-    #arima_values.index = index
-    #plt.plot(arima_values, alpha = 0.8, label = "arima prediction")
-
-    # Plot Legend
-    plotLegend()
-    # ------------------------- GRAPHS Optimized --------------------------------------------
-    ax = plt.subplot(next(subplot_iterator))
-    setupPlot(ax, pw, 400, 50)
-
-    # Plot real blood glucose readings
-    plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
-
-    # optimized prediction
-    #plt.plot(optimized_curve_60, alpha = 0.8, label = "optimized curve 60")
-    #plt.plot(optimized_curve_90, alpha = 0.8, label = "optimized curve 90")
-    #plt.plot(optimized_curve_120, alpha = 0.8, label = "optimized curve 120")
-    plt.plot(optimized_curve, alpha = 0.8, label = "optimized curve mix")
-
-    # Plot Legend
-    plotLegend()
-
-    # ---------------------------- EVENTS -----------------------------------------
-    ax = plt.subplot(next(subplot_iterator))
-    setupPlot(ax, pw, 10, 2)
-
-    # Plot Events
-    # logger.debug(basalValues.values[0])
-    if not basalValues.empty:
-        plt.bar(basalValues.time, basalValues.dbdt, 5, alpha = 0.8, label = "basal event (not used)")
-    # logger.debug(carbValues)
-    if not carbValues.empty:
-        plt.bar(carbValues.time, carbValues.grams, 5, alpha = 0.8, label = "carb event")
-    if not bolusValues.empty:
-        plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
-    #if not optimized_carb_events_60.empty:
-    #    plt.bar(optimized_carb_events_60.index, optimized_carb_events_60, 5, alpha = 0.8, label = "optimized carb event")
-    if not optimized_carb_events.empty:
-
-        ctypes = optimized_carb_events.ctype.unique()
-        colors = iter(cm.hsv(np.linspace(0,1,ctypes.size+1)))
-        positions = iter([-5.5, -3,0, 3, 5.5])
-        for ctype in ctypes:
-            events = optimized_carb_events[optimized_carb_events.ctype == ctype]
-            color = next(colors)
-            position = next(positions)
-            plt.bar(events.time + position, events.grams, 2, alpha = 0.8,
-                    label = "optimized carb event mixed: {}".format(ctype), color=color)
-
-    plotLegend()
-    plt.subplots_adjust(hspace = 0.2)
-    # ---------------------------- IOB COB -----------------------------------------
-    ax = plt.subplot(next(subplot_iterator))
-    setupPlot(ax, pw, 3, 0.5)
-
-    plt.plot(iob, label = "Insulin on Board")
-    plt.plot(cob, label = "Carbs on Board")
-
-    plotLegend()
-    plt.subplots_adjust(hspace = 0.2)
-    # ---------------------------------------------------------------------
-
-    # Save plot as svgz (smallest format, able to open with chrome)
-    plt.savefig(path + "results/plots/result-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 150)
     plt.close()
