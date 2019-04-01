@@ -51,27 +51,35 @@ def check_and_plot(pw: PredictionWindow):
     return errors
 
 
+def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
+    # set figure size
+    fig = plt.figure(figsize = (20, 16))
+    gs = gridspec.GridSpec(6, 1, height_ratios = [3, 1, 1, 1, 3, 3])
+    subplot_iterator = iter(gs)
 
-def convertTimes(event, start):
-    if isinstance(start, datetime):
-        startTime = start
-    else:
-        startTime = datetime.strptime(start + timeZone, timeFormat)
+    # Set Title to day of week and starting time
+    fig.suptitle(get_header(pw))
+    # BLOOD GLUCOSE PREDICTION
+    plot_bg_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
 
-    eventTime = datetime.strptime(event.time + timeZone, timeFormat)
-    timeDifference = eventTime - startTime
-    if eventTime < startTime:
-        timeDifference = startTime - eventTime
-        event.time = - timeDifference.seconds / 60
-    else:
-        event.time = timeDifference.seconds / 60
+    # EVENTS ORIGINAL
+    plot_events(plt.subplot(next(subplot_iterator)), pw)
 
-    if event.etype == "carb":
-        event.time = event.time - 30  # TODO verify
-    if event.etype == "tempbasal":
-        event.t1 = event.time
-        event.t2 = eventTime
-    return event
+    # EVENTS OPTIMIZED
+    plot_events_optimized(plt.subplot(next(subplot_iterator)), pw, predictors)
+
+    # IOB / COB
+    plot_iob_cob(plt.subplot(next(subplot_iterator)), pw, predictors)
+
+    # PREDICTION PLOT
+    plot_graph_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
+
+    # ERRORS
+    plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
+
+    # SAVE PLOT TO FILE
+    plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.close()
 
 
 def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int, short: bool = False, negative: bool = False):
@@ -114,6 +122,10 @@ def plotLegend():
     # Plot Legend
     plt.legend(loc = 'center left', bbox_to_anchor = (1, 0.5))
     plt.tight_layout(pad = 6)
+
+
+def get_header(pw: PredictionWindow):
+    return "{}, {}".format(pw.startTime.day_name(), pw.startTime.strftime('%H:%M'))
 
 
 def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
@@ -217,30 +229,26 @@ def plot_errors(ax, pw, errors):
     plotLegend()
 
 
-def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
-    # set figure size
-    fig = plt.figure(figsize = (20, 16))
-    gs = gridspec.GridSpec(6, 1, height_ratios = [3, 1, 1, 1, 3, 3])
-    subplot_iterator = iter(gs)
+def convertTimes(event, start):
+    if isinstance(start, datetime):
+        startTime = start
+    else:
+        startTime = datetime.strptime(start + timeZone, timeFormat)
 
-    # BLOOD GLUCOSE PREDICTION
-    plot_bg_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
+    eventTime = datetime.strptime(event.time + timeZone, timeFormat)
+    timeDifference = eventTime - startTime
+    if eventTime < startTime:
+        timeDifference = startTime - eventTime
+        event.time = - timeDifference.seconds / 60
+    else:
+        event.time = timeDifference.seconds / 60
 
-    # EVENTS ORIGINAL
-    plot_events(plt.subplot(next(subplot_iterator)), pw)
+    if event.etype == "carb":
+        event.time = event.time - 30  # TODO verify
+    if event.etype == "tempbasal":
+        event.t1 = event.time
+        event.t2 = eventTime
+    return event
 
-    # EVENTS OPTIMIZED
-    plot_events_optimized(plt.subplot(next(subplot_iterator)), pw, predictors)
 
-    # IOB / COB
-    plot_iob_cob(plt.subplot(next(subplot_iterator)), pw, predictors)
 
-    # PREDICTION PLOT
-    plot_graph_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
-
-    # ERRORS
-    plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
-
-    # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
-    plt.close()
