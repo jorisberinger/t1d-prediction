@@ -26,6 +26,31 @@ timeZone = "+0100"
 path = os.getenv('T1DPATH', '../')
 
 
+error_times = np.array([15, 30, 45, 60, 90, 120, 150, 180])
+
+
+def check_and_plot(pw: PredictionWindow):
+    # Set values needed for calculations
+    pw.set_values(error_times)
+    # If there are no events stop, otherwise there will be errors TODO maby fix
+    if pw.events.empty:
+        return None
+
+    #predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), MathPredictor(pw)]
+    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]),Optimizer(pw, [15, 30, 60, 90, 120, 240]), Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]), Arima(pw), SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw,15)]
+
+    success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
+
+    errors = calculate_errors(predictors, pw)
+
+    if pw.plot:
+        graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
+        plot_graphs(pw, graphs, errors, predictors)
+
+    logger.info("errors {}".format(errors))
+    return errors
+
+
 def getTimeDelta(row, start):
     time = row.datetime
     if time < start:
@@ -78,96 +103,9 @@ def convertTimes(event, start):
     return event
 
 
-error_times = np.array([15, 30, 45, 60, 90, 120, 150, 180])
 
 
 
-
-
-def check_and_plot(pw: PredictionWindow):
-    # Set values needed for calculations
-    pw.set_values(error_times)
-    # If there are no events stop, otherwise there will be errors TODO maby fix
-    if pw.events.empty:
-        return None
-
-    #predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), MathPredictor(pw)]
-    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 180)]
-
-    success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
-
-    errors = calculate_errors(predictors, pw)
-
-    if pw.plot:
-        graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
-        plot_graphs(pw, graphs, errors, predictors)
-
-    logger.info("errors {}".format(errors))
-    return errors
-
-    # Run Prediction
-    # If plot option is on, we need the whole graph, not only the error checkpoints
-    if pw.plot:
-        sim_bg, iob, cob = predict.calculateBG(pw.events, pw.userData)
-
-        # Get prediction Value for last train value
-        prediction_last_train = np.array([sim_bg[0][pw.time_last_train], sim_bg[5][pw.time_last_train]])
-        # logger.debug("prediction train " + str(prediction_last_train))
-        # Get prediction Value for last value
-        prediction_last_value = np.array([sim_bg[0][pw.time_last_value], sim_bg[5][pw.time_last_value]])
-        # logger.debug("prediction value " + str(prediction_last_value))
-        # get prediction with optimized parameters
-        prediction_optimized, optimized_curve, optimized_carb_events = optimizer.optimize_mix(pw)
-        #prediction_optimized_60, optimized_curve_60, optimized_carb_events_60 = optimizer.optimize(pw, 60)
-        #prediction_optimized_90, optimized_curve_90, optimized_carb_events_90 = optimizer.optimize(pw, 90)
-        #prediction_optimized_120, optimized_curve_120, optimized_carb_events_120 = optimizer.optimize(pw, 120)
-        # logger.info("optimizer prediction " + str(prediction_optimized))
-    else:
-        # Get prediction Value for last train value
-        prediction_last_train = np.array(
-            predict.calculateBGAt2(pw.userData.simlength * 60 - pw.userData.predictionlength, pw.events, pw.userData))
-        # logger.debug("prediction train " + str(prediction_last_train))
-        # Get prediction Value for last value
-        prediction_last_value = np.array(predict.calculateBGAt2(pw.userData.simlength * 60, pw.events, pw.userData))
-        # logger.debug("prediction value " + str(prediction_last_value))
-        prediction_optimized = optimizer.optimize_mix(pw)
-        #prediction_optimized_60 = optimizer.optimize(pw, 60)
-        #prediction_optimized_90 = optimizer.optimize(pw, 90)
-        #prediction_optimized_120 = optimizer.optimize(pw, 120)
-
-        # logger.info("optimizer prediction " + str(prediction_optimized))
-
-    # Get Delta between train and last value
-    prediction_delta = prediction_last_value - prediction_last_train
-    # logger.debug("delta " + str(prediction_delta))
-    # add on last Train value
-    prediction = np.add(pw.train_value, prediction_delta)
-    # logger.debug("prediction " + str(prediction))
-    # add same value prediction
-    prediction = np.append(prediction, pw.train_value)
-
-    # logger.debug("prediction " + str(prediction))
-    # add last 30 min prediction
-    last30delta = pw.train_value - pw.cgmY[pw.userData.simlength * 60 - pw.userData.predictionlength - 30]
-    prediction30delta = last30delta * pw.userData.predictionlength / 30
-    prediction30 = pw.train_value + prediction30delta
-    prediction = np.append(prediction, prediction30)
-    prediction = np.append(prediction, prediction_optimized)
-    #prediction = np.append(prediction, prediction_optimized_90)
-    #prediction = np.append(prediction, prediction_optimized_120)
-    # Get ARIMA prediction
-    #prediction_arima, order = arima.get_arima_prediction(pw)
-    #pw.prediction = np.append(prediction, prediction_arima.iat[-1])
-    # logger.debug("prediction " + str(prediction))
-    # calculate error
-    pw.prediction = prediction
-    pw.errors = np.subtract(pw.lastValue, pw.prediction)
-    # logger.debug("errors " + str(errors))
-
-    if pw.plot:
-        plot_graph(pw, sim_bg, optimized_curve, optimized_carb_events, None, None, None, None, None, None, prediction30, None, iob, cob)
-
-    return pw.errors.tolist(), None
 
 
 def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int, short: bool = False, negative: bool = False):
@@ -305,9 +243,9 @@ def plot_graph_prediction(ax, pw, graphs):
 def plot_errors(ax, pw, errors):
     setupPlot(ax, pw, 400, 50, short = True, negative = True)
     plt.title("Errors")
-    positions = iter([-6, -3, 0, 3, 6])
+    positions = iter(np.linspace(-5, 5, num=len(errors), endpoint=True))
     for error in errors:
-        plt.bar(error['errors'].index + next(positions), error['errors'].tolist(), 3, alpha = 0.5,
+        plt.bar(error['errors'].index + next(positions), error['errors'].tolist(), 10 / len(errors), alpha = 0.5,
                 label = error['predictor'])
     plotLegend()
 
