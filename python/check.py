@@ -137,8 +137,18 @@ def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
     plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
     for graph in graphs:
         plt.plot(graph['values'], label = graph['label'])
-
     plotLegend()
+
+    # plot second x-Axis
+    ax2 = ax.twiny()
+
+    ax2.xaxis.set_ticks_position('bottom')  # set the position of the second x-axis to bottom
+    ax2.xaxis.set_label_position('bottom')  # set the position of the second x-axis to bottom
+    ax2.spines['bottom'].set_position(('outward', 36))
+    labels = list(map(lambda p: p.strftime('%H:%M'), pd.period_range(pw.startTime, pw.endTime, freq='h')))
+    ax2.set_xticks(ax.get_xticks())
+    ax2.set_xticklabels(labels)
+    ax2.set_xlim(ax.get_xlim())
 
 
 def plot_events(ax, pw: PredictionWindow):
