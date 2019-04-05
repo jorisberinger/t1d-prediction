@@ -21,14 +21,15 @@ def analyzeFile(filename):
 
 def createErrorPlots(means, all_errors):
     fig = plt.figure(figsize = (10, len(all_errors) * 4 + 4))
-    gs = gridspec.GridSpec(1 + len(all_errors), 1)
+    gs = gridspec.GridSpec(1 + len(all_errors), 1, height_ratios = [2] + [1] * len(all_errors))
     subplot_iterator = iter(gs)
 
     plt.subplot(next(subplot_iterator))
     plt.title("MEAN Absolute Error")
     for name, values in means.iterrows():
         values.plot(label=name)
-    plt.legend()
+    plt.legend(loc = 'upper center', bbox_to_anchor = (0.5, 1.1),
+            fancybox = True, shadow = True, ncol = 2)
 
     for name, values in all_errors.items():
         plt.subplot(next(subplot_iterator))
