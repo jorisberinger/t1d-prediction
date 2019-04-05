@@ -59,7 +59,6 @@ class Optimizer(Predictor):
         logger.debug("get Errors at {}".format(error_times))
         self.optimize_mix()
         self.get_prediction_values(error_times)
-
         logger.debug(self.prediction_values)
         return True
 
@@ -118,6 +117,14 @@ class Optimizer(Predictor):
         self.prediction_values = list(map(lambda error_time: self.get_prediction_value(error_time, allEvents), error_times + self.pw.userData.train_length()))
         self.all_events = allEvents
 
+    def optimize_only(self):
+        # Optimize without prediction
+        self.optimize_mix()
+        carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
+        insulin_events = self.pw.events[self.pw.events.etype != 'carb']
+        allEvents = pandas.concat([insulin_events, carb_events])
+        self.all_events = allEvents
+        return self.carb_values
 
 def predictor(inputs, real_values, insulin_values, p_cob):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.

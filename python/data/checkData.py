@@ -13,4 +13,6 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
     selected = window.loc[t]
     nas = selected['cgmValue'].isna()
     # check that there are events in the
+
     return not nas.any()
+

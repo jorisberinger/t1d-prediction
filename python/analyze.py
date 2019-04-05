@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import pandas
 from matplotlib import gridspec
 
-from check import setupPlot
 
 logger = logging.getLogger(__name__)
 

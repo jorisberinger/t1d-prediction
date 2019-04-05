@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 from datetime import timedelta
@@ -8,6 +9,7 @@ import check
 from Classes import UserData
 from PredictionWindow import PredictionWindow
 from data import checkData
+import checkOptimizer
 
 logger = logging.getLogger(__name__)
 path = os.getenv('T1DPATH', '../')
@@ -25,9 +27,10 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
     endTime = data.index[len(data) - 1]
     predictionWindow.endTime = data.index[len(data) - 1]
     results = []
+    prediction_carb_optimized = []
     i = 0
     # loop through the data
-    while startTime < endTime - timedelta(hours = user_data.simlength) and len(results) < 100: # TODO use a global variable
+    while startTime < endTime - timedelta(hours = user_data.simlength) and len(results) < 10: # TODO use a global variable
         logger.info("#" + str(i))
         logger.info("#r " + str(len(results)))
         i += 1
@@ -51,6 +54,9 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
             subset.index = (subset.index - subset.index[0]).seconds / 60
             predictionWindow.data = subset
             # logger.debug(subset)
+            # optimize test window
+            prediction_carb_optimized.append(checkOptimizer.check(predictionWindow))
+
             if checkData.check_window(subset, user_data):
                 res = check.check_and_plot(predictionWindow)
                 if res is not None:
@@ -58,7 +64,13 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
 
         startTime += delta  # delta determines the time between two predictions
     logger.debug("length of result " + str(len(results)))
+    to_file(prediction_carb_optimized)
     return results
+
+
+def to_file(arr):
+    with open(path + "results/prediction_carbs.json", 'w+') as file:
+        file.write(json.dumps(arr))
 
 
 def checkDiretories():
