@@ -1,7 +1,8 @@
+
 import json
 import logging
 import os
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import pandas as pd
 
@@ -17,7 +18,7 @@ path = os.getenv('T1DPATH', '../')
 
 # make rolling prediction and call checkWindow for every data window
 def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotune_res: dict, plotOption: bool):
-    checkDiretories()
+    check_diretories()
     predictionWindow = PredictionWindow()
 
     # select starting point as first data point, always start at 15 minute intervals
@@ -29,8 +30,11 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
     results = []
     prediction_carb_optimized = []
     i = 0
+    loop_start = datetime.now()
     # loop through the data
-    while startTime < endTime - timedelta(hours = user_data.simlength) and len(results) < 10: # TODO use a global variable
+    while startTime < endTime - timedelta(hours = user_data.simlength) \
+            and len(results) < 10 \
+            and (datetime.now() - loop_start).seconds < 60 * 1:  # TODO use a global variable
         logger.info("#" + str(i))
         logger.info("#r " + str(len(results)))
         i += 1
@@ -63,7 +67,7 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
                     results.append(res)
 
         startTime += delta  # delta determines the time between two predictions
-    logger.debug("length of result " + str(len(results)))
+    logger.info("length of result " + str(len(results)))
     to_file(prediction_carb_optimized)
     return results
 
@@ -73,7 +77,7 @@ def to_file(arr):
         file.write(json.dumps(arr))
 
 
-def checkDiretories():
+def check_diretories():
     directory = os.path.dirname(path + "results/")
     if not os.path.exists(directory):
         os.makedirs(directory)
