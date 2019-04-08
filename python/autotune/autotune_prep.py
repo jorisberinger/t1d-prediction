@@ -36,7 +36,7 @@ def createGlucoseJson(data):
         jsonarray = group.apply(lambda x: {"_id": uuid.uuid4().hex,
                                                                  "type": "sgv",
                                                                  "dateString": convertTime(
-                                                                     x.date + ',' + x.time).isoformat(),
+                                                                     "{},{}".format(x.date,x.time)).isoformat(),
                                                                  "date": convertTime(
                                                                      x.date + ',' + x.time).timestamp() * 1000,
                                                                  "sgv": x.cgmValue,

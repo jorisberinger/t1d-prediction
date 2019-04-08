@@ -12,7 +12,5 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
     t = np.append(t, user_data.simlength * 60.)
     selected = window.loc[t]
     nas = selected['cgmValue'].isna()
-    # check that there are events in the
-
     return not nas.any()
 

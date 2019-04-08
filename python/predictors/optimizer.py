@@ -126,6 +126,7 @@ class Optimizer(Predictor):
         self.all_events = allEvents
         return self.carb_values
 
+
 def predictor(inputs, real_values, insulin_values, p_cob):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
     # Update inputs

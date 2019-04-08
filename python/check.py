@@ -32,25 +32,30 @@ error_times = np.array([15, 30, 45, 60, 90, 120, 150, 180])
 def check_and_plot(pw: PredictionWindow):
     # Set values needed for calculations
     pw.set_values(error_times)
-    # If there are no events stop, otherwise there will be errors TODO maby fix
+    # If there are no events stop, otherwise there will be errors, same condition if events in prediction time frame
     if pw.events.empty:
         return None
 
-    #predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Arima(pw), MathPredictor(pw)]
-    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]),Optimizer(pw, [15, 30, 60, 90, 120, 240]), Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]), Arima(pw), SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw,15)]
-    #predictors = [Optimizer(pw, [30]), SameValue(pw)]
+    # Select with predictors should run
+    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                  Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]),
+                  Arima(pw), SameValue(pw),
+                  LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
+
+    # Make prediction for every predictor
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
-    if all(success):
-        errors = calculate_errors(predictors, pw)
-
-        if pw.plot:
-            graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
-            plot_graphs(pw, graphs, errors, predictors)
-
-        logger.info("errors {}".format(errors))
-        return errors
-    else:
+    # if a predictor is not successfull return null, because it can not be compared to the others
+    if not all(success):
         return None
+
+    # Calculate the prediction errors for each predictor
+    errors = calculate_errors(predictors, pw)
+
+    if pw.plot:
+        graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
+        plot_graphs(pw, graphs, errors, predictors)
+
+    return errors
 
 
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
@@ -142,9 +147,9 @@ def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
     # plot second x-Axis
     ax2 = ax.twiny()
 
-    ax2.xaxis.set_ticks_position('bottom')  # set the position of the second x-axis to bottom
-    ax2.xaxis.set_label_position('bottom')  # set the position of the second x-axis to bottom
-    ax2.spines['bottom'].set_position(('outward', 36))
+    ax2.xaxis.set_ticks_position('top')  # set the position of the second x-axis to bottom
+    ax2.xaxis.set_label_position('top')  # set the position of the second x-axis to bottom
+    ax2.spines['top'].set_position(('outward', 36))
     labels = list(map(lambda p: p.strftime('%H:%M'), pd.period_range(pw.startTime, pw.endTime, freq='h')))
     ax2.set_xticks(ax.get_xticks())
     ax2.set_xticklabels(labels)

@@ -33,10 +33,9 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
     loop_start = datetime.now()
     # loop through the data
     while startTime < endTime - timedelta(hours = user_data.simlength) \
-            and len(results) < 10 \
-            and (datetime.now() - loop_start).seconds < 60 * 1:  # TODO use a global variable
-        logger.info("#" + str(i))
-        logger.info("#r " + str(len(results)))
+            and len(results) < 1000000 \
+            and (datetime.now() - loop_start).seconds < 60 * 60 * 14:  # TODO use a global variable
+        logger.info("#:{} \t #R:{}".format(i, len(results)))
         i += 1
         predictionWindow.startTime = startTime
         predictionWindow.endTime = startTime + timedelta(hours = user_data.simlength)
@@ -67,7 +66,8 @@ def rolling(data: pd.DataFrame, delta: pd.Timedelta, user_data: UserData, autotu
                     results.append(res)
 
         startTime += delta  # delta determines the time between two predictions
-    logger.info("length of result " + str(len(results)))
+    logger.info("length of result {}".format(len(results)))
+    # save all prediction carb optimized values to a json file
     to_file(prediction_carb_optimized)
     return results
 

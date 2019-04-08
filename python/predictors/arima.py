@@ -22,7 +22,6 @@ class Arima(Predictor):
 
     def __init__(self, pw):
         super().__init__()
-        logger.info("init Arima")
         self.pw: PredictionWindow = pw
         self.sample_time = sampleTime
         self.window = window = self.pw.data.iloc[::sampleTime]['cgmValue']
@@ -34,17 +33,15 @@ class Arima(Predictor):
                                              freq = str(sampleTime) + 'min')
 
     def calc_predictions(self, error_times: [int]) -> bool:
-        logger.info("get Errors at {}".format(error_times))
-
         train = self.window[0:(self.pw.userData.simlength * 60 - self.pw.userData.predictionlength)]
         train.index = pd.to_datetime(self.index_train)
 
         test = self.window[(self.pw.userData.train_length() + self.sample_time):(self.pw.userData.simlength * 60)]
         test.index = pd.to_datetime(self.index_test)
 
-        stepwise_fit = auto_arima(train, start_p = 1, start_q = 1, max_p = 10, max_q = 10, seasonal = False,
-                                  trace = True, max_order = 100,
-                                  error_action = 'warn', suppress_warnings = True, stepwise = True)
+        stepwise_fit = auto_arima(train, max_p = 10, max_q = 10, seasonal = False,
+                                  trace = False, max_order = 100,
+                                  error_action = 'ignore', suppress_warnings = True, stepwise = True)
 
         if sum(stepwise_fit.order):
             preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
