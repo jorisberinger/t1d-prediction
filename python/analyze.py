@@ -4,8 +4,9 @@ import os
 
 import matplotlib.pyplot as plt
 import pandas
+import numpy as np
 from matplotlib import gridspec
-
+from tinydb import TinyDB, where
 
 logger = logging.getLogger(__name__)
 
@@ -36,27 +37,39 @@ def createErrorPlots(means, all_errors):
         plt.ylim(-400,400)
         values.boxplot()
 
-    plt.savefig(path + "results/errorPlot.png", dpi = 600)
+    plt.savefig(path + "results/errorPlot-gradient-5-1.8-over.png", dpi = 600)
 
 
-def getSummary(res):
+def getResults(db: TinyDB):
+    with_result = db.search((where('result').exists()) & (where('gradient-5') > 6))
+    #with_result = db.search((where('result').exists()))
+    results = list(map(lambda x: x['result'], with_result))
+    results = list(filter(lambda x: len(x) == 10, results))
+    return results
+
+def getSummary(db: TinyDB):
     logger.debug("in get Summary")
+    res = getResults(db)
     setNumber = 1  # for debug
-    all_results = pandas.DataFrame(res)
+    #all_results = pandas.DataFrame(res)
     summary = pandas.DataFrame()
     all_data = {}
-    for i in range(all_results.shape[1]):
-        predictor_results = all_results[i]
-        logger.debug("Predictor Results {}".format(predictor_results))
-        result_matrix = pandas.DataFrame([], columns = predictor_results[0]['errors'].index)
-        for result in predictor_results:
-            result_matrix = result_matrix.append(result['errors'], ignore_index = True)
-
+    # get labels for predictors
+    labels = list(map(lambda x: x['predictor'], res[0]))
+    # create series for each predicotor
+    # join them in dataframe
+    all_results = pandas.DataFrame()
+    for label in labels:
+        predictor_errors = pandas.Series(list(map(lambda x: list(filter(lambda y: y['predictor'] == label, x))[0]['errors'], res)), name = label)
+        all_results.append(predictor_errors)
+        logger.debug("Predictor Results {}".format(predictor_errors))
+        result_matrix = predictor_errors.apply(pandas.Series)
+        result_matrix.columns = np.array([15, 30, 45, 60, 90, 120, 150, 180])
         result_mean = abs(result_matrix).mean()
-        result_mean.name = predictor_results[0]['predictor']
+        result_mean.name = label
         summary = summary.append(result_mean)
 
-        result_matrix.name = predictor_results[0]['predictor']
+        result_matrix.name = label
         all_data[result_matrix.name] = result_matrix
 
     logger.debug("summary {}".format(summary))

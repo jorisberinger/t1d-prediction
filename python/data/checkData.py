@@ -3,6 +3,8 @@ import logging
 import numpy as np
 
 from Classes import UserData
+from data.dataObject import DataObject
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,4 +15,35 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
     selected = window.loc[t]
     nas = selected['cgmValue'].isna()
     return not nas.any()
+
+
+def check_data_object(data_object: DataObject) -> bool:
+    valid = check_events(data_object)
+    if not valid:
+        return valid
+
+    return valid
+
+
+def check_events(data_object:DataObject) -> bool:
+    # check for events in the prediction time frame
+    event_types = ['carb', 'bolus'] # basal events are fine
+    for key in event_types:
+        if hasattr(data_object, key + '_events'):
+            events = data_object.__getattribute__(key + '_events')
+            # Check that there are no events in the prediction window
+            if not events.index[np.logical_and(events.index >= 630, events.index < 730)].empty:
+                return False
+            # Check that there are events in the training window
+            if events.index[events.index <= 600].empty:
+                return False
+    return True
+
+
+
+
+
+
+
+
 

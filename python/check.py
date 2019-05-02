@@ -29,7 +29,7 @@ path = os.getenv('T1DPATH', '../')
 error_times = np.array([15, 30, 45, 60, 90, 120, 150, 180])
 
 
-def check_and_plot(pw: PredictionWindow):
+def check_and_plot(pw: PredictionWindow, item):
     # Set values needed for calculations
     pw.set_values(error_times)
     # If there are no events stop, otherwise there will be errors, same condition if events in prediction time frame
@@ -41,7 +41,8 @@ def check_and_plot(pw: PredictionWindow):
                   Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]),
                   Arima(pw), SameValue(pw),
                   LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
-
+    #calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
+    #predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
     # Make prediction for every predictor
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
     # if a predictor is not successfull return null, because it can not be compared to the others
@@ -85,7 +86,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results/plots/result-over-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 
@@ -132,7 +133,7 @@ def plotLegend():
 
 
 def get_header(pw: PredictionWindow):
-    return "{}, {}".format(pw.startTime.day_name(), pw.startTime.strftime('%H:%M'))
+    return "{}, {}".format(pw.startTime.day, pw.startTime.strftime('%H:%M'))
 
 
 def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):

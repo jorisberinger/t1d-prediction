@@ -16,7 +16,7 @@ def convert(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 def select_columns(data: pd.DataFrame) -> pd.DataFrame:
-    logger.info("select columns")
+    logger.debug("select columns")
     # Drop all unneccessary columns to save memory
     data = data.drop(['bgValue', 'cgmRawValue', 'glucoseAnnotation', 'cgmAlertValue', 'pumpCgmPredictionValue',
      'basalAnnotation', 'bolusAnnotation', 'bolusCalculationValue',
@@ -26,7 +26,7 @@ def select_columns(data: pd.DataFrame) -> pd.DataFrame:
     return data
 
 def create_time_index(data: pd.DataFrame) -> pd.DataFrame:
-    logger.info("create time index")
+    logger.debug("create time index")
     # create time index from date and time
     data = data.set_index(pd.to_datetime(data['date'] + " " + data['time'], dayfirst=True))
     return data

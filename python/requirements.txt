@@ -1,6 +1,9 @@
+numba
 imageio
 pmdarima
 numpy
 pandas
 matplotlib
 coloredlogs
+ujson
+tinydb
