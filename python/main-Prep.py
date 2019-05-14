@@ -16,10 +16,13 @@ def main():
     logging.info("Starting Main")
     logging.info("Init tinydb from {}".format(os.path.abspath(db_path)))
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
+
+    logging.info("{} items in db".format(len(db)))
+    
     logging.info("Init data loader")
     data_loader = DataLoader(db)
     logging.info("Loading csv file")
-    data_loader.load(path + 'data/csv/data_17_3-4.csv')
+    data_loader.load(path + 'data/csv/data_17.csv')
     #data_loader.load(path + 'data/csv/data-o2.csv')
     logging.info("Adding events")
     data_loader.add_events()

@@ -37,11 +37,11 @@ def createErrorPlots(means, all_errors):
         plt.ylim(-400,400)
         values.boxplot()
 
-    plt.savefig(path + "results/errorPlot-gradient-5-1.8-over.png", dpi = 600)
+    plt.savefig(path + "results/errorPlot-gradient-s-over-7.png", dpi = 600)
 
 
 def getResults(db: TinyDB):
-    with_result = db.search((where('result').exists()) & (where('gradient-5') > 6))
+    with_result = db.search((where('result').exists()) & (where('gradient-s') >= 7))
     #with_result = db.search((where('result').exists()))
     results = list(map(lambda x: x['result'], with_result))
     results = list(filter(lambda x: len(x) == 10, results))

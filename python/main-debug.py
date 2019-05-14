@@ -37,36 +37,17 @@ def main():
     # Get Database
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
 
-    #add_gradient(db)
+    l = db.search(where('result').exists() & (where('gradient-s') > 10))
+
+    print(len(l))
+
+    exit()
+    for item in db:
+        print(item)
+        for x in item:
+            print(x)
+        exit()
+
     
-
-    # MAKE A ROLLING PREDICTION
-    logger.info("Start Prediciton")
-    prediction_result = rolling.rolling(db, user_data, create_plots)
-    logger.info("Finished prediction")
-
-    # ANALYSE PREDICTION RESULTS
-    #summary, all_data = analyze.getSummary(db)
-
-    # CREATE PLOTS FOR ANALYSE SUMMARY
-    #analyze.createErrorPlots(summary, all_data)
-
-
-    # CREATE A GIF OUT OF THE PREDICTION PLOTS
-    #if create_plots:
-    #    gifmaker.makeGif(path + "results/plots/", data)
-
-    logger.info("Main finished!")
-
-
-if __name__ == '__main__':
-    start_time = time.process_time()
-    profile = False
-    if profile:
-        pr = cProfile.Profile()
-        pr.enable()
+if __name__ == "__main__":
     main()
-    if profile:
-        pr.disable()
-        pr.dump_stats(path + "results/profiler/profile")
-    logger.info(str(time.process_time() - start_time) + " seconds")

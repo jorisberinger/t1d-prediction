@@ -34,6 +34,7 @@ class DataLoader:
         for item in self.db.search(~where('carb').exists() | ~where('bolus').exists() | ~where('basal').exists()):
             if not hasattr(item, 'carb'):
                 data_object = DataObject.from_dict(item)
+                logging.info("doc id: {}".format(item.doc_id))
                 data_object.add_events()
                 di = data_object.to_dict()
                 self.db.update(di, where('start_time') == di['start_time'])
