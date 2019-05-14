@@ -34,14 +34,14 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
     #elements = list(filter(lambda x: len(x['result']) < 10, elements))
     # elements = filter_elements(db.search(where('result').exists()))
 
-    logging.info("number of elements {}".format(len(elements)))
+    logging.info("number of unprocessed items {}".format(len(elements)))
     random.shuffle(elements)
     #elements = [db.get(doc_id=5748)]
     #elements = []
     for item in elements:
         # Break out of loop if enough results or it takes too long
         if len(results) > 10000 or \
-                (datetime.now() - loop_start).seconds > 60 * 60 * 12:
+                (datetime.now() - loop_start).seconds > 60 * 1:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
         # Get element

@@ -15,13 +15,14 @@ from Classes import UserData
 from autotune import autotune
 from data import readData, convertData
 from data.dataPrep import add_gradient
+import main_Prep as prep
 
 logger = logging.getLogger(__name__)
-
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
-
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data_17_3-4.csv"
+
+# SET INPUT FILE PATH
+filename = path + "data/csv/data"
 db_path = path + 'data/tinydb/db1.json'
 
 # filename = path + "data/csv/data-o3.csv"
@@ -34,11 +35,13 @@ def main():
     user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
                          predictionlength = 180, stats = None)
 
+
     # Get Database
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
+    logging.info("Loaded database from {} with {} items".format(os.path.abspath(db_path),len(db)))
 
-    #add_gradient(db)
-    
+    # Load data into database
+    prep.main(db)
 
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediciton")
@@ -46,10 +49,10 @@ def main():
     logger.info("Finished prediction")
 
     # ANALYSE PREDICTION RESULTS
-    #summary, all_data = analyze.getSummary(db)
+    summary, all_data = analyze.getSummary(db)
 
     # CREATE PLOTS FOR ANALYSE SUMMARY
-    #analyze.createErrorPlots(summary, all_data)
+    analyze.createErrorPlots(summary, all_data)
 
 
     # CREATE A GIF OUT OF THE PREDICTION PLOTS

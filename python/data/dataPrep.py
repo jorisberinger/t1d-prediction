@@ -62,22 +62,24 @@ def add_to_db(data: pd.DataFrame, db: TinyDB) -> [pd.DataFrame]:
     db.storage.flush()
     return counter
 
+
 def add_gradient(db: TinyDB):
-    logging.info("Add Gradient")
+    logging.debug("Calculate Gradient for items")
     gradients = []
-    for item in db.search(~where('gradient-s').exists()):
-        logging.info("#: {}\tdoc id: {}".format(len(gradients), item.doc_id))
+    items = db.search(~where('gradient-s').exists())
+    for item in items:
+        logging.debug("#: {}\tdoc id: {}".format(len(gradients), item.doc_id))
         data_object = DataObject.from_dict(item)
         data = data_object.data['cgmValue'].values
         d1 = data[630:690]
         d2 = data[635:695]
         max_gradient = max(d2-d1)
-        logging.info("max gradient {}".format(max_gradient))
+        logging.debug("max gradient {}".format(max_gradient))
         item['gradient-s'] = max_gradient
         gradients.append(max_gradient)
         db.write_back([item])
     db.storage.flush()
-    logging.info("done")
+    logging.info("Added gradient to {} items".format(len(items)))
 
 
 

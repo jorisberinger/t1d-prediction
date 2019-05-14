@@ -26,7 +26,7 @@ class DataLoader:
         data = prepare_data(data_original)
         # add data to tiny db
         count = add_to_db(data, self.db)
-        logging.info("added {} items to DB".format(count))
+        logging.info("added {} new items to DB".format(count))
 
     def add_events(self):
         count = 0
@@ -60,4 +60,4 @@ class DataLoader:
         self.db.update({'valid': True}, doc_ids=valid_ids)
         self.db.storage.flush()
         logging.info("removed {} items form db".format(len(remove_ids)))
-        logging.info("Still have {} in db".format(len(self.db)))
+        logging.info("Still {} items in db".format(len(self.db)))
