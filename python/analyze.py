@@ -27,7 +27,8 @@ def createErrorPlots(db):
                ]
     for query in queries:
         means, data =  getSummary(db, query)
-        plot(means, data, query['fn'])
+        if len(means):
+            plot(means, data, query['fn'])
 
 
 
@@ -63,6 +64,8 @@ def getResults(db: TinyDB, query):
 def getSummary(db: TinyDB, query):
     logger.debug("in get Summary")
     res = getResults(db, query)
+    if len(res):
+        return [],[]
     setNumber = 1  # for debug
     #all_results = pandas.DataFrame(res)
     summary = pandas.DataFrame()
