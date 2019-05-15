@@ -41,11 +41,11 @@ def main():
     logging.info("Loaded database from {} with {} items".format(os.path.abspath(db_path),len(db)))
 
     # Load data into database
-    #prep.main(db)
+    prep.main(db)
 
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediciton")
-    #prediction_result = rolling.rolling(db, user_data, create_plots)
+    prediction_result = rolling.rolling(db, user_data, create_plots)
     logger.info("Finished prediction")
 
     # CREATE PLOTS FOR ANALYSE SUMMARY
