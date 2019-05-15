@@ -19,37 +19,50 @@ def analyzeFile(filename):
     createErrorPlots(res)
 
 
-def createErrorPlots(means, all_errors):
-    fig = plt.figure(figsize = (10, len(all_errors) * 4 + 4))
-    gs = gridspec.GridSpec(1 + len(all_errors), 1, height_ratios = [2] + [1] * len(all_errors))
+def createErrorPlots(db):
+    logging.info("in all_errors")
+    queries = [{'q': where('result').exists(), "fn":"all"},
+               {'q': where('result').exists() & (where('gradient-s') >= 10), "fn": "gradient-over-10"},
+               {'q': where('result').exists() & (where('gradient-s') < 10), "fn": "gradient-under-10"}
+               ]
+    for query in queries:
+        means, data =  getSummary(db, query)
+        plot(means, data, query['fn'])
+
+
+
+
+
+def plot(means, data, filename):
+    fig = plt.figure(figsize = (10, len(data) * 4 + 4))
+    gs = gridspec.GridSpec(1 + len(data), 1, height_ratios = [2] + [1] * len(data))
     subplot_iterator = iter(gs)
 
     plt.subplot(next(subplot_iterator))
     plt.title("MEAN Absolute Error")
     for name, values in means.iterrows():
-        values.plot(label=name)
+        values.plot(label = name)
     plt.legend(loc = 'upper center', bbox_to_anchor = (0.5, 1.1),
-            fancybox = True, shadow = True, ncol = 2)
+               fancybox = True, shadow = True, ncol = 2)
 
-    for name, values in all_errors.items():
+    for name, values in data.items():
         plt.subplot(next(subplot_iterator))
         plt.title(name)
-        plt.ylim(-400,400)
+        plt.ylim(-400, 400)
         values.boxplot()
 
-    plt.savefig(path + "results/errorPlot-gradient-s-over-7.png", dpi = 600)
+    plt.savefig("{}results/{}.png".format(path, filename), dpi = 600)
 
-
-def getResults(db: TinyDB):
-    with_result = db.search((where('result').exists()) & (where('gradient-s') >= 7))
+def getResults(db: TinyDB, query):
+    with_result = db.search(query['q'])
     #with_result = db.search((where('result').exists()))
     results = list(map(lambda x: x['result'], with_result))
     results = list(filter(lambda x: len(x) == 10, results))
     return results
 
-def getSummary(db: TinyDB):
+def getSummary(db: TinyDB, query):
     logger.debug("in get Summary")
-    res = getResults(db)
+    res = getResults(db, query)
     setNumber = 1  # for debug
     #all_results = pandas.DataFrame(res)
     summary = pandas.DataFrame()
@@ -73,10 +86,8 @@ def getSummary(db: TinyDB):
         all_data[result_matrix.name] = result_matrix
 
     logger.debug("summary {}".format(summary))
-    with open(path + "results/result-summary-" + str(setNumber) + ".json", 'w') as file:
+    with open(path + "results/result-summary-" + query['fn'] + str(setNumber) + ".json", 'w') as file:
         file.write(summary.to_json())
-    #with open(path + "results/result-all-" + str(setNumber) + ".json", 'w') as file:
-    #    file.write(all_data.to_json())
     return summary, all_data
 
 
