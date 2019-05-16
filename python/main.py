@@ -29,7 +29,7 @@ db_path = path + 'data/tinydb/db1.json'
 
 def main():
     logger.info("Start Main!")
-    create_plots: bool = False  # Select True if you want a plot for every prediction window
+    create_plots: bool = True  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
     user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
@@ -41,7 +41,7 @@ def main():
     logging.info("Loaded database from {} with {} items".format(os.path.abspath(db_path),len(db)))
 
     # Load data into database
-    prep.main(db)
+    # prep.main(db)
 
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediciton")

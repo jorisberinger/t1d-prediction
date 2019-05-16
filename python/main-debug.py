@@ -15,6 +15,9 @@ from Classes import UserData
 from autotune import autotune
 from data import readData, convertData
 from data.dataPrep import add_gradient
+from data.dataObject import DataObject
+
+from matplotlib import gridspec, pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +40,41 @@ def main():
     # Get Database
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
 
-    l = db.search(where('result').exists() & (where('gradient-s') > 10))
+    logging.info("length of db: {}".format(len(db)))
+    all = db.all()
 
-    print(len(l))
+    #outliers = list(filter(detect_outliers, all))
+    # logging.info("number of outliers {}".format(len(outliers)))
+
+   
+
+    
+
+
+
+    with_result = db.search(where('result').exists())
+    # with_result = db.search(where('doc_id') in list(range(19650, 19700)))
+    # res = list(map(lambda x: db.get(doc_id=x),range(19600,19700)))
+    # res = list(filter(lambda x: (x is not None), res))
+    # logging.debug(len(res))
+
+    #list(map(plot, res))
+    # doc_ids = list(map(lambda x: x.doc_id, res))
+
+    # db.remove(doc_ids=doc_ids)
+    # db.storage.flush()
+    # logging.info("length of db: {}".format(len(db)))
+    # exit()
+
+    # exit()
+    outliers = list(filter(lambda x: x['result'][0]['errors'][0] > 75, with_result))
+    logging.debug(len(outliers))
+    # logging.debug(doc_ids)
+
+    list(map(plot, outliers))
+
+    logging.info('end')
+
 
     exit()
     for item in db:
@@ -48,6 +83,32 @@ def main():
             print(x)
         exit()
 
-    
+def plot(item):
+    logging.info('plotting {}'.format(item.doc_id))
+    dataObject = DataObject.from_dict(item)
+    cgm = dataObject.data['cgmValue']
+    if max(cgm) > 600 or max(cgm) < 0:
+        logging.info(max(cgm))
+        logging.info("something wrong")
+
+    dataObject.data['cgmValue'].plot()
+    plt.savefig('{}results/opt-plots/doc-{}.png'.format(path,item.doc_id))
+    plt.close()
+    logging.info("end")
+
+def detect_outliers(item):
+    dataObject = DataObject.from_dict(item)
+    cgm = dataObject.data['cgmValue']
+    m = max(cgm)
+    mi = min(cgm)
+    if m > 600 or m < 0 or mi < 20 or mi > 400:
+        logging.debug(dataObject.start_time)
+        logging.debug(m)
+        return True
+    return False
+
+
+
+
 if __name__ == "__main__":
     main()

@@ -37,10 +37,10 @@ def check_and_plot(pw: PredictionWindow, item):
         return None
 
     # Select with predictors should run
-    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Optimizer(pw, [15, 30, 60, 90, 120, 240]),
-                  Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]),
-                  Arima(pw), SameValue(pw),
-                  LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
+    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Optimizer(pw, [15, 30, 60, 90, 120, 240]),]
+                #   Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]),
+                #   Arima(pw), SameValue(pw),
+                #   LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
     #calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
     #predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
     # Make prediction for every predictor
@@ -86,7 +86,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/result-over-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results/opt-plots/result-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 
