@@ -67,9 +67,12 @@ class Optimizer(Predictor):
     def get_graph(self) -> ({'label': str, 'values': [float]}, {'label': str, 'events': [float]}):
         logger.debug("get graph")
         values, iob, cob = predict.calculateBG(self.all_events, self.pw.userData)
+        vals = values[5]
         self.iob = iob
         self.cob = cob
-        return {'label': self.name, 'values': values[5]}
+        offset = vals[self.pw.userData.train_length()] - self.pw.train_value
+        vals[self.pw.userData.train_length():] = vals[self.pw.userData.train_length():] - offset
+        return {'label': self.name, 'values': vals}
 
     def optimize_mix(self) -> (int, pandas.DataFrame, pandas.DataFrame):
         # Set time steps where to calculate the error between real_values and prediction
@@ -78,6 +81,10 @@ class Optimizer(Predictor):
 
         # Get Real Values
         real_values = get_real_values(self.pw, t_error)
+        
+        # set weights
+        weights = np.array(list(map(lambda x: (x + 1) / len(real_values)/2+0.5,range(len(real_values)))))
+
 
         # Number of Parameters per Carb Type
         t_carb_events = get_carb_time_steps(self.pw, 15)
@@ -101,7 +108,7 @@ class Optimizer(Predictor):
         patient_carb_matrix = udata.sensf / udata.cratio * cob_matrix
 
         # Minimize predicter function, with inital guess x0 and use bounds to improve speed, and constraint to positive numbers
-        values = minimize(predictor, x0, args = (real_values, insulin_values, patient_carb_matrix), method = 'L-BFGS-B',
+        values = minimize(predictor, x0, args = (real_values, insulin_values, patient_carb_matrix, weights), method = 'L-BFGS-B',
                           bounds = bounds, options = {'disp': False, 'maxiter': 1000, 'maxfun': 1000000, 'maxls': 200})
 
         logger.debug("success {}".format(values.success))
@@ -116,7 +123,9 @@ class Optimizer(Predictor):
         carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
         insulin_events = self.pw.events[self.pw.events.etype != 'carb']
         allEvents = pandas.concat([insulin_events, carb_events])
-        self.prediction_values = list(map(lambda error_time: self.get_prediction_value(error_time, allEvents), error_times + self.pw.userData.train_length()))
+        offset = self.get_prediction_value(0, allEvents) - self.pw.lastValue
+        self.prediction_values = list(map(lambda error_time: self.get_prediction_value(error_time, allEvents) - offset, error_times + self.pw.userData.train_length()))
+
         self.all_events = allEvents
 
     def optimize_only(self):
@@ -129,15 +138,17 @@ class Optimizer(Predictor):
         return self.carb_values
 
 
-def predictor(inputs, real_values, insulin_values, p_cob):
+def predictor(inputs, real_values, insulin_values, p_cob, weights):
     # Calculate simulated BG for every real BG value we have. Then calculate the error and sum it up.
     # Update inputs
     carb_values = np.array(np.matmul(inputs, p_cob))
     predictions = carb_values + insulin_values
     error = np.absolute(real_values - predictions.flatten())
-    error_sum = np.matmul(error, error)
+    squared_error = np.power(error, 2)
+    weighted_error = np.matmul(squared_error, weights)
+    # error_sum = np.matmul(error, error)
     #error_sum = error.sum()
-    return error_sum
+    return weighted_error
 # return time steps with step size step_size in the range from sim_length training period
 def get_error_time_steps(pw: PredictionWindow, step_size: int) -> np.array:
     t = np.arange(0, pw.userData.simlength * 60 - pw.userData.predictionlength + 1, step_size)

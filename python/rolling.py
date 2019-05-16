@@ -49,6 +49,7 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
         data_object = DataObject.from_dict(item)
 
         predictionWindow.startTime = data_object.start_time
+        logger.info(predictionWindow.startTime.isoformat())
         predictionWindow.endTime = data_object.end_time
         # select data for this window
         predictionWindow.data = data_object.data
