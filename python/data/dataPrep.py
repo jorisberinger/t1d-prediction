@@ -1,19 +1,18 @@
 import logging
+import os
 from datetime import timedelta
 
 import coloredlogs
-import pandas as pd
-import os
 import numpy as np
+import pandas as pd
+from tinydb import Query, TinyDB, where
+from tinydb.middlewares import CachingMiddleware
 
-from pandas.io.json import json
-
-from data.convertData import convert, create_time_index, interpolate_cgm, select_columns
+from data.convertData import (convert, create_time_index, interpolate_cgm,
+                              select_columns, copy_cgm)
 from data.dataConnector import DataConnector
 from data.dataObject import DataObject
 from data.readData import read_data
-from tinydb import TinyDB, Query, where
-from tinydb.middlewares import CachingMiddleware
 
 path = os.getenv('T1DPATH', '../../')
 
@@ -24,6 +23,8 @@ delta_length = 15
 def prepare_data(data_original: pd.DataFrame) -> pd.DataFrame:
     # convert index to time index
     data = convert(data_original)
+    # Copy CgmValue column to save original values
+    data = copy_cgm(data)
     # interpolate Data to minute cgm resolution
     data = interpolate_cgm(data)
     # add timestamp as int(to recover date if lost when converting to json)
@@ -87,5 +88,3 @@ def add_gradient(db: TinyDB):
 def add_timestamps(data: pd.DataFrame) -> pd.DataFrame:
     data['timestamp'] = pd.to_numeric(data.index)
     return data
-
-

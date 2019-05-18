@@ -65,3 +65,7 @@ def interpolate_cgm(data: pd.DataFrame) -> pd.DataFrame:
     data['date'] = data['date'].interpolate('pad')
 
     return data
+
+def copy_cgm(data: pd.DataFrame) -> pd.DataFrame:
+        data['cgmValue_original'] = data['cgmValue']
+        return data
