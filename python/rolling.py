@@ -42,7 +42,7 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
     #elements = []
     for item in elements:
         # Break out of loop if enough results or it takes too long
-        if len(results) >= 10 or \
+        if len(results) >= 5 or \
                 (datetime.now() - loop_start).seconds > 60 * 5:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))

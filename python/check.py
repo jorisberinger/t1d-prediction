@@ -15,6 +15,7 @@ from predictors.arima import Arima
 from predictors.math_model import MathPredictor
 from predictors.optimizer import Optimizer
 from predictors.predictor import Predictor
+from predictors.lstm import LSTM
 
 import pandas as pd
 
@@ -37,12 +38,17 @@ def check_and_plot(pw: PredictionWindow, item):
         return None
 
     # Select with predictors should run
-    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Optimizer(pw, [15, 30, 60, 90, 120, 240]),
-                   Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]),
-                   Arima(pw), SameValue(pw),
-                   LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
+    predictors =   [
+                    # Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                    # Optimizer(pw,[90]),
+                    # Arima(pw), 
+                    # SameValue(pw),
+                    # LastNDelta(pw, 30), 
+                    # LastNDelta(pw, 15),
+                    LSTM(pw)
+                    ]
 
-    predictors = [Arima(pw)]
+
     if 'result' in item:
         calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
         predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
