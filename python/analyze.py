@@ -58,13 +58,14 @@ def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
     #with_result = db.search((where('result').exists()))
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 10, results))
+    #results = list(filter(lambda x: len(x) == 10, results)) # TODO uncomment
     return results
 
 def getSummary(db: TinyDB, query):
     logger.debug("in get Summary")
     res = getResults(db, query)
-    if len(res):
+    if len(res) == 0:
+        logging.warning("no result")
         return [],[]
     setNumber = 1  # for debug
     #all_results = pandas.DataFrame(res)
@@ -79,11 +80,11 @@ def getSummary(db: TinyDB, query):
         predictor_errors = pandas.Series(list(map(lambda x: list(filter(lambda y: y['predictor'] == label, x))[0]['errors'], res)), name = label)
         all_results.append(predictor_errors)
         logger.debug("Predictor Results {}".format(predictor_errors))
-        result_matrix = predictor_errors.apply(pandas.Series)
-        result_matrix.columns = np.array([15, 30, 45, 60, 90, 120, 150, 180])
+        result_matrix = predictor_errors.apply(lambda x: pandas.Series(x, index=np.array([15, 30, 45, 60, 90, 120, 150, 180])))
         result_mean = abs(result_matrix).mean()
         result_mean.name = label
         summary = summary.append(result_mean)
+        
 
         result_matrix.name = label
         all_data[result_matrix.name] = result_matrix

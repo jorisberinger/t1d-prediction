@@ -17,7 +17,9 @@ from data.readData import read_data
 path = os.getenv('T1DPATH', '../../')
 
 window_length = 13
+long_window_length = 63
 delta_length = 15
+
 
 
 def prepare_data(data_original: pd.DataFrame) -> pd.DataFrame:
@@ -36,10 +38,8 @@ def prepare_data(data_original: pd.DataFrame) -> pd.DataFrame:
 def add_to_db(data: pd.DataFrame, db: TinyDB) -> [pd.DataFrame]:
     # split data in to prediction windows
     # set start and end time
-    start_time = data.index[0]
+    start_time = data.index[0] +timedelta(hours = long_window_length - window_length)
     final_start_time = data.index[-1] - timedelta(hours = window_length)
-    # init split array
-    splits = []
     counter = 0
     # get all starting times
     times = list(map(lambda x: x['start_time'], db.all()))
@@ -51,12 +51,18 @@ def add_to_db(data: pd.DataFrame, db: TinyDB) -> [pd.DataFrame]:
             data_object.set_start_time(start_time)
             end_time = start_time + timedelta(hours = window_length)
             data_object.set_end_time(end_time)
-            # select data for this window
-            subset = data.loc[start_time <= data.index]
-            subset = subset.loc[end_time >= subset.index]
+            # select data for this window --- SHORT
+            subset_short = data.loc[start_time <= data.index]
+            subset_short = subset_short.loc[end_time >= subset_short.index]
             # set index to minutes
-            subset.index = np.arange(0.0, len(subset))
-            data_object.set_data(subset)
+            subset_short.index = np.arange(0.0, len(subset_short))
+            data_object.set_data_short(subset_short)
+             # select data for this window --- LONG
+            subset_long = data.loc[start_time - timedelta(hours= long_window_length - window_length) <= data.index]
+            subset_long = subset_long.loc[end_time >= subset_long.index]
+            # set index to minutes
+            subset_long.index = np.arange(0.0, len(subset_long))
+            data_object.set_data_long(subset_long)
             db.insert(data_object.to_dict())
             counter += 1
         start_time += timedelta(minutes = delta_length)

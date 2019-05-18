@@ -37,12 +37,15 @@ def check_and_plot(pw: PredictionWindow, item):
         return None
 
     # Select with predictors should run
-    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Optimizer(pw, [15, 30, 60, 90, 120, 240]),]
-                #   Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]),
-                #   Arima(pw), SameValue(pw),
-                #   LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
-    #calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
-    #predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
+    predictors = [Optimizer(pw, [30, 60, 90, 120, 240]), Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                   Optimizer(pw,[60]), Optimizer(pw,[90]), Optimizer(pw,[120]),
+                   Arima(pw), SameValue(pw),
+                   LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
+
+    predictors = [SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 15)]
+    if 'result' in item:
+        calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
+        predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
     # Make prediction for every predictor
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
     # if a predictor is not successfull return null, because it can not be compared to the others

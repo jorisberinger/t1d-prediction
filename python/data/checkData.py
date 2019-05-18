@@ -18,7 +18,9 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
 
 
 def check_data_object(data_object: DataObject) -> bool:
-    valid = check_events(data_object)
+    valid_events: bool = check_events(data_object)
+    valid_cgm: bool = check_cgm(data_object)
+    valid: bool = valid_events and valid_cgm
     if not valid:
         return valid
 
@@ -32,14 +34,23 @@ def check_events(data_object:DataObject) -> bool:
         if hasattr(data_object, key + '_events'):
             events = data_object.__getattribute__(key + '_events')
             # Check that there are no events in the prediction window
-            if not events.index[np.logical_and(events.index >= 630, events.index < 730)].empty:
+            if not events.index[np.logical_and(events.index >= 600, events.index < 730)].empty:
+                logging.debug("events in prediction ")
                 return False
             # Check that there are events in the training window
             if events.index[events.index <= 600].empty:
                 return False
     return True
 
-
+def check_cgm(data_object: DataObject) -> bool:
+    # Check that there are no gaps in cgm_values
+    cgm_values = data_object.data['cgmValue_original'].dropna()
+    index = cgm_values.index.values 
+    if len(index) < 10:
+        logging.debug("index less than 10 items")
+        return False
+    differences = index[1:-1] - index[0:-2]
+    return max(differences) < 75
 
 
 

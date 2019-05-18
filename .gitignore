@@ -118,6 +118,7 @@ dmypy.json
 Autotune/data/Input/
 
 results/
+results*
 
 
 

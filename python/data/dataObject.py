@@ -13,6 +13,7 @@ class DataObject:
     start_time: pd._libs.tslibs.timestamps.Timestamp
     end_time: pd._libs.tslibs.timestamps.Timestamp
     data: pd.DataFrame
+    data_long: pd.DataFrame
     bolus_events: pd.DataFrame
     basal_events: pd.DataFrame
     carb_events: pd.DataFrame
@@ -21,12 +22,6 @@ class DataObject:
     def __init__(self):
         pass
 
-    @classmethod
-    def from_json(cls, json_object):
-        data_object = DataObject()
-        data_object.set_start_time(json_object['start_time'])
-        data_object.end_time(json_object['end_time'])
-        data_object.set_data(pd.DataFrame(json_object['data']))
 
     def set_start_time(self, start_time):
         self.start_time = start_time
@@ -34,9 +29,12 @@ class DataObject:
     def set_end_time(self, end_time):
         self.end_time = end_time
 
-    def set_data(self, subset):
+    def set_data_short(self, subset):
         subset.index = list(map(lambda x: float(x), subset.index))
         self.data = subset.sort_index()
+    def set_data_long(self, subset):
+        subset.index = list(map(lambda x: float(x), subset.index))
+        self.data_long = subset.sort_index()
 
     def set_events(self, events):
         self.events = events
@@ -49,6 +47,7 @@ class DataObject:
         cp.start_time = cp.start_time.isoformat()
         cp.end_time = cp.end_time.isoformat()
         cp.data = cp.data.to_json()
+        cp.data_long = cp.data_long.to_json()
         for key in ['carb', 'bolus', 'basal']:
             if hasattr(self, key):
                 cp.__setattr__(key, cp.__getattribute__(key).to_json())
@@ -59,7 +58,8 @@ class DataObject:
         data_object = DataObject()
         data_object.set_start_time(pd.datetime.fromisoformat(di['start_time']))
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
-        data_object.set_data(pd.DataFrame(json.loads(di['data'])))
+        data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
+        data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
         if 'result' in di:
             data_object.set_result(di['result'])
         for key in etypes:

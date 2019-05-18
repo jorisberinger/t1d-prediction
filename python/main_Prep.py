@@ -9,9 +9,8 @@ from tinydb.middlewares import CachingMiddleware
 from data.dataPrep import add_gradient
 from dataPreperation.dataLoader import DataLoader
 
-path = os.getenv('T1DPATH', '../')
-db_path = path + 'data/tinydb/db1.json'
 
+path = os.getenv('T1DPATH', '../')
 data_csv_path = path + 'data/csv/data.csv'
 
 # This method reads in data from a csv file and converts it into sliding windows which are saved into a TinyDB json file. 
@@ -24,11 +23,11 @@ def main(db: TinyDB, filepath=data_csv_path):
     data_loader.load(filepath)
     logging.debug("Adding events")
     data_loader.add_events()
-    logging.debug("Removing invalid samples")
-    data_loader.check_valid()
     logging.debug("Calculate gradients")
     add_gradient(db)
-    logging.debug("Done")
+    logging.debug("Removing invalid samples")
+    data_loader.check_valid()
+    logging.debug("Done Importing and cleaning")
 
 
 if __name__ == '__main__':
@@ -36,6 +35,8 @@ if __name__ == '__main__':
     coloredlogs.install(level = 'INFO',
                         fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
     start = time.time()
+    
+    db_path = path + 'data/tinydb/db1.json'
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
     main(db)
     end = time.time()
