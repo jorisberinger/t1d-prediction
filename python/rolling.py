@@ -31,6 +31,7 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
 
     # create random iterator
     elements = db.search(~where('result').exists())
+    elements = db.all()
     #elements = list(filter(lambda x: len(x['result']) < 10, elements))
     # elements = filter_elements(db.search(where('result').exists()))
     #elements = list(filter(lambda x: x['result'][0]['errors'][0] > 75, elements))
@@ -41,7 +42,7 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
     #elements = []
     for item in elements:
         # Break out of loop if enough results or it takes too long
-        if len(results) >= 1 or \
+        if len(results) >= 10 or \
                 (datetime.now() - loop_start).seconds > 60 * 5:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
@@ -53,6 +54,7 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
         predictionWindow.endTime = data_object.end_time
         # select data for this window
         predictionWindow.data = data_object.data
+        predictionWindow.data_long = data_object.data_long
         predictionWindow.events = pd.concat([data_object.carb_events, data_object.basal_events, data_object.bolus_events])
 
 

@@ -42,7 +42,7 @@ def check_and_plot(pw: PredictionWindow, item):
                    Arima(pw), SameValue(pw),
                    LastNDelta(pw, 30), LastNDelta(pw, 180), LastNDelta(pw, 15)]
 
-    predictors = [SameValue(pw), LastNDelta(pw, 30), LastNDelta(pw, 15)]
+    predictors = [Arima(pw)]
     if 'result' in item:
         calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
         predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))

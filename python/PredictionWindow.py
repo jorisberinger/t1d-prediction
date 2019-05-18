@@ -7,6 +7,7 @@ import extractor
 
 class PredictionWindow:
     data: pandas.DataFrame = None
+    data_long: pandas.DataFrame = None
     startTime = None
     endTime = None
     userData = None

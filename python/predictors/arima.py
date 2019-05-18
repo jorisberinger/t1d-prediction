@@ -13,6 +13,9 @@ from predictors.predictor import Predictor
 path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
 sampleTime = 1
+train_hours = 60
+test_hours = 3
+total_hours = train_hours + test_hours
 
 
 class Arima(Predictor):
@@ -24,19 +27,20 @@ class Arima(Predictor):
         super().__init__()
         self.pw: PredictionWindow = pw
         self.sample_time = sampleTime
-        self.window = window = self.pw.data.iloc[::sampleTime]['cgmValue']
+        self.window = window = self.pw.data_long.iloc[::sampleTime]['cgmValue']
         self.index_train = pd.timedelta_range(start = '0 hour',
-                                              end = '{} hours'.format(self.pw.userData.train_length() / 60),
+                                              end = '{} hours'.format(train_hours),
                                               freq = str(sampleTime) + 'min')
-        self.index_test = pd.timedelta_range(start = '{} minutes'.format(self.pw.userData.train_length() + self.sample_time),
-                                             end = '{} hours'.format(self.pw.userData.simlength),
+        self.index_test = pd.timedelta_range(start = '{} minutes'.format(train_hours * 60 + self.sample_time),
+                                             end = '{} hours'.format(total_hours),
                                              freq = str(sampleTime) + 'min')
+        logging.debug("done init arima")
 
     def calc_predictions(self, error_times: [int]) -> bool:
-        train = self.window[0:(self.pw.userData.simlength * 60 - self.pw.userData.predictionlength)]
+        train = self.window[:len(self.index_train)-1]
         train.index = pd.to_datetime(self.index_train)
 
-        test = self.window[(self.pw.userData.train_length() + self.sample_time):(self.pw.userData.simlength * 60)]
+        test = self.window[len(self.index_train):]
         test.index = pd.to_datetime(self.index_test)
 
         stepwise_fit = auto_arima(train, max_p = 10, max_q = 10, seasonal = False,
