@@ -58,7 +58,7 @@ def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
     #with_result = db.search((where('result').exists()))
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 6, results)) #
+    results = list(filter(lambda x: len(x) == 7, results)) #
     return results
 
 def getSummary(db: TinyDB, query):
