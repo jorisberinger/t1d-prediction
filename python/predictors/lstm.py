@@ -14,7 +14,7 @@ from predictors.predictor import Predictor
 import keras
 path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
-model_path = path+'model.h5'
+model_path = path+'model-2000.h5'
 
 class LSTM(Predictor):
     name: str = "LSTM Predictor"
@@ -35,7 +35,9 @@ class LSTM(Predictor):
         x = np.empty((1,features.shape[0], features.shape[1]))
         x[0] = features
         prediction = self.model.predict(x)
-        self.prediction_values_all = prediction[0] * 500
+        self.prediction_values_all = pd.Series(prediction[0] * 500, index=range(0,len(prediction[0])*5,5))
+        self.prediction_values = self.prediction_values_all[error_times]
+        self.prediction_values.index += 600
         return True
       
 
