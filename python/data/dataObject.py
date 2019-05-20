@@ -72,10 +72,11 @@ class DataObject:
     def add_events(self):
         logging.debug("adding events")
         events = getEvents(self.data)
-        events = pd.DataFrame([vars(e) for e in events], index=events.index)
-        for key in etypes:
-            self.__setattr__(key, events[events['etype'] == key])
-        logging.debug("done adding events")
+        if not events.empty:
+            events = pd.DataFrame([vars(e) for e in events], index=events.index)
+            for key in etypes:
+                self.__setattr__(key, events[events['etype'] == key])
+            logging.debug("done adding events")
 
     def set_int_index(self):
         logging.debug("set int index")
