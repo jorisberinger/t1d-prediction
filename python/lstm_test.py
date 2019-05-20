@@ -122,7 +122,7 @@ with tf.device('/CPU:0'):
     
     # fit model
 
-    history = model.fit(x_train, y_train, epochs = 10, batch_size = 64 , validation_data = (x_test, y_test))
+    history = model.fit(x_train, y_train, epochs = 2000, batch_size = 128 , validation_data = (x_test, y_test))
     # make a one step prediction out of sample
     # x_input = np.array([9, 10]).reshape((1, n_input, n_features))
     # yhat = model.predict(x_input, verbose=0)
@@ -131,7 +131,7 @@ with tf.device('/CPU:0'):
     test_acc = model.evaluate(x_test, y_test)
 
     print('Test accuracy:', test_acc)
-    model.save(path+'model.h5') 
+    model.save(path+'model-2000.h5') 
 
 logging.info("END")
 
