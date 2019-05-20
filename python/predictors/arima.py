@@ -43,8 +43,8 @@ class Arima(Predictor):
         test = self.window[len(self.index_train):]
         test.index = pd.to_datetime(self.index_test)
 
-        stepwise_fit = auto_arima(train, max_p = 10, max_q = 10, seasonal = False,
-                                  trace = False, max_order = 100,
+        stepwise_fit = auto_arima(train, seasonal = False,
+                                  trace = False,
                                   error_action = 'ignore', suppress_warnings = True, stepwise = True)
 
         if sum(stepwise_fit.order):
