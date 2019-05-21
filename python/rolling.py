@@ -31,8 +31,8 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
 
     # create random iterator
     elements = db.search(~where('result').exists())
-    elements = db.all()
-    #elements = list(filter(lambda x: len(x['result']) < 10, elements))
+    #elements = db.all()
+    #elements = list(filter(lambda x: len(x['result']) < 7, elements))
     # elements = filter_elements(db.search(where('result').exists()))
     #elements = list(filter(lambda x: x['result'][0]['errors'][0] > 75, elements))
 
@@ -42,8 +42,8 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
     #elements = []
     for item in elements:
         # Break out of loop if enough results or it takes too long
-        if len(results) >= 5 or \
-                (datetime.now() - loop_start).seconds > 60 * 5:
+        if len(results) >= 3000 or \
+                (datetime.now() - loop_start).seconds > 60 * 60 * 1:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
         # Get element
@@ -65,18 +65,18 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
         # prediction_carb_optimized.append(checkOptimizer.check(predictionWindow))
 
         if checkData.check_window(predictionWindow.data, user_data):
-            try:
-                res = check.check_and_plot(predictionWindow, item)
-                if res is not None:
-                    results.append(res)
-                    if 'result' in item:
-                        item['result'] = item['result'] + res
-                        db.write_back([item])
-                    else:
-                        db.update({'result': res}, doc_ids=[item.doc_id])
-                    db.storage.flush()
-            except:
-                pass
+        
+            res = check.check_and_plot(predictionWindow, item)
+            if res is not None:
+                results.append(res)
+                if 'result' in item:
+                    item['result'] = item['result'] + res
+                    db.write_back([item])
+                else:
+                    db.update({'result': res}, doc_ids=[item.doc_id])
+                
+
+    db.storage.flush()
     logger.info("length of result {}".format(len(results)))
     # save all prediction carb optimized values to a json file
     to_file(prediction_carb_optimized)

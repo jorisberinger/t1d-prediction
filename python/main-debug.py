@@ -25,7 +25,7 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/data_17_3-4.csv"
-db_path = path + 'data/tinydb/db1.json'
+db_path = path + 'data/tinydb/db16.json'
 
 # filename = path + "data/csv/data-o3.csv"
 
@@ -53,6 +53,22 @@ def main():
 
 
     with_result = db.search(where('result').exists())
+
+
+    # Filter Items with LSMT Result
+
+    lstm_result = list(filter(check_lstm, with_result))
+
+    logging.info("number of results with lstm {}".format(len(lstm_result)))
+
+    for item in lstm_result:
+        item['result'] = list(filter(lambda x: x['predictor'] != 'LSTM Predictor', item['result']))
+        db.write_back([item])
+
+    db.storage.flush()
+
+    exit()
+
     # with_result = db.search(where('doc_id') in list(range(19650, 19700)))
     # res = list(map(lambda x: db.get(doc_id=x),range(19600,19700)))
     # res = list(filter(lambda x: (x is not None), res))
@@ -82,6 +98,11 @@ def main():
         for x in item:
             print(x)
         exit()
+
+def check_lstm(item):
+    results = item['result']
+    predictors = list(map(lambda x: x['predictor'], results))
+    return 'LSTM Predictor' in predictors
 
 def plot(item):
     logging.info('plotting {}'.format(item.doc_id))

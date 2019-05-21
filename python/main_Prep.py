@@ -20,7 +20,7 @@ def main(db: TinyDB, filepath=data_csv_path):
     logging.debug("Init data loader")
     data_loader = DataLoader(db)
     logging.info("Loading csv file {}".format(os.path.abspath(filepath)))
-    data_loader.load(filepath)
+    #data_loader.load(filepath)
     logging.debug("Adding events")
     data_loader.add_events()
     logging.debug("Calculate gradients")
