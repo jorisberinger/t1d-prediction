@@ -36,7 +36,7 @@ Build the docker image from the provided Dockerfile
 `docker build -t t1d-pred:latest .` (call from root of project)
 
 ### Run Docker image
-You need to mount your local files and input data
+You need to mount your local files and input data to the docker container
 
 `docker run --rm -v <absoulute path to root of project (should end with /t1d-prediction)>:/t1d t1d-pred:latest`
 
