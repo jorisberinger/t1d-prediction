@@ -30,6 +30,9 @@ def check_data_object(data_object: DataObject) -> bool:
 def check_events(data_object:DataObject) -> bool:
     # check for events in the prediction time frame
     event_types = ['carb', 'bolus'] # basal events are fine
+    # check that there is at least a carb or a bolus event
+    if not any(map(lambda x: hasattr(data_object, x + '_events'), event_types)):
+        return False
     for key in event_types:
         if hasattr(data_object, key + '_events'):
             events = data_object.__getattribute__(key + '_events')

@@ -43,10 +43,14 @@ def main():
     logging.info("length of db: {}".format(len(db)))
     all = db.all()
 
-    #outliers = list(filter(detect_outliers, all))
-    # logging.info("number of outliers {}".format(len(outliers)))
 
-   
+
+    item = db.get(doc_id = 17713)
+    da = DataObject.from_dict(item)
+    da.add_events()
+
+    logging.info("check item")
+    exit()
 
     
 
