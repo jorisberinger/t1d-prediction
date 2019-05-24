@@ -16,6 +16,25 @@ timeZone = "+0100"
 path = os.getenv('T1DPATH', '../')
 folder_path = path + "data/input/1/"
 
+
+
+# read data and create json files for autotune
+def prep_for_autotune(data):
+    logger.info("prep for autotune - start")
+    directory = os.path.dirname(folder_path)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    # create glucose.json from cgmValue
+    cgms = extractor.getBGContinious(data)
+    createGlucoseJson(cgms)
+
+    # create pumphistory.json from insulin events
+    events = extractor.getEvents(data)
+    createPumphistoryJson(events)
+    logger.info("prep for autotune - end")
+
+    
 # Convert Time from String to Datetime object
 def convertTime(dateandtime):
     return datetime.strptime(dateandtime + timeZone, timeFormat)
@@ -51,17 +70,17 @@ def bolusToJson(event):
     return {"eventType": "Correction Bolus",
             "duration": 0,
             "insulin": event.units,
-            "timestamp": convertTime(event.time).isoformat(),
+            "timestamp": str(event.time),
             "_id": uuid.uuid4().hex,
                "bolus": {
-                   "timestamp": convertTime(event.time).isoformat(),
+                   "timestamp": str(event.time),
                    "_type": "Bolus",
                    "amount": event.units,
                    "programmed": event.units,
                    "unabsorbed": 0,
                    "duration": 0
                },
-            "created_at": convertTime(event.time).isoformat(),
+            "created_at": str(event.time),
             "notes": "Normal bolus (solo, no bolus wizard).\nCalculated IOB: 0.279\nProgrammed bolus 0.4\nDelivered bolus 0.4\nPercent delivered:  100%",
             "medtronic": "mm://openaps/mm-format-ns-treatments/Correction Bolus",
             "enteredBy": "openaps://medtronic/754",
@@ -74,21 +93,21 @@ def basalToJson(event):
             "duration": 30,
             "rate": event.dbdt,
             "absolute": event.dbdt,
-            "timestamp": convertTime(event.time).isoformat(),
+            "timestamp": str(event.time),
             "_id": uuid.uuid4().hex,
             "raw_rate": {
-                "timestamp": convertTime(event.time).isoformat(),
+                "timestamp": str(event.time),
                 "_type": "TempBasal",
                 "temp": "absolute",
                 "rate": event.dbdt
             },
             "raw_duration": {
-                "timestamp": convertTime(event.time).isoformat(),
+                "timestamp": str(event.time),
                 "_type": "TempBasalDuration",
                 "duration (min)": 30
             },
             "medtronic": "mm://openaps/mm-format-ns-treatments/Temp Basal",
-            "created_at": convertTime(event.time).isoformat(),
+            "created_at": str(event.time),
             "enteredBy": "openaps://medtronic/754",
             "carbs": None,
             "insulin": None
@@ -107,28 +126,12 @@ def eventToJson(e):
 # create insulin pump history Json in order to use it as input for autotune
 def createPumphistoryJson(events):
     data = pandas.DataFrame(events)
-    data['date'] = data.apply(lambda x:
-                              x.values[0].time.split(',')[0], axis=1)
+    data['date'] = pandas.DatetimeIndex(events.index).date
     grouped = data.groupby('date')
     for name, group in grouped:
-        logger.debug("pumphistory - " + name)
+        logger.debug("pumphistory - " + name.isoformat())
         jsondata = group.apply(eventToJson, axis=1)
         jsondata = jsondata[jsondata.notnull()]
-        writeJson(jsondata.values.tolist(), "pumphistory-"+name)
+        writeJson(jsondata.values.tolist(), "pumphistory-"+ name.strftime('%d.%m.%y'))
 
 
-# read data and create json files for autotune
-def prep_for_autotune(data):
-    logger.info("prep for autotune - start")
-    directory = os.path.dirname(folder_path)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-
-    # create glucose.json from cgmValue
-    cgms = extractor.getBGContinious(data)
-    createGlucoseJson(cgms)
-
-    # create pumphistory.json from insulin events
-    events = extractor.getEvents(data)
-    createPumphistoryJson(events)
-    logger.info("prep for autotune - end")
