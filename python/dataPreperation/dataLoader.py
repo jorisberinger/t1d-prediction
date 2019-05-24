@@ -1,7 +1,7 @@
 import logging
 from tinydb import TinyDB, where
 import pandas as pd
-
+import random
 from data.checkData import check_data_object
 from data.convertData import convert, interpolate_cgm
 from data.dataObject import DataObject
@@ -45,18 +45,30 @@ class DataLoader:
     def check_valid(self):
         # get all items which are not flagged valid
         items = self.db.search(~where('valid').exists())
+        random.shuffle(items)
         logging.info("checking {} items".format(len(items)))
         remove_ids = []
         valid_ids = []
+        valid_events = []
+        valid_cgms = []
+        issues = []
         for item in items:
-            valid = check_data_object(DataObject.from_dict(item))
+            valid, v_events, v_cgm, issue = check_data_object(DataObject.from_dict(item))
+            valid_events.append(v_events)
+            valid_cgms.append(v_cgm)
+            if not v_cgm:
+                issues.append(issue)
             if valid:
                 valid_ids.append(item.doc_id)
-            else:
+            if not valid:
                 remove_ids.append(item.doc_id)
         # remove invalid items
         self.db.remove(doc_ids = remove_ids)
         # remember valid items
+        logging.info("not valid events {}".format(len(valid_events) - sum(valid_events)))
+        logging.info("not valid cgms {}".format(len(valid_cgms) - sum(valid_cgms)))
+        logging.info("less than 10: {}".format(len(issues) - sum(issues)))
+        logging.info("max difference < 75: {}".format(sum(issues)))
         self.db.update({'valid': True}, doc_ids=valid_ids)
         self.db.storage.flush()
         logging.info("removed {} items form db".format(len(remove_ids)))

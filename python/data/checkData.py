@@ -19,12 +19,9 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
 
 def check_data_object(data_object: DataObject) -> bool:
     valid_events: bool = check_events(data_object)
-    valid_cgm: bool = check_cgm(data_object)
+    valid_cgm, issue = check_cgm(data_object)
     valid: bool = valid_events and valid_cgm
-    if not valid:
-        return valid
-
-    return valid
+    return valid, valid_events, valid_cgm, issue
 
 
 def check_events(data_object:DataObject) -> bool:
@@ -51,9 +48,12 @@ def check_cgm(data_object: DataObject) -> bool:
     index = cgm_values.index.values 
     if len(index) < 10:
         logging.debug("index less than 10 items")
-        return False
+        return False, 0
     differences = index[1:-1] - index[0:-2]
-    return max(differences) < 75
+    if max(differences) >= 75:
+        return False, 1
+    else:
+        return True, 0
 
 
 
