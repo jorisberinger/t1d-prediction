@@ -22,8 +22,8 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 path = os.getenv('T1DPATH', '../')
 
 # SET INPUT FILE PATH
-filepath = path + "data/csv/data_16.csv"
-db_path = path + 'data/tinydb/db16.json'
+filepath = path + "data/csv/data_18.csv"
+db_path = path + 'data/tinydb/db18.json'
 
 # filename = path + "data/csv/data-o3.csv"
 
@@ -47,6 +47,7 @@ def main():
     # Load data from csv into database
     prep.main(db, filepath)
 
+    exit()
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediciton")
     prediction_result = rolling.rolling(db, user_data, create_plots)
