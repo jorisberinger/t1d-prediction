@@ -16,9 +16,10 @@ from autotune import autotune
 from data import readData, convertData
 from data.dataPrep import add_gradient
 import main_Prep as prep
+from autotune.autotune_runner import run_autotune
 
 logger = logging.getLogger(__name__)
-coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
+coloredlogs.install(level = logging.DEBUG , fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 path = os.getenv('T1DPATH', '../')
 
 # SET INPUT FILE PATH
@@ -35,7 +36,10 @@ def main():
     user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
                          predictionlength = 180, stats = None)
 
+    # Calculate Insulin Sensitivity factor and Carbohydrate Ratio with autotune
+    run_autotune(filepath) 
 
+    exit()
     # Get Database
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
     logging.info("Loaded database from {} with {} items".format(os.path.abspath(db_path),len(db)))

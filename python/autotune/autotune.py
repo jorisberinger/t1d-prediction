@@ -2,6 +2,7 @@ import logging
 import subprocess
 import json
 import os
+import pandas as pd
 
 from autotune import autotune_prep
 
@@ -17,16 +18,11 @@ corejs = "/autotune/oref0/bin/oref0-autotune-core.js"
 profilejson = folder + "profile.json"
 profilepumpjson = folder + "profile.pump.json"
 
-def runAutotune(data):
-    logger.debug("Prep glucose and insulin history for autotune as json")
-    autotune_prep.prep_for_autotune(data)
-    logger.debug("Run autotune")
-    res = run_autotune(data)
-    return res
 
 
 
-def run_autotune(data):
+
+def run_autotune_calc(data):
     logger.info("run autotune")
     directory = os.path.dirname(path)
     if not os.path.exists(directory):
