@@ -123,7 +123,7 @@ class Optimizer(Predictor):
         carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
         insulin_events = self.pw.events[self.pw.events.etype != 'carb']
         allEvents = pandas.concat([insulin_events, carb_events])
-        offset = self.get_prediction_value(0, allEvents) - self.pw.lastValue
+        offset = self.get_prediction_value(self.pw.userData.train_length(), allEvents) - self.pw.train_value
         self.prediction_values = list(map(lambda error_time: self.get_prediction_value(error_time, allEvents) - offset, error_times + self.pw.userData.train_length()))
 
         self.all_events = allEvents
