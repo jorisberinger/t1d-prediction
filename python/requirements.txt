@@ -7,3 +7,4 @@ matplotlib
 coloredlogs
 ujson
 tinydb
+statsmodels

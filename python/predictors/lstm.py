@@ -38,6 +38,7 @@ class LSTM(Predictor):
         self.prediction_values_all = pd.Series(prediction[0] * 500, index=range(0,len(prediction[0])*5,5))
         self.prediction_values = self.prediction_values_all[error_times]
         self.prediction_values.index += 600
+        self.prediction_values_all.index += 600
         return True
       
 

@@ -48,8 +48,7 @@ def check_and_plot(pw: PredictionWindow, item):
                     LSTM(pw)
                     ]
 
-
-    # if 'result' in item:
+    #if 'result' in item:
     #     calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
     #     predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
     logging.info("Predictors: {}".format(list(map(lambda x: x.name, predictors))))
@@ -72,7 +71,7 @@ def check_and_plot(pw: PredictionWindow, item):
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     # set figure size
     fig = plt.figure(figsize = (20, 16))
-    gs = gridspec.GridSpec(6, 1, height_ratios = [3, 1, 1, 1, 3, 3])
+    gs = gridspec.GridSpec(5, 1, height_ratios = [3, 1, 1, 3, 3])
     subplot_iterator = iter(gs)
 
     # Set Title to day of week and starting time
@@ -84,7 +83,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_events(plt.subplot(next(subplot_iterator)), pw)
 
     # EVENTS OPTIMIZED
-    plot_events_optimized(plt.subplot(next(subplot_iterator)), pw, predictors)
+    #plot_events_optimized(plt.subplot(next(subplot_iterator)), pw, predictors)
 
     # IOB / COB
     plot_iob_cob(plt.subplot(next(subplot_iterator)), pw, predictors)
@@ -96,7 +95,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/opt-plots/result-n-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results/plots/result-oulier-over-200-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 

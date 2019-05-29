@@ -64,6 +64,7 @@ def getResults(db: TinyDB, query):
 def getSummary(db: TinyDB, query):
     logger.debug("in get Summary")
     res = getResults(db, query)
+    logging.info("Number of results for query {}: {}".format(query, len(res)))
     if len(res) == 0:
         logging.warning("no result")
         return [],[]
