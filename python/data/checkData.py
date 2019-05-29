@@ -45,10 +45,13 @@ def check_events(data_object:DataObject) -> bool:
 def check_cgm(data_object: DataObject) -> bool:
     # Check that there are no gaps in cgm_values
     cgm_values = data_object.data['cgmValue_original'].dropna()
-    index = cgm_values.index.values 
+    index = cgm_values.index.values
+    # Check that the first and last value are close to the start and end
     if len(index) < 10:
         logging.debug("index less than 10 items")
         return False, 0
+    if index[0] > 30 or index[-1] < 750:
+        return False, 1
     differences = index[1:-1] - index[0:-2]
     if max(differences) >= 75:
         return False, 1
