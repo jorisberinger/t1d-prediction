@@ -21,17 +21,20 @@ class DataLoader:
     # Read data from file and put into database
     def load(self, filename):
         # Read file as pandas Dataframe
+        logging.debug("read data...")
         data_original = read_data(filename)
         # Prepare Data
+        logging.debug("prepare data...")
         data = prepare_data(data_original)
         # add data to tiny db
+        logging.debug("add data to database...")
         count = add_to_db(data, self.db)
         logging.info("added {} new items to DB".format(count))
 
     def add_events(self):
         count = 0
         # Iterate through all items in db
-        for item in self.db.search(~where('carb').exists() | ~where('bolus').exists() | ~where('basal').exists()):
+        for item in self.db.search(~where('valid').exists() & (~where('carb').exists() | ~where('bolus').exists() | ~where('basal').exists())):
             if not hasattr(item, 'carb'):
                 data_object = DataObject.from_dict(item)
                 logging.debug("doc id: {}".format(item.doc_id))
@@ -63,13 +66,16 @@ class DataLoader:
             if not valid:
                 remove_ids.append(item.doc_id)
         # remove invalid items
-        self.db.remove(doc_ids = remove_ids)
+        ##self.db.remove(doc_ids = remove_ids)
         # remember valid items
-        logging.info("not valid events {}".format(len(valid_events) - sum(valid_events)))
-        logging.info("not valid cgms {}".format(len(valid_cgms) - sum(valid_cgms)))
-        logging.info("less than 10: {}".format(len(issues) - sum(issues)))
-        logging.info("max difference < 75: {}".format(sum(issues)))
+        logging.debug("not valid events {}".format(len(valid_events) - sum(valid_events)))
+        logging.debug("not valid cgms {}".format(len(valid_cgms) - sum(valid_cgms)))
+        logging.debug("less than 10: {}".format(len(issues) - sum(issues)))
+        logging.debug("max difference < 75: {}".format(sum(issues)))
         self.db.update({'valid': True}, doc_ids=valid_ids)
+        self.db.update({'valid': False}, doc_ids=remove_ids)
         self.db.storage.flush()
         logging.info("removed {} items form db".format(len(remove_ids)))
-        logging.info("Still {} items in db".format(len(self.db)))
+        logging.info("Still {} items in db".format(len(self.db.search(where('valid') == True))))
+
+
