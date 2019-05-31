@@ -4,7 +4,7 @@ import logging
 import os
 import random
 from datetime import timedelta, datetime
-
+import config
 import pandas as pd
 from tinydb import TinyDB, where
 
@@ -20,8 +20,8 @@ path = os.getenv('T1DPATH', '../')
 
 
 # make rolling prediction and call checkWindow for every data window
-def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
-    check_diretories()
+def rolling(db: TinyDB, user_data: UserData):
+    check_directories()
     predictionWindow = PredictionWindow()
 
     results = []
@@ -29,23 +29,15 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
     i = 0
     loop_start = datetime.now()
 
-    # create random iterator
-    elements = db.search(where('result').exists())
-    #elements = db.all()
-    #elements = list(filter(lambda x: len(x['result']) < 7, elements))
-    
-    elements = list(filter(lambda item: any(list(map(lambda result: abs(result['errors'][0]) > 200, item['result']))), elements))
-    # elements = filter_elements(db.search(where('result').exists()))
-    #elements = list(filter(lambda x: x['result'][0]['errors'][0] > 75, elements))
-
-    logging.info("number of unprocessed items {}".format(len(elements)))
+    # create random iterator over valid items without a result
+    elements = db.search(~where('result').exists() & (where('valid') == True))
     random.shuffle(elements)
-    #elements = [db.get(doc_id=5748)]
-    #elements = []
+    logging.info("number of unprocessed items {}".format(len(elements)))
+
     for item in elements:
         # Break out of loop if enough results or it takes too long
-        if len(results) >= 20 or \
-                (datetime.now() - loop_start).seconds > 60 * 60 * 4:
+        if len(results) >= config.PREDICTION_CONFIG['max_number_of_results'] or \
+                (datetime.now() - loop_start).seconds > config.PREDICTION_CONFIG['max_number_of_results']:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
         # Get element
@@ -58,17 +50,15 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
         predictionWindow.data = data_object.data
         predictionWindow.data_long = data_object.data_long
         predictionWindow.events = pd.concat([data_object.carb_events, data_object.basal_events, data_object.bolus_events])
-
-
         predictionWindow.userData = user_data
-        predictionWindow.plot = plotOption
-
+        predictionWindow.plot = config.PREDICTION_CONFIG['create_plots']
 
         # prediction_carb_optimized.append(checkOptimizer.check(predictionWindow))
 
         if checkData.check_window(predictionWindow.data, user_data):
-        
+            # Call to Predictors
             res = check.check_and_plot(predictionWindow, item)
+            # Write result back into db
             if res is not None:
                 results.append(res)
                 if 'result' in item:
@@ -76,26 +66,27 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
                     db.write_back([item])
                 else:
                     db.update({'result': res}, doc_ids=[item.doc_id])
-                
+        db.storage.flush()       
 
-    db.storage.flush()
     logger.info("length of result {}".format(len(results)))
     # save all prediction carb optimized values to a json file
     to_file(prediction_carb_optimized)
 
     return results
 
+
 def filter_elements(elements: []) -> []:
     logging.info("in filter")
     fe = list(filter(lambda x: x['result'].pop(1)['errors'][0] > 100, elements))
     return fe
+
 
 def to_file(arr):
     with open(path + "results/prediction_carbs.json", 'w+') as file:
         file.write(json.dumps(arr))
 
 
-def check_diretories():
+def check_directories():
     directory = os.path.dirname(path + "results/")
     if not os.path.exists(directory):
         os.makedirs(directory)

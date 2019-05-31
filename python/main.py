@@ -7,7 +7,7 @@ import coloredlogs
 import pandas as pd
 from tinydb import TinyDB, JSONStorage, where
 from tinydb.middlewares import CachingMiddleware
-
+import config
 import analyze
 import gifmaker
 import rolling
@@ -23,46 +23,36 @@ coloredlogs.install(level = logging.DEBUG , fmt = '%(asctime)s %(filename)s[%(li
 path = os.getenv('T1DPATH', '../')
 
 # SET INPUT FILE PATH
-filepath = path + "data/csv/data_16.csv"
-db_path = path + 'data/tinydb/db16.json'
+filepath = path + config.DATA_CONFIG['csv_input_path']
+db_path = path + config.DATA_CONFIG['database_path']
 
-# filename = path + "data/csv/data-o3.csv"
 
 def main():
     logger.info("Start Main!")
-    create_plots: bool = True  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
     user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
                          predictionlength = 180, stats = None)
 
     # Calculate Insulin Sensitivity factor and Carbohydrate Ratio with autotune
-    run_autotune(filepath) 
+    #run_autotune(filepath) 
 
-    exit()
     # Get Database
+    logging.debug("Loading database...")
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
     logging.info("Loaded database from {} with {} items".format(os.path.abspath(db_path),len(db)))
-
-    # db.purge_tables()
-
-    # logging.info("Loaded database from {} with {} items".format(os.path.abspath(db_path),len(db)))
 
     # Load data from csv into database
     prep.main(db, filepath)
 
     # MAKE A ROLLING PREDICTION
-    logger.info("Start Prediciton")
-    prediction_result = rolling.rolling(db, user_data, create_plots)
+    logger.info("Start Prediction")
+    prediction_result = rolling.rolling(db, user_data)
     logger.info("Finished prediction")
 
     # CREATE PLOTS FOR ANALYSE SUMMARY
+    logger.info("creating error plots..")
     analyze.createErrorPlots(db)
-
-
-    # CREATE A GIF OUT OF THE PREDICTION PLOTS
-    #if create_plots:
-    #    gifmaker.makeGif(path + "results/plots/", data)
 
     logger.info("Main finished!")
 
