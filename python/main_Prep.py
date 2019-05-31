@@ -28,6 +28,7 @@ def main(db: TinyDB, filepath=data_csv_path):
     logging.debug("Removing invalid samples")
     data_loader.check_valid()
     logging.debug("Done Importing and cleaning")
+    data_loader.clean_invalid()
 
 
 if __name__ == '__main__':
