@@ -1,6 +1,6 @@
 PREDICTION_CONFIG = {
-    "runtime_in_minutes": 1,         # Prediction will stop either after specified runtime or after reaching
-    "max_number_of_results": 1,     # max number of results, whichever comes first.
+    "runtime_in_minutes": 5,         # Prediction will stop either after specified runtime or after reaching
+    "max_number_of_results": 5,     # max number of results, whichever comes first.
     "create_plots": False           # Create a plot for every example containing different predictions and events
 }
 
