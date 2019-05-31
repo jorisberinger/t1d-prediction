@@ -19,7 +19,7 @@ import main_Prep as prep
 from autotune.autotune_runner import run_autotune
 
 logger = logging.getLogger(__name__)
-coloredlogs.install(level = logging.DEBUG , fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
+coloredlogs.install(level = logging.INFO , fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 path = os.getenv('T1DPATH', '../')
 
 # SET INPUT FILE PATH
@@ -41,6 +41,7 @@ def main():
     logging.debug("Loading database...")
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
     logging.info("Loaded database from {} with {} items".format(os.path.abspath(db_path),len(db)))
+    logging.info("Valid items: {}".format(len(db.search(where('valid') == True))))
 
     # Load data from csv into database
     prep.main(db, filepath)
