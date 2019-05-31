@@ -81,7 +81,7 @@ class DataLoader:
 
     def clean_invalid(self):
         for key in ['data','data_long','carb','bolus','basal']:
-            self.db.update(delete(key), where('valid') == False)
+            self.db.update(delete(key), (where('valid') == False) & where(key).exists())
         self.db.storage.flush()
 
 
