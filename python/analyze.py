@@ -21,9 +21,9 @@ def analyzeFile(filename):
 
 def createErrorPlots(db):
     logging.info("in all_errors")
-    queries = [{'q': where('result').exists(), "fn":"all"},
-               {'q': where('result').exists() & (where('gradient-s') >= 10), "fn": "gradient-over-10"},
-               {'q': where('result').exists() & (where('gradient-s') < 10), "fn": "gradient-under-10"}
+    queries = [{'q': where('result').exists() & (where('valid') == True), "fn":"all"},
+               {'q': where('result').exists() & (where('valid') == True) & (where('gradient-s') >= 10), "fn": "gradient-over-10"},
+               {'q': where('result').exists() & (where('valid') == True) & (where('gradient-s') < 10), "fn": "gradient-under-10"}
                ]
     for query in queries:
         means, data =  getSummary(db, query)
