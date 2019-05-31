@@ -1,5 +1,6 @@
 import logging
 from tinydb import TinyDB, where
+from tinydb.operations import delete
 import pandas as pd
 import random
 from data.checkData import check_data_object
@@ -78,5 +79,10 @@ class DataLoader:
         self.db.storage.flush()
         logging.info("removed {} items form db".format(len(remove_ids)))
         logging.info("Still {} items in db".format(len(self.db.search(where('valid') == True))))
+
+    def clean_invalid(self):
+        for key in ['data','data_long','carb','bolus','basal']:
+            self.db.update(delete(key), where('valid') == False)
+        self.db.storage.flush()
 
 
