@@ -10,6 +10,13 @@ from statsmodels.tsa.arima_model import ARIMAResults
 
 from PredictionWindow import PredictionWindow
 from predictors.predictor import Predictor
+
+
+from statsmodels.tsa.arima_model import ARIMA
+
+
+
+
 path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
 sampleTime = 1
@@ -44,12 +51,23 @@ class Arima(Predictor):
         test.index = pd.to_datetime(self.index_test)
 
         stepwise_fit = auto_arima(train, seasonal = False,
-                                  trace = False,
-                                  error_action = 'ignore', suppress_warnings = True, stepwise = True)
+                                  trace = True, max_p = 10, max_q = 10, max_order = 100,
+                                  error_action = 'ignore', suppress_warnings = False, stepwise = True)
 
         if sum(stepwise_fit.order):
             preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
             prediction = pd.Series(preds, index = test.index)
+            model = ARIMA(train, order=stepwise_fit.order).fit(disp=0)
+            train_compare = model.predict(typ='levels')
+            data = model.predict(typ='levels', end = 3600 +180)
+
+            train.plot(label='Training data')
+            plt.plot(prediction, label='auto prediction')
+            plt.plot(train_compare, label='train compare')
+            plt.plot(data, label='prediction')
+            plt.legend()
+            plt.savefig(path+'results/test')
+
             index = np.arange(self.pw.userData.train_length() + sampleTime, self.pw.userData.simlength * 60 + 1,
                               self.sample_time)
             self.prediction_values_all = prediction

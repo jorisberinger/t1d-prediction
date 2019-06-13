@@ -22,14 +22,14 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 path = os.getenv('T1DPATH', '../')
 
 # SET INPUT FILE PATH
-filepath = path + "data/csv/data_18.csv"
-db_path = path + 'data/tinydb/db18.json'
+filepath = path + "data/csv/data_16.csv"
+db_path = path + 'data/tinydb/db16.json'
 
 # filename = path + "data/csv/data-o3.csv"
 
 def main():
     logger.info("Start Main!")
-    create_plots: bool = False  # Select True if you want a plot for every prediction window
+    create_plots: bool = True  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
     user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
@@ -47,7 +47,6 @@ def main():
     # Load data from csv into database
     prep.main(db, filepath)
 
-    exit()
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediciton")
     prediction_result = rolling.rolling(db, user_data, create_plots)

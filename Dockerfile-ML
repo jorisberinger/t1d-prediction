@@ -1,0 +1,12 @@
+# Use tensorflow base image with GPU support
+FROM tensorflow/tensorflow:1.13.1-gpu-py3
+# Set working directory
+WORKDIR /t1d
+# Copy pip requirements file into container
+COPY python/ml/requirements.txt /
+# Install requirements
+RUN pip install -r /requirements.txt
+# Set t1d path, can be used for relative paths
+ENV T1DPATH=/t1d/
+# Execute main-ml.py when running container
+CMD python python/ml/main-ml.py

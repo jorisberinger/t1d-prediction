@@ -41,22 +41,47 @@ def main():
     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
 
     logging.info("length of db: {}".format(len(db)))
-    all = db.all()
+
+    #all = db.all()
+
+    with_result = db.search(where('result').exists())
+
+    outliers = list(filter(lambda item: any(list(map(lambda result: abs(result['errors'][0]) > 100, item['result']))), with_result))
+
+    logging.info("number of outliers: {}".format(len(outliers)))
+
+    list(map(plot, outliers))
+   
+    exit()
+
+    logging.info("results with optimizer: {} ".format(len(list(filter(lambda x: any(list(map(lambda y: 'Optimizer' in y['predictor'], x['result']))), with_result)))))
+    for item in with_result:
+        item['result'] = list(filter(lambda x: 'Optimizer' not in x['predictor'], item['result']))
+        db.write_back([item])
+
+    db.storage.flush()
+
+    exit()
 
 
+    logging.info("with result: {}".format(len(with_result)))
 
-    item = db.get(doc_id = 17713)
-    da = DataObject.from_dict(item)
-    da.add_events()
+    results = list(map(lambda x: x['result'], with_result)) 
 
-    logging.info("check item")
+    seven = list(filter(lambda x : len(x) == 7, results))
+
+    logging.info("with 7 results: {}".format(len(seven)))
+
+    le = pd.Series(list(map(len, with_result)))
+    logging.info(le.describe())
+
     exit()
 
     
 
 
 
-    with_result = db.search(where('result').exists())
+    
 
 
     # Filter Items with LSMT Result
@@ -117,9 +142,13 @@ def plot(item):
         logging.info("something wrong")
 
     dataObject.data['cgmValue'].plot()
-    plt.savefig('{}results/opt-plots/doc-{}.png'.format(path,item.doc_id))
+    plt.scatter(dataObject.data['cgmValue_original'].index, dataObject.data['cgmValue_original'])
+    
+    plt.savefig('{}results/outliers/doc-{}.png'.format(path,item.doc_id))
     plt.close()
     logging.info("end")
+
+
 
 def detect_outliers(item):
     dataObject = DataObject.from_dict(item)
@@ -133,6 +162,12 @@ def detect_outliers(item):
     return False
 
 
+def check_outliers(item):
+    return any(list(map(check_result, item['result'])))
+
+def check_result(result):
+    logging.info("result: {}".format(result))
+    return abs(result['errors'][0]) > 100
 
 
 if __name__ == "__main__":

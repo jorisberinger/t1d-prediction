@@ -30,9 +30,11 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
     loop_start = datetime.now()
 
     # create random iterator
-    elements = db.search(~where('result').exists())
+    elements = db.search(where('result').exists())
     #elements = db.all()
     #elements = list(filter(lambda x: len(x['result']) < 7, elements))
+    
+    elements = list(filter(lambda item: any(list(map(lambda result: abs(result['errors'][0]) > 200, item['result']))), elements))
     # elements = filter_elements(db.search(where('result').exists()))
     #elements = list(filter(lambda x: x['result'][0]['errors'][0] > 75, elements))
 
@@ -42,8 +44,8 @@ def rolling(db: TinyDB, user_data: UserData, plotOption: bool):
     #elements = []
     for item in elements:
         # Break out of loop if enough results or it takes too long
-        if len(results) >= 3000 or \
-                (datetime.now() - loop_start).seconds > 60 * 60 * 1:
+        if len(results) >= 20 or \
+                (datetime.now() - loop_start).seconds > 60 * 60 * 4:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
         # Get element

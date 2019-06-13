@@ -1,0 +1,6 @@
+keras
+coloredlogs
+tinydb
+pandas
+numpy
+sklearn
