@@ -39,13 +39,13 @@ def check_and_plot(pw: PredictionWindow, item):
 
     # Select with predictors should run
     predictors =   [
-                    Optimizer(pw, [15, 30, 60, 90, 120, 240]),
-                    Optimizer(pw,[90]),
+                    #Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                    #Optimizer(pw,[90]),
                     Arima(pw), 
-                    SameValue(pw),
-                    LastNDelta(pw, 30), 
-                    LastNDelta(pw, 15),
-                    LSTM(pw)
+                    #SameValue(pw),
+                    #LastNDelta(pw, 30), 
+                    #LastNDelta(pw, 15),
+                    #LSTM(pw)
                     ]
 
     #if 'result' in item:
@@ -60,12 +60,17 @@ def check_and_plot(pw: PredictionWindow, item):
 
     # Calculate the prediction errors for each predictor
     errors = calculate_errors(predictors, pw)
+    
+    # Get arima order
+    order = predictors[0].order
 
+    # Get features created by optimizer
+    #features = predictors[0].get_features()
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
         plot_graphs(pw, graphs, errors, predictors)
 
-    return errors
+    return errors, order
 
 
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):

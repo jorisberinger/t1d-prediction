@@ -19,7 +19,7 @@ import main_Prep as prep
 from autotune.autotune_runner import run_autotune
 
 logger = logging.getLogger(__name__)
-coloredlogs.install(level = logging.INFO , fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
+coloredlogs.install(level = logging.DEBUG , fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 path = os.getenv('T1DPATH', '../')
 
 # SET INPUT FILE PATH
@@ -44,7 +44,7 @@ def main():
     logging.info("Valid items: {}".format(len(db.search(where('valid') == True))))
 
     # Load data from csv into database
-    prep.main(db, filepath)
+    #prep.main(db, filepath)
 
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediction")

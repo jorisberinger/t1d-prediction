@@ -46,10 +46,9 @@ class DataLoader:
         self.db.storage.flush()
         logging.info("updated {} items in DB".format(count))
 
-    def check_valid(self):
+    def check_valid(self, early: True):
         # get all items which are not flagged valid
         items = self.db.search(~where('valid').exists())
-        items = self.db.all()
         random.shuffle(items)
         logging.info("checking {} items".format(len(items)))
         remove_ids = []
@@ -58,7 +57,7 @@ class DataLoader:
         valid_cgms = []
         issues = []
         for item in items:
-            valid, v_events, v_cgm, issue = check_data_object(DataObject.from_dict(item))
+            valid, v_events, v_cgm, issue = check_data_object(DataObject.from_dict(item), early)
             valid_events.append(v_events)
             valid_cgms.append(v_cgm)
             if not v_cgm:
@@ -70,11 +69,12 @@ class DataLoader:
         # remove invalid items
         ##self.db.remove(doc_ids = remove_ids)
         # remember valid items
-        logging.debug("not valid events {}".format(len(valid_events) - sum(valid_events)))
-        logging.debug("not valid cgms {}".format(len(valid_cgms) - sum(valid_cgms)))
-        logging.debug("less than 10: {}".format(len(issues) - sum(issues)))
-        logging.debug("max difference < 75: {}".format(sum(issues)))
-        self.db.update({'valid': True}, doc_ids=valid_ids)
+        if not early:
+            logging.debug("not valid events {}".format(len(valid_events) - sum(valid_events)))
+            logging.debug("not valid cgms {}".format(len(valid_cgms) - sum(valid_cgms)))
+            logging.debug("less than 10: {}".format(len(issues) - sum(issues)))
+            logging.debug("max difference < 75: {}".format(sum(issues)))
+            self.db.update({'valid': True}, doc_ids=valid_ids)
         self.db.update({'valid': False}, doc_ids=remove_ids)
         self.db.storage.flush()
         logging.info("removed {} items form db".format(len(remove_ids)))

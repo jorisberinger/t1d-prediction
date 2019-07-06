@@ -17,11 +17,15 @@ def check_window(window: pd.DataFrame, user_data: UserData) -> bool:
     return not nas.any()
 
 
-def check_data_object(data_object: DataObject) -> bool:
-    valid_events: bool = check_events(data_object)
-    valid_cgm, issue = check_cgm(data_object)
-    valid: bool = valid_events and valid_cgm
-    return valid, valid_events, valid_cgm, issue
+def check_data_object(data_object: DataObject, early: bool) -> bool:
+    if early:
+        valid_cgm, issue = check_cgm(data_object)
+        return valid_cgm, None, None, None
+    else:
+        valid_events: bool = check_events(data_object)
+        valid_cgm, issue = check_cgm(data_object)
+        valid: bool = valid_events and valid_cgm
+        return valid, valid_events, valid_cgm, issue
 
 
 def check_events(data_object:DataObject) -> bool:
@@ -43,6 +47,24 @@ def check_events(data_object:DataObject) -> bool:
     return True
 
 def check_cgm(data_object: DataObject) -> bool:
+    # Check that there are no gaps in cgm_values
+    cgm_values = data_object.data_long['cgmValue_original'].dropna()
+    index = cgm_values.index.values
+    # Check that the first and last value are close to the start and end
+    if len(index) < 60:
+        logging.debug("index less than 60 items")
+        return False, 0
+    if index[0] > 30 or index[-1] < 3570:
+        return False, 1
+    differences = index[1:-1] - index[0:-2]
+    if max(differences) >= 75:
+        return False, 1
+    else:
+        return True, 0
+
+
+
+def check_cgm_short(data_object: DataObject) -> bool:
     # Check that there are no gaps in cgm_values
     cgm_values = data_object.data['cgmValue_original'].dropna()
     index = cgm_values.index.values

@@ -41,6 +41,9 @@ class DataObject:
 
     def set_result(self, result):
         self.result = result
+    
+    def set_features(self, features):
+        self.features = features
 
     def to_dict(self):
         cp = copy.deepcopy(self)
@@ -62,6 +65,8 @@ class DataObject:
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
         if 'result' in di:
             data_object.set_result(di['result'])
+        if 'features' in di:
+            data_object.set_features(di['features'])
         for key in etypes:
             if key in di:
                 df = pd.DataFrame(json.loads(di[key]))

@@ -37,7 +37,7 @@ def rolling(db: TinyDB, user_data: UserData):
     for item in elements:
         # Break out of loop if enough results or it takes too long
         if len(results) >= config.PREDICTION_CONFIG['max_number_of_results'] or \
-                (datetime.now() - loop_start).seconds > config.PREDICTION_CONFIG['max_number_of_results']:
+                (datetime.now() - loop_start).seconds > config.PREDICTION_CONFIG['runtime_in_minutes']:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
         # Get element
@@ -57,7 +57,7 @@ def rolling(db: TinyDB, user_data: UserData):
 
         if checkData.check_window(predictionWindow.data, user_data):
             # Call to Predictors
-            res = check.check_and_plot(predictionWindow, item)
+            res, order = check.check_and_plot(predictionWindow, item)
             # Write result back into db
             if res is not None:
                 results.append(res)
@@ -66,6 +66,12 @@ def rolling(db: TinyDB, user_data: UserData):
                     db.write_back([item])
                 else:
                     db.update({'result': res}, doc_ids=[item.doc_id])
+            if order is not None:
+                if 'features' in item:
+                    item['features'] = order
+                    db.write_back([item])
+                else:
+                    db.update({'features': order}, doc_ids=[item.doc_id])
         db.storage.flush()       
 
     logger.info("length of result {}".format(len(results)))

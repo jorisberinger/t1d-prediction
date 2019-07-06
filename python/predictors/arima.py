@@ -29,6 +29,7 @@ class Arima(Predictor):
     name: str = "Arima Predictor"
     pw: PredictionWindow
     prediction_values: [float]
+    order: (int, int, int)
 
     def __init__(self, pw):
         super().__init__()
@@ -51,22 +52,23 @@ class Arima(Predictor):
         test.index = pd.to_datetime(self.index_test)
 
         stepwise_fit = auto_arima(train, seasonal = False,
-                                  trace = True, max_p = 10, max_q = 10, max_order = 100,
+                                  trace = True,
                                   error_action = 'ignore', suppress_warnings = False, stepwise = True)
 
         if sum(stepwise_fit.order):
+            self.order = stepwise_fit.order
             preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
             prediction = pd.Series(preds, index = test.index)
             model = ARIMA(train, order=stepwise_fit.order).fit(disp=0)
             train_compare = model.predict(typ='levels')
             data = model.predict(typ='levels', end = 3600 +180)
 
-            train.plot(label='Training data')
-            plt.plot(prediction, label='auto prediction')
-            plt.plot(train_compare, label='train compare')
-            plt.plot(data, label='prediction')
-            plt.legend()
-            plt.savefig(path+'results/test')
+            # train.plot(label='Training data')
+            # plt.plot(prediction, label='auto prediction')
+            # plt.plot(train_compare, label='train compare')
+            # plt.plot(data, label='prediction')
+            # plt.legend()
+            # plt.savefig(path+'results/test')
 
             index = np.arange(self.pw.userData.train_length() + sampleTime, self.pw.userData.simlength * 60 + 1,
                               self.sample_time)
@@ -76,7 +78,7 @@ class Arima(Predictor):
             self.prediction_values = self.prediction_values.tolist()
             return True
         else:
-            return False
+            return False, None
 
     def get_graph(self) -> ({'label': str, 'values': [float]}):
 
