@@ -18,6 +18,7 @@ from data.dataPrep import add_gradient
 from data.dataObject import DataObject
 
 from matplotlib import gridspec, pyplot as plt
+from collections import Counter
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/data_17_3-4.csv"
-db_path = path + 'data/tinydb/db1.json'
+db_path = path + 'data/tinydb/dbtest2.json'
 
 # filename = path + "data/csv/data-o3.csv"
 
@@ -45,12 +46,21 @@ def main():
     logging.info("length of db: {}".format(len(db)))
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
+
+    with_result = db.search(where('result').exists())
+    arima_result = list(filter(lambda x: any(list(map(lambda y: y['predictor'] == 'Arima Predictor', x['result']))) , with_result))
+
+    logging.info("arima results: {}".format(len(arima_result)))
+
+   
+    get_arima_order_summary(db)
+
     exit()
     logging.info("length of db: {}".format(len(db)))
 
     #all = db.all()
 
-    with_result = db.search(where('result').exists())
+    
 
     outliers = list(filter(lambda item: any(list(map(lambda result: abs(result['errors'][0]) > 100, item['result']))), with_result))
 
@@ -174,6 +184,16 @@ def check_outliers(item):
 def check_result(result):
     logging.info("result: {}".format(result))
     return abs(result['errors'][0]) > 100
+
+def get_arima_order_summary(db):
+    order  = list(map(lambda x: x['features'], db.search(where('features').exists())))
+    cnt = Counter()
+    for ord in order:
+        cnt[str(ord)] +=1
+
+
+    list(map(lambda x: print(x), cnt.most_common()))
+
 
 
 if __name__ == "__main__":
