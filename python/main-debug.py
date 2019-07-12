@@ -5,8 +5,9 @@ import time
 
 import coloredlogs
 import pandas as pd
-from tinydb import TinyDB, JSONStorage, where
+from tinydb import TinyDB, JSONStorage, where 
 from tinydb.middlewares import CachingMiddleware
+from tinydb.operations import delete
 
 import analyze
 import gifmaker
@@ -47,6 +48,10 @@ def main():
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
+    get_features_summary(db)
+
+    exit()
+
     with_result = db.search(where('result').exists())
     arima_result = list(filter(lambda x: any(list(map(lambda y: y['predictor'] == 'Arima Predictor', x['result']))) , with_result))
 
@@ -55,7 +60,7 @@ def main():
    
     get_arima_order_summary(db)
 
-    exit()
+
     logging.info("length of db: {}".format(len(db)))
 
     #all = db.all()
@@ -193,6 +198,12 @@ def get_arima_order_summary(db):
 
 
     list(map(lambda x: print(x), cnt.most_common()))
+
+
+def get_features_summary(db: TinyDB):
+    logging.info("Getting features summary")
+    features = list(map(lambda x: x['features-90'], db.search(where('features-90').exists())))
+    logging.info("found {} results".format(len(features)))
 
 
 

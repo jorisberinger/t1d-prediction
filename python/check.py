@@ -40,17 +40,17 @@ def check_and_plot(pw: PredictionWindow, item):
     # Select with predictors should run
     predictors =   [
                     #Optimizer(pw, [15, 30, 60, 90, 120, 240]),
-                    #Optimizer(pw,[90]),
+                    Optimizer(pw,[90]),
                     Arima(pw), 
-                    #SameValue(pw),
-                    #LastNDelta(pw, 30), 
-                    #LastNDelta(pw, 15),
+                    SameValue(pw),
+                    LastNDelta(pw, 30), 
+                    LastNDelta(pw, 15),
                     #LSTM(pw)
                     ]
 
-    #if 'result' in item:
-    #     calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
-    #     predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
+    if 'result' in item:
+         calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
+         predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
     logging.info("Predictors: {}".format(list(map(lambda x: x.name, predictors))))
     # Make prediction for every predictor
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
@@ -62,15 +62,25 @@ def check_and_plot(pw: PredictionWindow, item):
     errors = calculate_errors(predictors, pw)
     
     # Get arima order
-    order = predictors[0].order
+    
+    arm = list(filter(lambda x: 'Arima' in x.name, predictors))
+    if len(arm):
+        order = arm[0].order
+    else:
+        order = None
 
     # Get features created by optimizer
-    #features = predictors[0].get_features()
+    opt = list(filter(lambda x: 'Optimizer' in x.name, predictors))
+    if len(opt):
+        features = opt[0].get_features()
+    else:
+        features = None
+    
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
         plot_graphs(pw, graphs, errors, predictors)
 
-    return errors, order
+    return errors, order, features
 
 
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
@@ -100,7 +110,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/result-oulier-over-200-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results/plots/result-opt-test-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 

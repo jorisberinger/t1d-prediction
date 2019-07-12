@@ -34,10 +34,11 @@ def rolling(db: TinyDB, user_data: UserData):
     random.shuffle(elements)
     logging.info("number of unprocessed items {}".format(len(elements)))
 
+    last_save = 0
     for item in elements:
         # Break out of loop if enough results or it takes too long
         if len(results) >= config.PREDICTION_CONFIG['max_number_of_results'] or \
-                (datetime.now() - loop_start).seconds > config.PREDICTION_CONFIG['runtime_in_minutes']:
+                (datetime.now() - loop_start).seconds / 60 > config.PREDICTION_CONFIG['runtime_in_minutes']:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
         # Get element
@@ -57,7 +58,7 @@ def rolling(db: TinyDB, user_data: UserData):
 
         if checkData.check_window(predictionWindow.data, user_data):
             # Call to Predictors
-            res, order = check.check_and_plot(predictionWindow, item)
+            res, order, features = check.check_and_plot(predictionWindow, item)
             # Write result back into db
             if res is not None:
                 results.append(res)
@@ -66,13 +67,22 @@ def rolling(db: TinyDB, user_data: UserData):
                     db.write_back([item])
                 else:
                     db.update({'result': res}, doc_ids=[item.doc_id])
+            if features is not None:
+                if 'features-90' in item:
+                    item['features-90'] = features
+                    db.write_back([item])
+                else:
+                    db.update({'features-90': features}, doc_ids=[item.doc_id])
             if order is not None:
                 if 'features' in item:
                     item['features'] = order
                     db.write_back([item])
                 else:
                     db.update({'features': order}, doc_ids=[item.doc_id])
-        db.storage.flush()       
+        
+        if len(results) > 10 + last_save:
+            last_save = len(results)
+            db.storage.flush()       
 
     logger.info("length of result {}".format(len(results)))
     # save all prediction carb optimized values to a json file

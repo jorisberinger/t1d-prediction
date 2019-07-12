@@ -138,8 +138,9 @@ class Optimizer(Predictor):
         return carb_events
 
     def get_features(self):
-        carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
-        return carb_events
+        #carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
+
+        return self.carb_values
 
 
 def predictor(inputs, real_values, insulin_values, p_cob, weights):

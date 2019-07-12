@@ -66,4 +66,4 @@ After the first run, autotune has created all necessary files and run_autotune i
 
 ### RUN AND BUILD
 
-`docker build -t t1d-pred-ml:latest -f Dockerfile-ML . && docker run --runtime= nvidia --rm -v ~/code/t1d-prediction:/t1d t1d-pred-ml:latest`
+`docker build -t t1d-pred-ml:latest -f Dockerfile-ML . && docker run --runtime=nvidia --rm -v ~/code/t1d-prediction:/t1d t1d-pred-ml:latest`
