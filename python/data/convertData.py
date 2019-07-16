@@ -73,7 +73,7 @@ def interpolate_cgm(data: pd.DataFrame) -> pd.DataFrame:
     data = data.resample("1T").asfreq()
     data['cgmValue'] = data['cgmValue'].interpolate('quadratic')
     data['cgmValue'] = data['cgmValue'].interpolate('pad')
-    data['date'] = data['date'].interpolate('pad')
+    # data['date'] = data['date'].interpolate('pad')
 
     return data
 

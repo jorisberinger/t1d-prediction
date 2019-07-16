@@ -5,6 +5,6 @@ PREDICTION_CONFIG = {
 }
 
 DATA_CONFIG = {
-    "database_path": 'data/tinydb/dbtest2.json',
-    "csv_input_path": "data/csv/data_18.csv"
+    "database_path": 'data/tinydb/dbjsontest.json',
+    "csv_input_path": "data/csv/csv_1.csv"
 }
