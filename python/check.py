@@ -75,6 +75,7 @@ def check_and_plot(pw: PredictionWindow, item):
         features = opt[0].get_features()
     else:
         features = None
+    #features = None
     
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
@@ -110,7 +111,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/result-opt-test-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results/plots/result-outlier-over-70-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 

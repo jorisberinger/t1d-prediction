@@ -48,7 +48,7 @@ def main():
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
-    get_features_summary(db)
+    get_arima_order_summary(db)
 
     exit()
 
@@ -58,7 +58,7 @@ def main():
     logging.info("arima results: {}".format(len(arima_result)))
 
    
-    get_arima_order_summary(db)
+    
 
 
     logging.info("length of db: {}".format(len(db)))

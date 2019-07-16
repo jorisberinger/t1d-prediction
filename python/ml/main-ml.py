@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 from keras.layers import CuDNNLSTM, Dropout, Dense, LSTM
 from keras.models import Sequential
 from keras.callbacks import EarlyStopping
+
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
@@ -28,6 +29,7 @@ configurations = [  {'name':'cgm', 'columns':[0]},
                     ]
 
 def main():
+
     logging.info("Starting machine learning main")
     #db = TinyDB(db_path18, storage = CachingMiddleware(JSONStorage))
     #logging.info("database loaded with {} entries".format(len(db18)))
@@ -82,25 +84,34 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
 
     with tf.device('/GPU:0'):
             # define Model
-            model = Sequential()
-            model.add(CuDNNLSTM(120, input_shape = (120, configuration['number_features']), return_sequences= True))
-            model.add(Dropout(0.5))
-            model.add(CuDNNLSTM(40, return_sequences=True))
-            model.add(Dropout(0.5))
-            model.add(CuDNNLSTM(40))
-            model.add(Dense(37))
-            model.compile(optimizer = 'adam', loss = 'mse', metrics=['accuracy', 'mae'])
-            model.summary()
+            model = get_lstm_model(configuration['number_features'])
             #
             es = EarlyStopping(monitor='val_mean_absolute_error', mode='min', verbose=1, patience=100)
             # fit model
-            history = model.fit(x_train, y_train, epochs = 1000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
+            history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/test-1000-{}.h5'.format(path, configuration['name'])) 
+            model.save('{}models/test-5-{}.h5'.format(path, configuration['name'])) 
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
 
+def get_lstm_model(number_features):
+    
+    if tf.test.is_gpu_available():
+        lstm_cell = CuDNNLSTM
+    else:
+        lstm_cell = LSTM
+    
+    model = Sequential()
+    model.add(lstm_cell(120, input_shape = (120, number_features), return_sequences= True)) 
+    model.add(Dropout(0.5))
+    model.add(lstm_cell(40, return_sequences=True))
+    model.add(Dropout(0.5))
+    model.add(lstm_cell(40))
+    model.add(Dense(37))
+    model.compile(optimizer = 'adam', loss = 'mse', metrics=['accuracy', 'mae'])
+    model.summary()
+    return model
 
 
 def train_model(df):

@@ -31,6 +31,9 @@ def rolling(db: TinyDB, user_data: UserData):
 
     # create random iterator over valid items without a result
     elements = db.search(~where('result').exists() & (where('valid') == True))
+
+    #elements = list(filter(lambda x: any(list(map(lambda y: abs(y['errors'][0]) > 70, x['result']))), elements))
+
     random.shuffle(elements)
     logging.info("number of unprocessed items {}".format(len(elements)))
 
