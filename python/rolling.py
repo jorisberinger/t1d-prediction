@@ -41,7 +41,7 @@ def rolling(db: TinyDB, user_data: UserData):
     for item in elements:
         # Break out of loop if enough results or it takes too long
         if len(results) >= config.PREDICTION_CONFIG['max_number_of_results'] or \
-                (datetime.now() - loop_start).seconds / 60 > config.PREDICTION_CONFIG['runtime_in_minutes']:
+                (datetime.now() - loop_start).seconds > config.PREDICTION_CONFIG['runtime_in_minutes'] * 60:
             break
         logger.info("#:{} \t #R:{}\tdoc_id: {}".format(i, len(results), item.doc_id))
         # Get element
