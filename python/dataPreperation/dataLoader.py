@@ -49,6 +49,7 @@ class DataLoader:
     def check_valid(self, early: True):
         # get all items which are not flagged valid
         items = self.db.search(~where('valid').exists())
+        #items = self.db.all()
         random.shuffle(items)
         logging.info("checking {} items".format(len(items)))
         remove_ids = []

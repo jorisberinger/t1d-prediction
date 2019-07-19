@@ -46,7 +46,6 @@ def main():
     # Load data from csv into database
     #prep.main(db, filepath)
 
-    exit()
 
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediction")

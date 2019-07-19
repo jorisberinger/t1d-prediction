@@ -77,11 +77,15 @@ def getSummary(db: TinyDB, query):
     # create series for each predicotor
     # join them in dataframe
     all_results = pandas.DataFrame()
+    def set_index(x):
+        s = pandas.Series(x)
+        s.index = np.array([15, 30, 45, 60, 90, 120, 150, 180])
+        return s
     for label in labels:
         predictor_errors = pandas.Series(list(map(lambda x: list(filter(lambda y: y['predictor'] == label, x))[0]['errors'], res)), name = label)
         all_results.append(predictor_errors)
         logger.debug("Predictor Results {}".format(predictor_errors))
-        result_matrix = predictor_errors.apply(lambda x: pandas.Series(x, index=np.array([15, 30, 45, 60, 90, 120, 150, 180])))
+        result_matrix = predictor_errors.apply(set_index)
         result_mean = abs(result_matrix).mean()
         result_mean.name = label
         summary = summary.append(result_mean)

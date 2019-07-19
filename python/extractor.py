@@ -24,22 +24,44 @@ def getEventsAsDataFrame(pw: PredictionWindow) -> pd.DataFrame:
 
 def getEvents(data: pd.DataFrame) -> pd.Series:
     events = pd.Series()
-    basal = data[data['basalValue'].notnull()]
+    basal = pd.Series()
+    if 'basalValue' in data.columns:
+        basal = data[data['basalValue'].notnull()]
+        
     if not basal.empty:
-        basalEvents = basal.apply(
-            lambda event:  Event.createTemp(time=event.name, dbdt=event['basalValue'], t1=event['date']+','+event['time'], t2=event['date']+','+event['time']), axis=1)
+        if 'date' in basal.columns:
+            basalEvents = basal.apply(
+                lambda event:  Event.createTemp(time=event.name, dbdt=event['basalValue'], t1=event['date']+','+event['time'], t2=event['date']+','+event['time']), axis=1
+                )
+        else:
+            basalEvents = basal.apply(
+                lambda event:  Event.createTemp(time=event.name, dbdt=event['basalValue'], t1=event.name, t2=event.name), axis=1
+                )
+
         events = events.append(basalEvents)
 
-    bolus = data[data['bolusValue'].notnull()]
+    bolus = pd.Series()
+    if 'bolusValue' in data.columns:
+        bolus = data[data['bolusValue'].notnull()]
+    
     if not bolus.empty:
         bolusEvents = bolus.apply(
             lambda event: Event.createBolus(time=event.name, units=event['bolusValue']), axis=1)
         events = events.append(bolusEvents)
 
-    meal = data[data['mealValue'].notnull()]
+    meal = pd.Series()
+    if 'mealValue' in data.columns:
+        meal = data[data['mealValue'].notnull()]
+        meal = data[data['mealValue'] > 0]
+    
     if not meal.empty:
-        mealEvents = meal.apply(
-            lambda event: Event.createCarb(time=event.name, grams=event['mealValue'], ctype=3*60), axis=1) # TODO Carbtype
+        if 'absorptionTime' in meal.columns:
+            mealEvents = meal.apply(
+                lambda event: Event.createCarb(time=event.name, grams=event['mealValue'], ctype=event['absorptionTime']), axis=1) 
+        else:
+             mealEvents = meal.apply(
+                lambda event: Event.createCarb(time=event.name, grams=event['mealValue'], ctype=3*60), axis=1) 
+
         events = events.append(mealEvents)
 
     return events
