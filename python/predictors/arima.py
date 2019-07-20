@@ -51,7 +51,7 @@ class Arima(Predictor):
         test = self.window[len(self.index_train):]
         test.index = pd.to_datetime(self.index_test)
 
-        stepwise_fit = auto_arima(train, seasonal = False,
+        stepwise_fit = auto_arima(train, seasonal = False, start_p = 3, start_d =1, start_q = 2,
                                   trace = True,
                                   error_action = 'ignore', suppress_warnings = False, stepwise = True)
 
@@ -60,8 +60,13 @@ class Arima(Predictor):
             preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
             prediction = pd.Series(preds, index = test.index)
             model = ARIMA(train, order=stepwise_fit.order).fit(disp=0)
-            train_compare = model.predict(typ='levels')
-            data = model.predict(typ='levels', end = 3600 +180)
+            if stepwise_fit.order[1] == 0:
+                #train_compare = model.predict()
+                data = model.predict(end = 3600 +180)
+            else:
+                #train_compare = model.predict(typ='levels')
+                data = model.predict(typ='levels', end = 3600 +180)
+            
 
             # train.plot(label='Training data')
             # plt.plot(prediction, label='auto prediction')
