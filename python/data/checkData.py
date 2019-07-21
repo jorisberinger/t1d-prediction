@@ -37,6 +37,8 @@ def check_events(data_object:DataObject) -> bool:
     for key in event_types:
         if hasattr(data_object, key + '_events'):
             events = data_object.__getattribute__(key + '_events')
+            if key == 'bolus':
+                events = events[events['units'] > 0]
             # Check that there are no events in the prediction window
             if not events.index[np.logical_and(events.index >= 600, events.index < 730)].empty:
                 logging.debug("events in prediction ")
@@ -54,13 +56,25 @@ def check_cgm(data_object: DataObject) -> bool:
     if len(index) < 60:
         logging.debug("index less than 60 items")
         return False, 0
-    if index[0] > 30 or index[-1] < 3570:
+    if index[0] > 90 or index[-1] < 3570:
         return False, 1
     differences = index[1:-1] - index[0:-2]
-    if max(differences) >= 75:
+    if max(differences) >= 180:
         return False, 1
-    else:
-        return True, 0
+    
+    cgm_values = data_object.data['cgmValue_original'].dropna()
+    index = cgm_values.index.values
+
+    if len(index) < 10:
+        logging.debug("index less than 60 items")
+        return False, 0
+    if index[0] > 30 or index[-1] < 730:
+        return False, 1
+    differences = index[1:-1] - index[0:-2]
+    if max(differences) >= 30:
+        return False, 1
+
+    return True, 0
 
 
 
