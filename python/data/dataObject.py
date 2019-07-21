@@ -18,6 +18,9 @@ class DataObject:
     basal_events: pd.DataFrame
     carb_events: pd.DataFrame
     result: list
+    id: str
+    carb_ratio: float
+    insulin_sensitivity: float
 
     def __init__(self):
         pass
@@ -63,6 +66,9 @@ class DataObject:
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
+        data_object.id = di['id']
+        data_object.carb_ratio = di['carb_ratio']
+        data_object.insulin_sensitivity = di['insulin_sensitivity']
         if 'result' in di:
             data_object.set_result(di['result'])
         if 'features' in di:

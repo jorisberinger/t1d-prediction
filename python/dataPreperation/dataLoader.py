@@ -8,7 +8,7 @@ from data.convertData import convert, interpolate_cgm
 from data.dataObject import DataObject
 from data.dataPrep import add_timestamps, add_to_db, prepare_data
 from data.readData import read_data
-
+from dataPreperation.profile_reader import Profile_reader
 
 # Class for loading data into the Tiny DB
 class DataLoader:
@@ -27,9 +27,11 @@ class DataLoader:
         # Prepare Data
         logging.debug("prepare data...")
         data = prepare_data(data_original)
+        # Get Info from Profile.json
+        profile_reader = Profile_reader(filename)
         # add data to tiny db
         logging.debug("add data to database...")
-        count = add_to_db(data, self.db)
+        count = add_to_db(data, self.db, profile_reader)
         logging.info("added {} new items to DB".format(count))
 
     def add_events(self):

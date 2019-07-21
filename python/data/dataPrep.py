@@ -14,6 +14,8 @@ from data.dataConnector import DataConnector
 from data.dataObject import DataObject
 from data.readData import read_data
 
+from dataPreperation.profile_reader import Profile_reader
+
 path = os.getenv('T1DPATH', '../../')
 
 window_length = 13
@@ -35,7 +37,7 @@ def prepare_data(data_original: pd.DataFrame) -> pd.DataFrame:
     return data
 
 
-def add_to_db(data: pd.DataFrame, db: TinyDB) -> [pd.DataFrame]:
+def add_to_db(data: pd.DataFrame, db: TinyDB, profile: Profile_reader) -> [pd.DataFrame]:
     # split data in to prediction windows
     # set start and end time
     start_time = data.index[0] +timedelta(hours = long_window_length - window_length)
@@ -48,6 +50,10 @@ def add_to_db(data: pd.DataFrame, db: TinyDB) -> [pd.DataFrame]:
         # Check if time frame exists
         if not start_time.isoformat() in times:
             data_object = DataObject()
+            data_object.id = profile.get_id()
+            data_object.insulin_sensitivity = profile.get_insulin_sensitivity()
+            data_object.carb_ratio = profile.get_carb_ratio()
+
             data_object.set_start_time(start_time)
             end_time = start_time + timedelta(hours = window_length)
             data_object.set_end_time(end_time)
@@ -65,8 +71,8 @@ def add_to_db(data: pd.DataFrame, db: TinyDB) -> [pd.DataFrame]:
             data_object.set_data_long(subset_long)
             db.insert(data_object.to_dict())
             counter += 1
-            #if counter >= 1:
-            #    break
+            if counter >= 1:
+                break
             print('Processing [%d]\r'%counter, end="")
         start_time += timedelta(minutes = delta_length)
     db.storage.flush()
