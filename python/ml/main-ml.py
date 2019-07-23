@@ -17,15 +17,16 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 path = os.getenv('T1DPATH', '../')
 db_path18 = path + 'data/tinydb/db18.json'
 db_path17 = path + 'data/tinydb/db1.json'
-db_path = path + 'data/tinydb/dbtest2.json'
+db_path = path + 'data/tinydb/dbtestml.json'
 
 # Different configuarations of Features
-# ['cgmValue', 'basalValue', 'bolusValue', 'mealValue', 'feature-90']
-configurations = [  {'name':'cgm', 'columns':[0]},
-                        {'name':'cgm, insulin', 'columns':[0,1, 2]},
-                        {'name':'cgm, insulin, carbs', 'columns':[0, 1, 2, 3]},
-                        {'name':'cgm, insulin, optimized', 'columns':[0, 1, 2, 4]},
-                        {'name':'cgm, insulin, carbs, optimized', 'columns':[0, 1, 2, 3, 4]}                    
+# ['cgmValue', 'basalValue', 'bolusValue', 'mealValue', 'feature-90', 'timeOfDay']
+configurations = [      {'name':'cgm', 'columns':[0]},
+                        {'name':'cgm, time of day', 'columns':[0, 5]},
+                        # {'name':'cgm, insulin', 'columns':[0,1, 2]},
+                        # {'name':'cgm, insulin, carbs', 'columns':[0, 1, 2, 3]},
+                        # {'name':'cgm, insulin, optimized', 'columns':[0, 1, 2, 4]},
+                        # {'name':'cgm, insulin, carbs, optimized', 'columns':[0, 1, 2, 3, 4]}                    
                     ]
 
 def main():
@@ -68,7 +69,7 @@ def get_features_for_configuration(configuration, df:pd.DataFrame):
     logging.info("Prepping for {}".format(configuration['name']))
 
     features = np.empty((len(df), 120, configuration['number_features']))
-    all_features = np.empty((len(df), 120, 5))
+    all_features = np.empty((len(df), 120, 6))
     labels = np.empty((len(df), 37))
     for i, item in enumerate(df):
         all_features[i] = item.values[:600:5]
@@ -88,9 +89,9 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             #
             es = EarlyStopping(monitor='val_mean_absolute_error', mode='min', verbose=1, patience=100)
             # fit model
-            history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
+            history = model.fit(x_train, y_train, epochs = 2, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/test-5-{}.h5'.format(path, configuration['name'])) 
+            model.save('{}models/test-2-{}.h5'.format(path, configuration['name'])) 
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
@@ -139,7 +140,7 @@ def train_model(df):
         
         # fit model
 
-        history = model.fit(x_train, y_train, epochs = 1000, batch_size = 256 , validation_data = (x_test, y_test))
+        history = model.fit(x_train, y_train, epochs = 10, batch_size = 256 , validation_data = (x_test, y_test))
         # make a one step prediction out of sample
         # x_input = np.array([9, 10]).reshape((1, n_input, n_features))
         # yhat = model.predict(x_input, verbose=0)
@@ -172,6 +173,7 @@ def from_dict(di):
     # data_object['end_time'] = (pd.datetime.fromisoformat(di['end_time']))
     data_object['data'] = (pd.DataFrame(json.loads(di['data'])))
     data_object['features-90'] = di['features-90']
+    data_object['start_time'] = di['start_time']
     if 'result' in di:
         data_object['result'] = di['result']
     # for key in etypes:
@@ -202,7 +204,9 @@ def load_data_with_result(db):
 def get_feature_list(data_object):
     df = data_object['data'][['cgmValue', 'basalValue', 'bolusValue', 'mealValue']].fillna(0)
     df.index = list(map(float , df.index))
+    df = df.sort_index()
     df['features-90'] = 0
+    df['time_of_day'] = get_time_of_day(data_object['start_time'])
     for i, v in enumerate(range(0,600,15)):
         df.loc[v,'features-90'] = data_object['features-90'][i]
     return df
@@ -225,7 +229,21 @@ def load_data(db):
     return subset
   
 
+def get_time_of_day(start_time:str)->pd.Series:
+    logging.debug("get Time of day")
+    time = pd.Timestamp(start_time)
+    time_of_day = pd.Series([0] * 780)
+    for offset in range(780):
+        logging.debug("offset: {}".format(offset))
+        t = time + pd.Timedelta('{}M'.format(offset))
+        logging.debug("time: {}".format(t))
+        hour = t.hour
+        logging.debug("hour: {}".format(hour))
+        category = int((hour - 2) / 4)
+        logging.debug("cat: {}".format(category))
+        time_of_day[offset] = category
 
+    return time_of_day
 
 
 if __name__ == "__main__":
