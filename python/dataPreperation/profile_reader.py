@@ -60,7 +60,9 @@ class Profile_reader:
     # extract insulin sensitivity from json
     def set_insulin_sensitivity(self, json_data: {}):
         logging.info("get insulin sensitivity")
-        sens_array = json_data['store']['Default']['sens']
+        store = json_data['store']
+        profile = store[list(store.keys())[0]]
+        sens_array = profile['sens']
         if len(sens_array) > 1:
             logging.error("More than one sensitivity reading")
         sensitivity = sens_array[0]['value']
@@ -69,7 +71,9 @@ class Profile_reader:
     # extract carb ratio from json
     def set_carb_ratio(self, json_data: {}):
         logging.info("get carb ratio")
-        carb_ratio_array = json_data['store']['Default']['carbratio']
+        store = json_data['store']
+        profile = store[list(store.keys())[0]]
+        carb_ratio_array = profile['carbratio']
         if len(carb_ratio_array) > 1:
             logging.error("More than one carb ratio reading")
         carb_ratio = carb_ratio_array[0]['value']

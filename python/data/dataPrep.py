@@ -71,8 +71,8 @@ def add_to_db(data: pd.DataFrame, db: TinyDB, profile: Profile_reader) -> [pd.Da
             data_object.set_data_long(subset_long)
             db.insert(data_object.to_dict())
             counter += 1
-            if counter >= 1:
-                break
+            #if counter >= 2:
+            #    break
             print('Processing [%d]\r'%counter, end="")
         start_time += timedelta(minutes = delta_length)
     db.storage.flush()

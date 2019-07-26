@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/data_17_3-4.csv"
-db_path = path + 'data/tinydb/dbjsontest.json'
+filename = path + "data/csv/csv_4.csv"
+db_path = path + 'data/tinydb/dbtest2.json'
 
 # filename = path + "data/csv/data-o3.csv"
 
@@ -47,6 +47,13 @@ def main():
     logging.info("length of db: {}".format(len(db)))
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
+
+    csv = pd.read_csv(filename)
+    csv.index = csv[csv.columns[0]]
+
+    cgm = csv['cgmValue'][csv['cgmValue'].notnull()]
+    
+    db.update()
 
     exit()
     get_arima_order_summary(db)

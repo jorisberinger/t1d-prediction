@@ -23,14 +23,19 @@ def main(db: TinyDB, filepath=data_csv_path):
     data_loader.load(filepath)
     logging.debug("Removing invalid samples - early")
     data_loader.check_valid(early=True)
+    logging.debug("Normalize insulin and carb data")
+    data_loader.normalize()
     logging.debug("Adding events")
     data_loader.add_events()
     logging.debug("Calculate gradients")
     add_gradient(db)
     logging.debug("Removing invalid samples")
     data_loader.check_valid(early=False)
-    logging.debug("Done Importing and cleaning")
+    logging.debug("remove unneccessary data from invalid item")
     data_loader.clean_invalid()
+
+
+    logging.debug("Done Importing and cleaning")
 
 
 if __name__ == '__main__':

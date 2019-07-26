@@ -21,12 +21,16 @@ db_path = path + 'data/tinydb/dbtestml.json'
 
 # Different configuarations of Features
 # ['cgmValue', 'basalValue', 'bolusValue', 'mealValue', 'feature-90', 'timeOfDay']
-configurations = [      {'name':'cgm', 'columns':[0]},
+configurations = [      #{'name':'cgm', 'columns':[0]},
                         {'name':'cgm, time of day', 'columns':[0, 5]},
-                        # {'name':'cgm, insulin', 'columns':[0,1, 2]},
-                        # {'name':'cgm, insulin, carbs', 'columns':[0, 1, 2, 3]},
-                        # {'name':'cgm, insulin, optimized', 'columns':[0, 1, 2, 4]},
-                        # {'name':'cgm, insulin, carbs, optimized', 'columns':[0, 1, 2, 3, 4]}                    
+                        #{'name':'cgm, insulin', 'columns':[0,1, 2]},
+                        {'name':'cgm, insulin, tod', 'columns':[0,1, 2, 5]},
+                        #{'name':'cgm, insulin, carbs', 'columns':[0, 1, 2, 3]},
+                        {'name':'cgm, insulin, carbs, tod', 'columns':[0, 1, 2, 3, 5]},
+                        #{'name':'cgm, insulin, optimized', 'columns':[0, 1, 2, 4]},
+                        {'name':'cgm, insulin, optimized, tod', 'columns':[0, 1, 2, 4, 5]},
+                        #{'name':'cgm, insulin, carbs, optimized', 'columns':[0, 1, 2, 3, 4]},
+                        {'name':'cgm, insulin, carbs, optimized, tod', 'columns':[0, 1, 2, 3, 4, 5]}                  
                     ]
 
 def main():
@@ -89,9 +93,9 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             #
             es = EarlyStopping(monitor='val_mean_absolute_error', mode='min', verbose=1, patience=100)
             # fit model
-            history = model.fit(x_train, y_train, epochs = 2, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
+            history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/test-2-{}.h5'.format(path, configuration['name'])) 
+            model.save('{}models/test-2000-zero-{}.h5'.format(path, configuration['name'])) 
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
@@ -140,7 +144,7 @@ def train_model(df):
         
         # fit model
 
-        history = model.fit(x_train, y_train, epochs = 10, batch_size = 256 , validation_data = (x_test, y_test))
+        history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test))
         # make a one step prediction out of sample
         # x_input = np.array([9, 10]).reshape((1, n_input, n_features))
         # yhat = model.predict(x_input, verbose=0)
@@ -205,10 +209,12 @@ def get_feature_list(data_object):
     df = data_object['data'][['cgmValue', 'basalValue', 'bolusValue', 'mealValue']].fillna(0)
     df.index = list(map(float , df.index))
     df = df.sort_index()
+    df, offset = shift_to_zero(df)
     df['features-90'] = 0
     df['time_of_day'] = get_time_of_day(data_object['start_time'])
     for i, v in enumerate(range(0,600,15)):
         df.loc[v,'features-90'] = data_object['features-90'][i]
+
     return df
 
 def load_data(db):
@@ -245,6 +251,17 @@ def get_time_of_day(start_time:str)->pd.Series:
 
     return time_of_day
 
+def shift_to_zero(df: pd.DataFrame)-> (pd.DataFrame, float):
+    logging.debug("shift to zero")
+    logging.debug("cgm at 600: {}".format(df['cgmValue'][600]))
+    logging.debug("cgm at 100: {}".format(df['cgmValue'][100]))
+    offset = df['cgmValue'][600]
+    logging.debug("offset: {}".format(offset))
+
+    df['cgmValue'] -= offset
+    logging.debug("cgm at 600: {}".format(df['cgmValue'][600]))
+    logging.debug("cgm at 100: {}".format(df['cgmValue'][100]))
+    return df, offset
 
 if __name__ == "__main__":
     main()

@@ -89,3 +89,57 @@ class DataLoader:
         self.db.storage.flush()
 
 
+    # Use the sensitivity factor and the carb ratio to normalize the data
+    def normalize(self):
+        # Get all valid items
+        items = self.db.search(where('valid') == True)
+        # filter out normalized items
+        items = list(filter(lambda x: not 'non_normalized_carbs' in x['data'], items))
+        logging.info("Normalizing {} items".format(len(items)))
+        # Iterate through all items
+        normalized_items = list(map(normalize_item, items))
+        for i, v in enumerate(items):
+            v['data'] = normalized_items[i]['data']
+        # save updated items in the db
+        self.db.write_back(items)
+        # make sure data is saved to file
+        self.db.storage.flush()
+        logging.info("Normalized {} items".format(len(normalized_items)))
+    
+
+def normalize_item(item):
+    logging.debug("Normalize item")
+    # convert from dict to data_object
+    data_object = DataObject.from_dict(item)
+    # check for sf and cr
+    if not (data_object.insulin_sensitivity > 0 and data_object.carb_ratio > 0):
+        raise Exception("Sensitivity factor and Carb Ratio must be in data object, to normalize data")
+
+    # get carb data
+    carbs = data_object.data['mealValue']
+    # Normalize carb data with carb ratio
+    normalized_carbs = carbs / data_object.carb_ratio
+    # Save old values and change to new value
+    data_object.data['non_normalized_carbs'] = data_object.data['mealValue']
+    data_object.data['mealValue'] = normalized_carbs
+
+    # get bolus and data
+    bolus = data_object.data['bolusValue']
+    basal = data_object.data['basalValue']
+    # Normalize insulin data with insulin sensitivity
+    normalized_bolus = bolus / data_object.insulin_sensitivity
+    normalized_basal = basal / data_object.insulin_sensitivity
+    # Save old values and replace with normalized
+    data_object.data['non_normalized_bolus'] = data_object.data['bolusValue']
+    data_object.data['non_normalized_basal'] = data_object.data['basalValue']
+
+    data_object.data['bolusValue'] = normalized_bolus
+    data_object.data['basalValue'] = normalized_basal
+
+    
+    return data_object.to_dict()
+
+
+
+
+

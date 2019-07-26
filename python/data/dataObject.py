@@ -66,9 +66,12 @@ class DataObject:
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
-        data_object.id = di['id']
-        data_object.carb_ratio = di['carb_ratio']
-        data_object.insulin_sensitivity = di['insulin_sensitivity']
+        if 'id' in di:
+            data_object.id = di['id']
+        if 'carb_ratio' in di:
+            data_object.carb_ratio = float(di['carb_ratio'])
+        if 'insulin_sensitivity' in di:
+            data_object.insulin_sensitivity = float(di['insulin_sensitivity'])
         if 'result' in di:
             data_object.set_result(di['result'])
         if 'features' in di:
