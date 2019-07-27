@@ -27,7 +27,7 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/csv_4.csv"
-db_path = path + 'data/tinydb/dbtest2.json'
+db_path = path + 'data/tinydb/dbjsontest1.json'
 
 # filename = path + "data/csv/data-o3.csv"
 
@@ -48,12 +48,9 @@ def main():
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
-    csv = pd.read_csv(filename)
-    csv.index = csv[csv.columns[0]]
-
-    cgm = csv['cgmValue'][csv['cgmValue'].notnull()]
-    
-    db.update()
+    all = db.search(where('valid') == True)
+    s = pd.Series(list(map(lambda x: x['id'], all)))
+    list(map(lambda id: print("id {} has {} items".format(id, len(list(filter(lambda x: x['id'] == id, all))))), s.unique()))
 
     exit()
     get_arima_order_summary(db)
