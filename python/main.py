@@ -31,7 +31,7 @@ def main():
     logger.info("Start Main!")
 
     # SET USER DATA
-    user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
+    user_data = UserData(bginitial = 100.0, cratio = 1, idur = 3, inputeeffect = None, sensf = 1, simlength = 13,
                          predictionlength = 180, stats = None)
 
     # Calculate Insulin Sensitivity factor and Carbohydrate Ratio with autotune
@@ -46,7 +46,7 @@ def main():
     # Load data from csv into database
     prep.main(db, filepath)
 
-    exit()
+    exit()    
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediction")
     prediction_result = rolling.rolling(db, user_data)
