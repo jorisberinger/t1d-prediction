@@ -40,12 +40,12 @@ def check_and_plot(pw: PredictionWindow, item):
     # Select with predictors should run
     predictors =   [
                     #Optimizer(pw, [15, 30, 60, 90, 120, 240]),
-                    Optimizer(pw,[90]),
-                    Arima(pw), 
-                    SameValue(pw),
-                    LastNDelta(pw, 30), 
-                    LastNDelta(pw, 15),
-                    #LSTM(pw)
+                    #Optimizer(pw,[90]),
+                    #Arima(pw), 
+                    #SameValue(pw),
+                    #LastNDelta(pw, 30), 
+                    #LastNDelta(pw, 15),
+                    LSTM(pw)
                     ]
 
     if 'result' in item:

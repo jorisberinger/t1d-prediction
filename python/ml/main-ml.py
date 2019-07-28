@@ -17,18 +17,18 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 path = os.getenv('T1DPATH', '../')
 db_path18 = path + 'data/tinydb/db18.json'
 db_path17 = path + 'data/tinydb/db1.json'
-db_path = path + 'data/tinydb/dbtestml.json'
+db_path = path + 'data/tinydb/dbtest2.json'
 
 # Different configuarations of Features
 # ['cgmValue', 'basalValue', 'bolusValue', 'mealValue', 'feature-90', 'timeOfDay']
 configurations = [      #{'name':'cgm', 'columns':[0]},
-                        {'name':'cgm, time of day', 'columns':[0, 5]},
+                        #{'name':'cgm, time of day', 'columns':[0, 5]},
                         #{'name':'cgm, insulin', 'columns':[0,1, 2]},
-                        {'name':'cgm, insulin, tod', 'columns':[0,1, 2, 5]},
+                        #{'name':'cgm, insulin, tod', 'columns':[0,1, 2, 5]},
                         #{'name':'cgm, insulin, carbs', 'columns':[0, 1, 2, 3]},
-                        {'name':'cgm, insulin, carbs, tod', 'columns':[0, 1, 2, 3, 5]},
+                        #{'name':'cgm, insulin, carbs, tod', 'columns':[0, 1, 2, 3, 5]},
                         #{'name':'cgm, insulin, optimized', 'columns':[0, 1, 2, 4]},
-                        {'name':'cgm, insulin, optimized, tod', 'columns':[0, 1, 2, 4, 5]},
+                        #{'name':'cgm, insulin, optimized, tod', 'columns':[0, 1, 2, 4, 5]},
                         #{'name':'cgm, insulin, carbs, optimized', 'columns':[0, 1, 2, 3, 4]},
                         {'name':'cgm, insulin, carbs, optimized, tod', 'columns':[0, 1, 2, 3, 4, 5]}                  
                     ]
@@ -59,7 +59,7 @@ def compare_features(df):
         features, labels = get_features_for_configuration(configuration, df)
         
         # split data into test and train data
-        x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size = 0.2, shuffle = True, random_state=1)
+        x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size = 0.05, shuffle = True, random_state=1)
 
         train_model_for_configuration(x_train, x_test, y_train, y_test, configuration)
         
@@ -93,9 +93,10 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             #
             es = EarlyStopping(monitor='val_mean_absolute_error', mode='min', verbose=1, patience=100)
             # fit model
-            history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
+            history = model.fit(x_train, y_train, epochs = 100, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/test-2000-zero-{}.h5'.format(path, configuration['name'])) 
+            model.save('{}models/test-100-3l-{}.h5'.format(path, configuration['name'])) 
+            model.save_weights('{}models/w-test-100-3l-{}.h5'.format(path, configuration['name']))
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
@@ -192,6 +193,7 @@ def load_data_with_result(db):
     logging.info("Get all elements from DB")
     all_items = db.search(where('features-90').exists())
     all_items = list(filter(lambda x: len(x['result']) == 5, all_items))
+    all_items = list(filter(lambda x: pd.Timestamp(x['start_time']).day not in [3,4,5,11,12,13], all_items))
     logging.info("{} items found".format(len(all_items)))
     logging.info("Convert items to data_objects")
     data_objects = list(map(lambda x: from_dict(x), all_items))
@@ -209,7 +211,6 @@ def get_feature_list(data_object):
     df = data_object['data'][['cgmValue', 'basalValue', 'bolusValue', 'mealValue']].fillna(0)
     df.index = list(map(float , df.index))
     df = df.sort_index()
-    df, offset = shift_to_zero(df)
     df['features-90'] = 0
     df['time_of_day'] = get_time_of_day(data_object['start_time'])
     for i, v in enumerate(range(0,600,15)):

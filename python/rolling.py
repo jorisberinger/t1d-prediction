@@ -30,7 +30,9 @@ def rolling(db: TinyDB, user_data: UserData):
     loop_start = datetime.now()
 
     # create random iterator over valid items without a result
-    elements = db.search(~where('result').exists() & (where('valid') == True))
+    elements = db.search(where('result').exists() & (where('valid') == True))
+
+    elements = list(filter(check_time, elements))
 
     #elements = list(filter(lambda x: any(list(map(lambda y: abs(y['errors'][0]) > 70, x['result']))), elements))
 
@@ -111,3 +113,14 @@ def check_directories():
         os.makedirs(directory)
     if not os.path.exists(directory + '/plots/'):
         os.makedirs(directory + '/plots/')
+
+def check_time(item):
+    time = pd.Timestamp(item['start_time'])
+
+    if time.day in [5,12]:
+        return True
+    if time.day in [4,11] and time.hour > 10:
+        return True
+    if time.day in [6,13] and time.hour < 14:
+        return True
+    return False

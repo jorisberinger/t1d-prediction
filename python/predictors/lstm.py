@@ -14,7 +14,7 @@ from predictors.predictor import Predictor
 import keras
 path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
-model_path = path+'model-2000.h5'
+model_path = path+'models/test-100-3l-cgm, insulin, carbs, optimized, tod.h5'
 
 class LSTM(Predictor):
     name: str = "LSTM Predictor"
@@ -32,6 +32,13 @@ class LSTM(Predictor):
         data = self.pw.data.iloc[:600:5]
         features =  data[['cgmValue', 'basalValue', 'bolusValue', 'mealValue']].fillna(0)
         features['cgmValue'] /= 500
+        features.index = list(map(float , features.index))
+        features = features.sort_index()
+        features['time_of_day'] = get_time_of_day(self.pw.startTime)
+        features['features-90'] = 0
+        for i, v in enumerate(range(0,600,15)):
+            features.loc[v,'features-90'] = data_object['features-90'][i]
+
         x = np.empty((1,features.shape[0], features.shape[1]))
         x[0] = features
         prediction = self.model.predict(x)
@@ -46,3 +53,14 @@ class LSTM(Predictor):
 
         return {'label': self.name, 'values': self.prediction_values_all}
 
+
+def get_feature_list(data_object):
+    df = data_object['data'][['cgmValue', 'basalValue', 'bolusValue', 'mealValue']].fillna(0)
+    df.index = list(map(float , df.index))
+    df = df.sort_index()
+    df['features-90'] = 0
+    df['time_of_day'] = get_time_of_day(data_object['start_time'])
+    for i, v in enumerate(range(0,600,15)):
+        df.loc[v,'features-90'] = data_object['features-90'][i]
+
+    return df
