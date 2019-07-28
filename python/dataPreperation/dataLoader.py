@@ -127,8 +127,8 @@ def normalize_item(item):
     bolus = data_object.data['bolusValue']
     basal = data_object.data['basalValue']
     # Normalize insulin data with insulin sensitivity
-    normalized_bolus = bolus / data_object.insulin_sensitivity
-    normalized_basal = basal / data_object.insulin_sensitivity
+    normalized_bolus = bolus * data_object.insulin_sensitivity
+    normalized_basal = basal * data_object.insulin_sensitivity
     # Save old values and replace with normalized
     data_object.data['non_normalized_bolus'] = data_object.data['bolusValue']
     data_object.data['non_normalized_basal'] = data_object.data['basalValue']
