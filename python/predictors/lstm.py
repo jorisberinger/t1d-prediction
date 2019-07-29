@@ -10,13 +10,17 @@ from statsmodels.tsa.arima_model import ARIMAResults
 
 from PredictionWindow import PredictionWindow
 from predictors.predictor import Predictor
-
+import tensorflow as tf
+from sklearn.model_selection import train_test_split
+from keras.layers import CuDNNLSTM, Dropout, Dense, LSTM
+from keras.models import Sequential
+from keras.callbacks import EarlyStopping
 import keras
 path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
-model_path = path+'models/test-100-3l-cgm, insulin, carbs, optimized, tod.h5'
+model_path = path+'models/w-test-2000-3l-cgm, insulin, carbs, optimized, tod.h5'
 
-class LSTM(Predictor):
+class LSTM_predictor(Predictor):
     name: str = "LSTM Predictor"
     pw: PredictionWindow
     prediction_values: [float]
@@ -26,7 +30,10 @@ class LSTM(Predictor):
     def __init__(self, pw):
         super().__init__()
         self.pw: PredictionWindow = pw
-        self.model = keras.models.load_model(model_path)
+        #self.model = keras.models.load_model(model_path)
+        self.model = get_lstm_model(6)
+        self.model.load_weights(model_path)
+
        
     def calc_predictions(self, error_times: [int]) -> bool:
         data = self.pw.data.iloc[:600:5]
@@ -37,7 +44,7 @@ class LSTM(Predictor):
         features['time_of_day'] = get_time_of_day(self.pw.startTime)
         features['features-90'] = 0
         for i, v in enumerate(range(0,600,15)):
-            features.loc[v,'features-90'] = data_object['features-90'][i]
+            features.loc[v,'features-90'] = self.pw.features_90[i]
 
         x = np.empty((1,features.shape[0], features.shape[1]))
         x[0] = features
@@ -54,13 +61,34 @@ class LSTM(Predictor):
         return {'label': self.name, 'values': self.prediction_values_all}
 
 
-def get_feature_list(data_object):
-    df = data_object['data'][['cgmValue', 'basalValue', 'bolusValue', 'mealValue']].fillna(0)
-    df.index = list(map(float , df.index))
-    df = df.sort_index()
-    df['features-90'] = 0
-    df['time_of_day'] = get_time_of_day(data_object['start_time'])
-    for i, v in enumerate(range(0,600,15)):
-        df.loc[v,'features-90'] = data_object['features-90'][i]
 
-    return df
+
+def get_lstm_model(number_features):
+    
+
+    model = Sequential()
+    model.add(LSTM(units = 120, input_shape = (120, number_features), return_sequences= True, recurrent_activation='sigmoid')) 
+    model.add(Dropout(0.5))
+    model.add(LSTM(units = 40, return_sequences=True, recurrent_activation='sigmoid'))
+    model.add(Dropout(0.5))
+    model.add(LSTM(40, recurrent_activation='sigmoid'))
+    model.add(Dense(37))
+    model.compile(optimizer = 'adam', loss = 'mse', metrics=['accuracy', 'mae'])
+    model.summary()
+    return model
+
+def get_time_of_day(start_time:str)->pd.Series:
+    logging.debug("get Time of day")
+    time = pd.Timestamp(start_time)
+    time_of_day = pd.Series([0] * 780)
+    for offset in range(780):
+        logging.debug("offset: {}".format(offset))
+        t = time + pd.Timedelta('{}M'.format(offset))
+        logging.debug("time: {}".format(t))
+        hour = t.hour
+        logging.debug("hour: {}".format(hour))
+        category = int((hour - 2) / 4)
+        logging.debug("cat: {}".format(category))
+        time_of_day[offset] = category
+
+    return time_of_day

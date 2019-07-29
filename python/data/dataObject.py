@@ -21,6 +21,7 @@ class DataObject:
     id: str
     carb_ratio: float
     insulin_sensitivity: float
+    features: [float]
 
     def __init__(self):
         pass
@@ -54,6 +55,7 @@ class DataObject:
         cp.end_time = cp.end_time.isoformat()
         cp.data = cp.data.to_json()
         cp.data_long = cp.data_long.to_json()
+        cp.features_90 = cp['features-90']
         for key in ['carb', 'bolus', 'basal']:
             if hasattr(self, key):
                 cp.__setattr__(key, cp.__getattribute__(key).to_json())
@@ -66,6 +68,7 @@ class DataObject:
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
+        data_object.features_90 = di['features-90']
         if 'id' in di:
             data_object.id = di['id']
         if 'carb_ratio' in di:

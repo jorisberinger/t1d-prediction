@@ -93,17 +93,17 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             #
             es = EarlyStopping(monitor='val_mean_absolute_error', mode='min', verbose=1, patience=100)
             # fit model
-            history = model.fit(x_train, y_train, epochs = 100, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
+            history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/test-100-3l-{}.h5'.format(path, configuration['name'])) 
-            model.save_weights('{}models/w-test-100-3l-{}.h5'.format(path, configuration['name']))
+            model.save('{}models/cpu-2000-3l-{}.h5'.format(path, configuration['name'])) 
+            model.save_weights('{}models/w-cpu-2000-3l-{}.h5'.format(path, configuration['name']))
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
 
 def get_lstm_model(number_features):
     
-    if tf.test.is_gpu_available():
+    if False and tf.test.is_gpu_available():
         lstm_cell = CuDNNLSTM
     else:
         lstm_cell = LSTM
@@ -117,6 +117,7 @@ def get_lstm_model(number_features):
     model.add(Dense(37))
     model.compile(optimizer = 'adam', loss = 'mse', metrics=['accuracy', 'mae'])
     model.summary()
+
     return model
 
 

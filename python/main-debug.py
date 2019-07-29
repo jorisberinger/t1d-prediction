@@ -27,7 +27,7 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/csv_4.csv"
-db_path = path + 'data/tinydb/dbjsontest1.json'
+db_path = path + 'data/tinydb/dbtestml.json'
 
 # filename = path + "data/csv/data-o3.csv"
 
@@ -47,6 +47,20 @@ def main():
     logging.info("length of db: {}".format(len(db)))
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
+
+    with_result = db.search(where('result').exists())
+    lstm_result = list(filter(lambda x: any(list(map(lambda y: "LSTM" in y['predictor'], x['result']))) , with_result))
+    logging.info("lstm res {}".format(len(lstm_result)))
+    lstm_cleaned = list(map(clean_lstm, lstm_result))
+
+    db.write_back(lstm_cleaned)
+    db.storage.flush()
+    with_result = db.search(where('result').exists())
+    lstm_result = list(filter(lambda x: any(list(map(lambda y: "LSTM" in y['predictor'], x['result']))) , with_result))
+
+    logging.info("lstm res {}".format(len(lstm_result)))
+
+    exit()
 
     all = db.search(where('valid') == True)
     s = pd.Series(list(map(lambda x: x['id'], all)))
@@ -211,6 +225,10 @@ def get_features_summary(db: TinyDB):
     logging.info("found {} results".format(len(features)))
 
 
-
+def clean_lstm(item):
+    logging.debug("results before: {}".format(list(map(lambda x: x['predictor'], item['result']))))
+    item['result'] = list(filter(lambda x: 'LSTM' not in x['predictor'], item['result']))
+    logging.debug("results after: {}".format(list(map(lambda x: x['predictor'], item['result']))))
+    return item
 if __name__ == "__main__":
     main()

@@ -58,6 +58,7 @@ def rolling(db: TinyDB, user_data: UserData):
         predictionWindow.events = pd.concat([data_object.carb_events, data_object.basal_events, data_object.bolus_events])
         predictionWindow.userData = user_data
         predictionWindow.plot = config.PREDICTION_CONFIG['create_plots']
+        predictionWindow.features_90 = data_object.features_90
 
         # prediction_carb_optimized.append(checkOptimizer.check(predictionWindow))
 
@@ -88,7 +89,7 @@ def rolling(db: TinyDB, user_data: UserData):
         if len(results) > 10 + last_save:
             last_save = len(results)
             db.storage.flush()       
-
+    db.storage.flush()
     logger.info("length of result {}".format(len(results)))
     # save all prediction carb optimized values to a json file
     to_file(prediction_carb_optimized)

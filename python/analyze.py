@@ -58,12 +58,13 @@ def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
     #with_result = db.search((where('result').exists()))
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 5, results)) #
+    results = list(filter(lambda x: len(x) == 6, results)) #
     return results
 
 def getSummary(db: TinyDB, query):
     logger.debug("in get Summary")
     res = getResults(db, query)
+    res = list(filter(lambda item: len(list(filter(lambda x: 'LSTM' in x['predictor'],item))), res))
     logging.info("Number of results for query {}: {}".format(query, len(res)))
     if len(res) == 0:
         logging.warning("no result")

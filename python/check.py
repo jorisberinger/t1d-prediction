@@ -15,7 +15,7 @@ from predictors.arima import Arima
 from predictors.math_model import MathPredictor
 from predictors.optimizer import Optimizer
 from predictors.predictor import Predictor
-from predictors.lstm import LSTM
+from predictors.lstm import LSTM_predictor
 
 import pandas as pd
 
@@ -45,7 +45,7 @@ def check_and_plot(pw: PredictionWindow, item):
                     #SameValue(pw),
                     #LastNDelta(pw, 30), 
                     #LastNDelta(pw, 15),
-                    LSTM(pw)
+                    LSTM_predictor(pw)
                     ]
 
     if 'result' in item:
