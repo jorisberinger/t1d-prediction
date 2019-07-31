@@ -18,7 +18,7 @@ from keras.callbacks import EarlyStopping
 import keras
 path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
-model_path = path+'models/w-test-2000-3l-cgm, insulin, carbs, optimized, tod.h5'
+model_path = path+'models/2p-cpu-2000-3l-cgm, insulin, carbs, optimized, tod.h5'
 
 class LSTM_predictor(Predictor):
     name: str = "LSTM Predictor"
@@ -30,9 +30,9 @@ class LSTM_predictor(Predictor):
     def __init__(self, pw):
         super().__init__()
         self.pw: PredictionWindow = pw
-        #self.model = keras.models.load_model(model_path)
-        self.model = get_lstm_model(6)
-        self.model.load_weights(model_path)
+        self.model = keras.models.load_model(model_path)
+        #self.model = get_lstm_model(6)
+        #self.model.load_weights(model_path)
 
        
     def calc_predictions(self, error_times: [int]) -> bool:
@@ -41,8 +41,9 @@ class LSTM_predictor(Predictor):
         features['cgmValue'] /= 500
         features.index = list(map(float , features.index))
         features = features.sort_index()
-        features['time_of_day'] = get_time_of_day(self.pw.startTime)
         features['features-90'] = 0
+        features['time_of_day'] = get_time_of_day(self.pw.startTime)
+        
         for i, v in enumerate(range(0,600,15)):
             features.loc[v,'features-90'] = self.pw.features_90[i]
 

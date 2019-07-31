@@ -11,13 +11,17 @@ from sklearn.model_selection import train_test_split
 from keras.layers import CuDNNLSTM, Dropout, Dense, LSTM
 from keras.models import Sequential
 from keras.callbacks import EarlyStopping
-
+from matplotlib import pyplot as plt
+import keras
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
 db_path18 = path + 'data/tinydb/db18.json'
 db_path17 = path + 'data/tinydb/db1.json'
 db_path = path + 'data/tinydb/dbtest2.json'
+
+
+model_path = path+'models/2p-cpu-2000-3l-cgm, insulin, carbs, optimized, tod.h5'
 
 # Different configuarations of Features
 # ['cgmValue', 'basalValue', 'bolusValue', 'mealValue', 'feature-90', 'timeOfDay']
@@ -61,9 +65,11 @@ def compare_features(df):
         # split data into test and train data
         x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size = 0.05, shuffle = True, random_state=1)
 
-        train_model_for_configuration(x_train, x_test, y_train, y_test, configuration)
-        
+        # model = train_model_for_configuration(x_train, x_test, y_train, y_test, configuration)
+        model = keras.models.load_model(model_path)
         logging.info("Done with {}".format(configuration['name']))
+
+        plot_lstm_predictions(model, x_test, y_test)
 
     for configuration in configurations:
         logging.info("{} with mae {}".format(configuration['name'], configuration['mae']))
@@ -86,7 +92,7 @@ def get_features_for_configuration(configuration, df:pd.DataFrame):
     return features, labels
 
 def train_model_for_configuration(x_train, x_test, y_train, y_test, configuration):
-
+    model = None
     with tf.device('/GPU:0'):
             # define Model
             model = get_lstm_model(configuration['number_features'])
@@ -95,12 +101,12 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             # fit model
             history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/cpu-2000-3l-{}.h5'.format(path, configuration['name'])) 
-            model.save_weights('{}models/w-cpu-2000-3l-{}.h5'.format(path, configuration['name']))
+            model.save('{}models/2p-cpu-2000-3l-{}.h5'.format(path, configuration['name'])) 
+            model.save_weights('{}models/w-2p-cpu-2000-3l-{}.h5'.format(path, configuration['name']))
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
-
+    return model
 def get_lstm_model(number_features):
     
     if False and tf.test.is_gpu_available():
@@ -193,8 +199,16 @@ def load_data_with_result(db):
     logging.info("START execution")
     logging.info("Get all elements from DB")
     all_items = db.search(where('features-90').exists())
-    all_items = list(filter(lambda x: len(x['result']) == 5, all_items))
-    all_items = list(filter(lambda x: pd.Timestamp(x['start_time']).day not in [3,4,5,11,12,13], all_items))
+    #all_items = list(filter(lambda x: len(x['result']) == 5, all_items))
+
+    all_items = list(filter(lambda x: pd.Timestamp(x['start_time']).day not in [3,4,5,11,12,13], all_items)) # 1 Patient train filter
+
+    all_items = all_items[0:10]
+
+    # filter elements by patient id, relevant for db with more than 1 patient
+    #all_items = list(filter(lambda x: x['id'] == '82923830', all_items))  # TRAIN patient
+    # elements = list(filter(lambda x: x['id'] == '27283995', elements))  # Test patient
+
     logging.info("{} items found".format(len(all_items)))
     logging.info("Convert items to data_objects")
     data_objects = list(map(lambda x: from_dict(x), all_items))
@@ -265,5 +279,25 @@ def shift_to_zero(df: pd.DataFrame)-> (pd.DataFrame, float):
     logging.debug("cgm at 100: {}".format(df['cgmValue'][100]))
     return df, offset
 
+
+def plot_lstm_predictions(model, x : np.ndarray, y : np.ndarray):
+    logging.info("Plot a few predictions")
+    predictions = model.predict(x)
+    for i in range(20):
+        logging.info("i: {}".format(i))
+        plt.plot(x[i,:,0],label='features')
+        plt.plot(y[i], label='Real CGM')
+        plt.plot(predictions[i], label='Prediction')
+        plt.legend()
+        plt.savefig("../results/plots/lstm-{}".format(i))
+        plt.close()
+
+
+
+
+
+
+
 if __name__ == "__main__":
     main()
+

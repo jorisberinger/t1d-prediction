@@ -30,9 +30,18 @@ def rolling(db: TinyDB, user_data: UserData):
     loop_start = datetime.now()
 
     # create random iterator over valid items without a result
-    elements = db.search(where('result').exists() & (where('valid') == True))
+    # elements = db.search(where('result').exists() & (where('valid') == True))
+    elements = db.search(where('valid') == True)
 
-    elements = list(filter(check_time, elements))
+    # filter elements by day of month, relevant for db with one patient
+    #elements = list(filter(check_time_train, elements))
+    elements = list(filter(check_time_test, elements))
+
+    # filter elements by patient id, relevant for db with more than 1 patient
+    # elements = list(filter(lambda x: x['id'] == '82923830', elements))  # TRAIN patient
+    #elements = list(filter(lambda x: x['id'] == '27283995', elements))  # Test patient
+
+
 
     #elements = list(filter(lambda x: any(list(map(lambda y: abs(y['errors'][0]) > 70, x['result']))), elements))
 
@@ -86,7 +95,7 @@ def rolling(db: TinyDB, user_data: UserData):
                 else:
                     db.update({'features': order}, doc_ids=[item.doc_id])
         
-        if len(results) > 10 + last_save:
+        if len(results) > 100 + last_save:
             last_save = len(results)
             db.storage.flush()       
     db.storage.flush()
@@ -115,9 +124,8 @@ def check_directories():
     if not os.path.exists(directory + '/plots/'):
         os.makedirs(directory + '/plots/')
 
-def check_time(item):
+def check_time_test(item):
     time = pd.Timestamp(item['start_time'])
-
     if time.day in [5,12]:
         return True
     if time.day in [4,11] and time.hour > 10:
@@ -125,3 +133,7 @@ def check_time(item):
     if time.day in [6,13] and time.hour < 14:
         return True
     return False
+
+def check_time_train(item):
+    time = pd.Timestamp(item['start_time'])
+    return time.day not in [4,5,6,11,12,13]

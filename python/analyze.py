@@ -7,6 +7,7 @@ import pandas
 import numpy as np
 from matplotlib import gridspec
 from tinydb import TinyDB, where
+from rolling import check_time_test
 
 logger = logging.getLogger(__name__)
 
@@ -52,13 +53,19 @@ def plot(means, data, filename):
         plt.ylim(-400, 400)
         values.boxplot()
 
-    plt.savefig("{}results/{}.png".format(path, filename), dpi = 600)
+    plt.savefig("{}results/1p-{}.png".format(path, filename), dpi = 600)
 
 def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
     #with_result = db.search((where('result').exists()))
+
+    with_result = list(filter(check_time_test, with_result))
+
+
     results = list(map(lambda x: x['result'], with_result))
     results = list(filter(lambda x: len(x) == 6, results)) #
+
+
     return results
 
 def getSummary(db: TinyDB, query):

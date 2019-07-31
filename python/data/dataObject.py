@@ -68,7 +68,10 @@ class DataObject:
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
-        data_object.features_90 = di['features-90']
+        if 'features-90' in di:
+            data_object.features_90 = di['features-90']
+        else:
+            data_object.features_90 = None
         if 'id' in di:
             data_object.id = di['id']
         if 'carb_ratio' in di:
