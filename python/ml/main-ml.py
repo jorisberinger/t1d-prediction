@@ -18,10 +18,12 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 path = os.getenv('T1DPATH', '../')
 db_path18 = path + 'data/tinydb/db18.json'
 db_path17 = path + 'data/tinydb/db1.json'
+
 db_path = path + 'data/tinydb/dbtest2.json'
 
 
-model_path = path+'models/2p-cpu-2000-3l-cgm, insulin, carbs, optimized, tod.h5'
+model_path = path+'models/1p-gpu-2000-3l-cgm, insulin, carbs, optimized, tod.h5'
+#model_path = path+'models/1p-cpu-5-3l-cgm, insulin, carbs, optimized, tod.h5'
 
 # Different configuarations of Features
 # ['cgmValue', 'basalValue', 'bolusValue', 'mealValue', 'feature-90', 'timeOfDay']
@@ -49,8 +51,11 @@ def main():
     #df18 = load_data(db18)
     #df17 = load_data(db17)
     logging.info("convert data into files")
-    df = load_data_with_result(db)
-    compare_features(df)
+    df = None
+    #df = load_data_with_result(db)
+    
+    predictions = compare_features(df)
+    save_predictions(db,predictions)
     logging.info("Done")
 
 
@@ -60,16 +65,37 @@ def compare_features(df):
     for configuration in configurations:
         configuration['number_features'] = len(configuration['columns'])
         # get features and labels for configuration
-        features, labels = get_features_for_configuration(configuration, df)
-        
-        # split data into test and train data
-        x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size = 0.05, shuffle = True, random_state=1)
+        #features, labels, doc_ids = get_features_for_configuration(configuration, df)
 
-        # model = train_model_for_configuration(x_train, x_test, y_train, y_test, configuration)
+        
+        ## 1P Train features
+        features = np.fromfile(path+"models/np-1p-features")
+        features = features.reshape((4506, 121, 6))
+        labels = np.fromfile(path+"models/np-1p-labels")
+        labels = labels.reshape((4506, 37))
+        ## 1P Test features
+        features_test = np.fromfile(path+"models/np-1p-test-features")
+        features_test = features_test.reshape((966, 121, 6))
+        labels_test = np.fromfile(path+"models/np-1p-test-labels")
+        labels_test = labels_test.reshape((966, 37))
+        doc_ids_test = np.fromfile(path+"models/np-1p-test-docids")
+        doc_ids_test = doc_ids_test.reshape((966,))
+
+        # features_test = features_test[0:10]
+        # doc_ids_test = doc_ids_test[0:10]
+
+
+        # split data into test and train data
+        x_train, x_test, y_train, y_test = train_test_split(features, labels, test_size = 0.2, shuffle = True, random_state=1)
+
+        #model = train_model_for_configuration(x_train, x_test, y_train, y_test, configuration)
         model = keras.models.load_model(model_path)
         logging.info("Done with {}".format(configuration['name']))
 
-        plot_lstm_predictions(model, x_test, y_test)
+        predictions = predict_with_model(features_test, labels_test, doc_ids_test, model)
+
+        return predictions
+        #plot_lstm_predictions(model, x_test, y_test)
 
     for configuration in configurations:
         logging.info("{} with mae {}".format(configuration['name'], configuration['mae']))
@@ -78,18 +104,21 @@ def compare_features(df):
 def get_features_for_configuration(configuration, df:pd.DataFrame):
     logging.info("Prepping for {}".format(configuration['name']))
 
-    features = np.empty((len(df), 120, configuration['number_features']))
-    all_features = np.empty((len(df), 120, 6))
+    features = np.empty((len(df), 121, configuration['number_features']))
+    all_features = np.empty((len(df), 121, 6))
     labels = np.empty((len(df), 37))
+    doc_ids = np.empty((len(df)))
     for i, item in enumerate(df):
-        all_features[i] = item.values[:600:5]
+        doc_ids[i] = item['doc_id'][0]
+        item = item.drop('doc_id', axis=1)
+        all_features[i] = item.values[:601:5]
         labels[i] = item['cgmValue'].values[600::5]
 
     logging.info("feature shape {}".format(all_features.shape))
     features = all_features[:,:,configuration['columns']]
     logging.info("feature shape {}".format(features.shape))
 
-    return features, labels
+    return features, labels, doc_ids
 
 def train_model_for_configuration(x_train, x_test, y_train, y_test, configuration):
     model = None
@@ -101,21 +130,21 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             # fit model
             history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/2p-cpu-2000-3l-{}.h5'.format(path, configuration['name'])) 
-            model.save_weights('{}models/w-2p-cpu-2000-3l-{}.h5'.format(path, configuration['name']))
+            model.save('{}models/1p-gpu-2000-3l-{}.h5'.format(path, configuration['name'])) 
+            model.save_weights('{}models/w-1p-gpu-2000-3l-{}.h5'.format(path, configuration['name']))
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
     return model
 def get_lstm_model(number_features):
     
-    if False and tf.test.is_gpu_available():
+    if tf.test.is_gpu_available():
         lstm_cell = CuDNNLSTM
     else:
         lstm_cell = LSTM
     
     model = Sequential()
-    model.add(lstm_cell(120, input_shape = (120, number_features), return_sequences= True)) 
+    model.add(lstm_cell(121, input_shape = (121, number_features), return_sequences= True)) 
     model.add(Dropout(0.5))
     model.add(lstm_cell(40, return_sequences=True))
     model.add(Dropout(0.5))
@@ -183,6 +212,7 @@ def from_dict(di):
     data_object = {}
     # data_object['start_time'] = (pd.datetime.fromisoformat(di['start_time']))
     # data_object['end_time'] = (pd.datetime.fromisoformat(di['end_time']))
+    data_object['doc_id'] = di.doc_id
     data_object['data'] = (pd.DataFrame(json.loads(di['data'])))
     data_object['features-90'] = di['features-90']
     data_object['start_time'] = di['start_time']
@@ -195,15 +225,25 @@ def from_dict(di):
     #        data_object.__setattr__(key + '_events', df.sort_index())
     return data_object
 
+def check_time_test(item):
+    time = pd.Timestamp(item['start_time'])
+    if time.day in [5,12]:
+        return True
+    if time.day in [4,11] and time.hour > 10:
+        return True
+    if time.day in [6,13] and time.hour < 14:
+        return True
+    return False
+
 def load_data_with_result(db):
     logging.info("START execution")
     logging.info("Get all elements from DB")
     all_items = db.search(where('features-90').exists())
     #all_items = list(filter(lambda x: len(x['result']) == 5, all_items))
 
-    all_items = list(filter(lambda x: pd.Timestamp(x['start_time']).day not in [3,4,5,11,12,13], all_items)) # 1 Patient train filter
-
-    all_items = all_items[0:10]
+    #all_items = list(filter(lambda x: pd.Timestamp(x['start_time']).day not in [3,4,5,11,12,13], all_items)) # 1 Patient train filter
+    all_items = list(filter(check_time_test, all_items))
+    #all_items = all_items[0:100]
 
     # filter elements by patient id, relevant for db with more than 1 patient
     #all_items = list(filter(lambda x: x['id'] == '82923830', all_items))  # TRAIN patient
@@ -220,6 +260,7 @@ def load_data_with_result(db):
       item['cgmValue'] /= 500
     #subset = subset[:500]
     logging.info("Convert to Dataframe")
+
     return subset
 
 def get_feature_list(data_object):
@@ -230,7 +271,7 @@ def get_feature_list(data_object):
     df['time_of_day'] = get_time_of_day(data_object['start_time'])
     for i, v in enumerate(range(0,600,15)):
         df.loc[v,'features-90'] = data_object['features-90'][i]
-
+    df['doc_id'] = data_object['doc_id']
     return df
 
 def load_data(db):
@@ -283,20 +324,34 @@ def shift_to_zero(df: pd.DataFrame)-> (pd.DataFrame, float):
 def plot_lstm_predictions(model, x : np.ndarray, y : np.ndarray):
     logging.info("Plot a few predictions")
     predictions = model.predict(x)
-    for i in range(20):
+
+
+    for i in range(min(len(x), 20)):
         logging.info("i: {}".format(i))
-        plt.plot(x[i,:,0],label='features')
-        plt.plot(y[i], label='Real CGM')
-        plt.plot(predictions[i], label='Prediction')
+        plt.plot(range(0,601,5), x[i,:,0],label='features')
+        plt.plot(range(600,781,5), y[i], label='Real CGM')
+        plt.plot(range(600,781,5), predictions[i], label='Prediction')
         plt.legend()
-        plt.savefig("../results/plots/lstm-{}".format(i))
+        plt.savefig("{}results/plots/lstm-6-{}".format(path, i))
         plt.close()
 
+def predict_with_model(features, labels, doc_ids, model):
+    logging.info("Making predictions!")
+    predictions = model.predict(features)
+    logging.info(len(predictions))
+    logging.info(len(doc_ids))
+
+    prediction_objects = list(map(lambda x: {'predictions': x[0], 'doc_id': x[1]}, zip(predictions, doc_ids)))
+
+    return prediction_objects
 
 
+def save_predictions(db:TinyDB, predictions: {}):
+    for item in predictions:
+        logging.info("item {}".format(item['doc_id']))
+        db.update({'lstm-test-result': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
 
-
-
+    db.storage.flush()
 
 if __name__ == "__main__":
     main()
