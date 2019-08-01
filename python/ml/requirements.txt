@@ -4,3 +4,4 @@ tinydb
 pandas
 numpy
 sklearn
+matplotlib
