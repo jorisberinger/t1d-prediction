@@ -27,9 +27,9 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/csv_4.csv"
-db_path = path + 'data/tinydb/dbtestml.json'
+db_path = path + 'data/tinydb/dbtest2.json'
 
-# filename = path + "data/csv/data-o3.csv"
+# filename = path + "data/csv/dbtest2.csv"
 
 def main():
     logger.info("Start Main!")
@@ -48,6 +48,15 @@ def main():
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
+
+    aa = db.search(where('lstm-test-result').exists())
+    logging.info("found {} items with lstm test result".format(len(aa)))
+    
+    all = db.search(where('valid') == True)
+    #s = pd.Series(list(map(lambda x: x['id'], all)))
+    #list(map(lambda id: print("id {} has {} items".format(id, len(list(filter(lambda x: x['id'] == id, all))))), s.unique()))
+
+    
     with_result = db.search(where('result').exists())
     lstm_result = list(filter(lambda x: any(list(map(lambda y: "LSTM" in y['predictor'], x['result']))) , with_result))
     logging.info("lstm res {}".format(len(lstm_result)))

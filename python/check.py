@@ -16,7 +16,7 @@ from predictors.math_model import MathPredictor
 from predictors.optimizer import Optimizer
 from predictors.predictor import Predictor
 from predictors.lstm import LSTM_predictor
-
+from predictors.mean_predictor import Mean_predictor
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,8 @@ def check_and_plot(pw: PredictionWindow, item):
                     #SameValue(pw),
                     #LastNDelta(pw, 30), 
                     #LastNDelta(pw, 15),
-                    LSTM_predictor(pw)
+                    # LSTM_predictor(pw),
+                    Mean_predictor(pw)
                     ]
 
     if 'result' in item:
@@ -75,7 +76,7 @@ def check_and_plot(pw: PredictionWindow, item):
         features = opt[0].get_features()
     else:
         features = None
-    #features = None
+    features = None
     
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))

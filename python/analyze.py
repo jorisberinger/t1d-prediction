@@ -60,10 +60,12 @@ def getResults(db: TinyDB, query):
     #with_result = db.search((where('result').exists()))
 
     with_result = list(filter(check_time_test, with_result))
+    # elements = list(filter(lambda x: x['id'] == '82923830', elements))  # TRAIN patient
+    # with_result = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient
 
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 6, results)) #
+    results = list(filter(lambda x: len(x) == 8, results)) 
 
 
     return results

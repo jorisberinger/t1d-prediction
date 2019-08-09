@@ -16,8 +16,6 @@ import keras
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
-db_path18 = path + 'data/tinydb/db18.json'
-db_path17 = path + 'data/tinydb/db1.json'
 
 db_path = path + 'data/tinydb/db3p.json'
 

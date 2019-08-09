@@ -22,6 +22,7 @@ class DataObject:
     carb_ratio: float
     insulin_sensitivity: float
     features: [float]
+    lstm_result: [float]
 
     def __init__(self):
         pass
@@ -68,6 +69,11 @@ class DataObject:
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
+        if 'lstm-test-result' in di:
+            data_object.lstm_result = di['lstm-test-result']
+        else:
+            data_object.lstm_result = None
+
         if 'features-90' in di:
             data_object.features_90 = di['features-90']
         else:

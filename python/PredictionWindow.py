@@ -25,6 +25,7 @@ class PredictionWindow:
     errors = None
     real_values: [float] = None
     features_90: [float]
+    lstm_result: [float]
     def set_values(self, error_times: np.array):
         # Get all Values of the Continuous Blood Glucose Reading, cgmX as TimeDelta from Start and cgmY the paired Value
         self.cgmY = get_cgm_reading(self.data)

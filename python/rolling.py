@@ -31,7 +31,7 @@ def rolling(db: TinyDB, user_data: UserData):
 
     # create random iterator over valid items without a result
     # elements = db.search(where('result').exists() & (where('valid') == True))
-    elements = db.search(where('valid') == True)
+    elements = db.search((where('valid') == True) & where('lstm-test-result').exists())
 
     # filter elements by day of month, relevant for db with one patient
     #elements = list(filter(check_time_train, elements))
@@ -68,6 +68,7 @@ def rolling(db: TinyDB, user_data: UserData):
         predictionWindow.userData = user_data
         predictionWindow.plot = config.PREDICTION_CONFIG['create_plots']
         predictionWindow.features_90 = data_object.features_90
+        PredictionWindow.lstm_result = data_object.lstm_result
 
         # prediction_carb_optimized.append(checkOptimizer.check(predictionWindow))
 
@@ -97,7 +98,7 @@ def rolling(db: TinyDB, user_data: UserData):
         
         if len(results) > 100 + last_save:
             last_save = len(results)
-            db.storage.flush()       
+            # db.storage.flush()       
     db.storage.flush()
     logger.info("length of result {}".format(len(results)))
     # save all prediction carb optimized values to a json file
