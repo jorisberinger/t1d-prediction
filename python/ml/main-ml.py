@@ -65,7 +65,7 @@ def compare_features(df):
     for configuration in configurations:
         configuration['number_features'] = len(configuration['columns'])
         # get features and labels for configuration
-        #features, labels, doc_ids = get_features_for_configuration(configuration, df)
+        features, labels, doc_ids = get_features_for_configuration(configuration, df)
 
        
         #features.tofile(path+'models/np-2p-test-features')
@@ -73,21 +73,21 @@ def compare_features(df):
         #doc_ids.tofile(path+'models/np-2p-test-docids')
 
 
-        ## 2p Train features
-        features = np.fromfile(path+'models/np-2p-features')
-        features = features.reshape((6178, 121, 6))
-        labels = np.fromfile(path+'models/np-2p-labels')
-        labels = labels.reshape((6178, 37))
-        doc_ids = np.fromfile(path+'models/np-2p-doc_ids')
-        doc_ids = doc_ids.reshape((6178,))
+        # ## 2p Train features
+        # features = np.fromfile(path+'models/np-2p-features')
+        # features = features.reshape((6178, 121, 6))
+        # labels = np.fromfile(path+'models/np-2p-labels')
+        # labels = labels.reshape((6178, 37))
+        # doc_ids = np.fromfile(path+'models/np-2p-doc_ids')
+        # doc_ids = doc_ids.reshape((6178,))
 
-        ## 2P Test features
-        features_test = np.fromfile(path+"models/np-2p-test-features")
-        features_test = features_test.reshape((998, 121, 6))
-        labels_test = np.fromfile(path+"models/np-2p-test-labels")
-        labels_test = labels_test.reshape((998, 37))
-        doc_ids_test = np.fromfile(path+"models/np-2p-test-docids")
-        doc_ids_test = doc_ids_test.reshape((998,))
+        # ## 2P Test features
+        # features_test = np.fromfile(path+"models/np-2p-test-features")
+        # features_test = features_test.reshape((998, 121, 6))
+        # labels_test = np.fromfile(path+"models/np-2p-test-labels")
+        # labels_test = labels_test.reshape((998, 37))
+        # doc_ids_test = np.fromfile(path+"models/np-2p-test-docids")
+        # doc_ids_test = doc_ids_test.reshape((998,))
 
 
         # ## 1P Train features

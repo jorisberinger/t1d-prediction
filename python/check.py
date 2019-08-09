@@ -17,6 +17,7 @@ from predictors.optimizer import Optimizer
 from predictors.predictor import Predictor
 from predictors.lstm import LSTM_predictor
 from predictors.mean_predictor import Mean_predictor
+from predictors.error_predictor import Error_predictor
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,8 @@ def check_and_plot(pw: PredictionWindow, item):
                     #LastNDelta(pw, 30), 
                     #LastNDelta(pw, 15),
                     # LSTM_predictor(pw),
-                    Mean_predictor(pw)
+                    #Mean_predictor(pw),
+                    Error_predictor(pw)
                     ]
 
     if 'result' in item:

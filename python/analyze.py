@@ -53,7 +53,7 @@ def plot(means, data, filename):
         plt.ylim(-400, 400)
         values.boxplot()
 
-    plt.savefig("{}results/2p-rmse-{}.png".format(path, filename), dpi = 600)
+    plt.savefig("{}results/2p-err-rmse-{}.png".format(path, filename), dpi = 600)
 
 def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
@@ -65,7 +65,7 @@ def getResults(db: TinyDB, query):
 
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 7, results)) 
+    results = list(filter(lambda x: len(x) == 8, results)) 
 
 
     return results

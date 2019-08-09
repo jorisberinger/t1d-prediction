@@ -23,6 +23,8 @@ class DataObject:
     insulin_sensitivity: float
     features: [float]
     lstm_result: [float]
+    error_result: [float]
+
 
     def __init__(self):
         pass
@@ -73,6 +75,10 @@ class DataObject:
             data_object.lstm_result = di['lstm-test-result']
         else:
             data_object.lstm_result = None
+        if 'error-arima-result' in di:
+            data_object.error_result = di['error-arima-result']
+        else:
+            data_object.error_result = None
 
         if 'features-90' in di:
             data_object.features_90 = di['features-90']
