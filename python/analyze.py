@@ -53,19 +53,19 @@ def plot(means, data, filename):
         plt.ylim(-400, 400)
         values.boxplot()
 
-    plt.savefig("{}results/1p-{}.png".format(path, filename), dpi = 600)
+    plt.savefig("{}results/2p-rmse-{}.png".format(path, filename), dpi = 600)
 
 def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
     #with_result = db.search((where('result').exists()))
 
-    with_result = list(filter(check_time_test, with_result))
+    # with_result = list(filter(check_time_test, with_result))
     # elements = list(filter(lambda x: x['id'] == '82923830', elements))  # TRAIN patient
-    # with_result = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient
+    with_result = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient
 
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 8, results)) 
+    results = list(filter(lambda x: len(x) == 7, results)) 
 
 
     return results
@@ -96,8 +96,12 @@ def getSummary(db: TinyDB, query):
         all_results.append(predictor_errors)
         logger.debug("Predictor Results {}".format(predictor_errors))
         result_matrix = predictor_errors.apply(set_index)
-        result_mean = abs(result_matrix).mean()
+        # result_mean = abs(result_matrix).mean() ### MEAN ABSOLUTE ERROR
+
+        result_mean = result_matrix.pow(2).mean().pow(0.5)  ### ROOT MEAN SQUARED ERROR
+
         result_mean.name = label
+
         summary = summary.append(result_mean)
         
 
