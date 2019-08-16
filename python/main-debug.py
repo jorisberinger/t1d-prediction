@@ -27,7 +27,7 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 
 path = os.getenv('T1DPATH', '../')
 filename = path + "data/csv/csv_4.csv"
-db_path = path + 'data/tinydb/dbtest2.json'
+db_path = path + 'data/tinydb/db3p.json'
 
 # filename = path + "data/csv/dbtest2.csv"
 
@@ -49,6 +49,19 @@ def main():
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
 
+
+    # exit()
+    with_result = db.search(where('result').exists())
+    all_items = list(filter(lambda x: x['id'] == '82923830', with_result)) # Train - 3p
+    # all_items = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient - 2p
+    p_result = list(filter(lambda x: any(list(map(lambda y: "LSTM" in y['predictor'], x['result']))) , all_items))
+    logging.info("error res {}".format(len(p_result)))
+    p_cleaned = list(map(lambda x: clean_result(x, '5000'), p_result))
+
+    db.write_back(p_cleaned)
+    db.storage.flush()
+
+    exit()
     aa = db.search(where('lstm-test-result').exists())
     logging.info("found {} items with lstm test result".format(len(aa)))
     
@@ -234,9 +247,9 @@ def get_features_summary(db: TinyDB):
     logging.info("found {} results".format(len(features)))
 
 
-def clean_lstm(item):
+def clean_result(item, string):
     logging.debug("results before: {}".format(list(map(lambda x: x['predictor'], item['result']))))
-    item['result'] = list(filter(lambda x: 'LSTM' not in x['predictor'], item['result']))
+    item['result'] = list(filter(lambda x: string not in x['predictor'], item['result']))
     logging.debug("results after: {}".format(list(map(lambda x: x['predictor'], item['result']))))
     return item
 if __name__ == "__main__":

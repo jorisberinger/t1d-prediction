@@ -42,14 +42,10 @@ configurations = [      #{'name':'cgm', 'columns':[0]},
 def main():
 
     logging.info("Starting machine learning main")
-    #db = TinyDB(db_path18, storage = CachingMiddleware(JSONStorage))
-    #logging.info("database loaded with {} entries".format(len(db18)))
-    #db17 = TinyDB(db_path17, storage = CachingMiddleware(JSONStorage))
     logging.info("Load Database")
     db = TinyDB(db_path, storage = CachingMiddleware(JSONStorage))
     logging.info("database loaded with {} entries".format(len(db)))
-    #df18 = load_data(db18)
-    #df17 = load_data(db17)
+
     logging.info("convert data into files")
     df = None
     # df = load_data_with_result(db)

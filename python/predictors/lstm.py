@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 model_path = path+'models/1p-cpu-2000-3l-cgm.h5'
 
 class LSTM_predictor(Predictor):
-    name: str = "LSTM Predictor"
+    name: str = "LSTM Predictor 5000"
     pw: PredictionWindow
     prediction_values: [float]
     prediction_values_all: [float]
@@ -56,7 +56,7 @@ class LSTM_predictor(Predictor):
 
         prediction = np.array(self.pw.lstm_result)
 
-        self.prediction_values_all = pd.Series(prediction * 500, index=range(0,len(prediction)*5,5))
+        self.prediction_values_all = pd.Series(prediction * 500, index=range(0,181,15))
         self.prediction_values = self.prediction_values_all[error_times]
         self.prediction_values.index += 600
         self.prediction_values_all.index += 600

@@ -53,19 +53,19 @@ def plot(means, data, filename):
         plt.ylim(-400, 400)
         values.boxplot()
 
-    plt.savefig("{}results/2p-err-rmse-{}.png".format(path, filename), dpi = 600)
+    plt.savefig("{}results/3p-err-rmse-{}.png".format(path, filename), dpi = 600)
 
 def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
     #with_result = db.search((where('result').exists()))
 
     # with_result = list(filter(check_time_test, with_result))
-    # elements = list(filter(lambda x: x['id'] == '82923830', elements))  # TRAIN patient
-    with_result = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient
+    with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
+    # with_result = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient
 
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 8, results)) 
+    results = list(filter(lambda x: len(x) == 7, results)) 
 
 
     return results
@@ -73,7 +73,7 @@ def getResults(db: TinyDB, query):
 def getSummary(db: TinyDB, query):
     logger.debug("in get Summary")
     res = getResults(db, query)
-    res = list(filter(lambda item: len(list(filter(lambda x: 'LSTM' in x['predictor'],item))), res))
+    res = list(filter(lambda item: len(list(filter(lambda x: '5000' in x['predictor'],item))), res))
     logging.info("Number of results for query {}: {}".format(query, len(res)))
     if len(res) == 0:
         logging.warning("no result")

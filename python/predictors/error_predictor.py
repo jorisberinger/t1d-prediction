@@ -35,9 +35,6 @@ class Error_predictor(Predictor):
 
         prediction_error = np.array(self.pw.error_result)
 
-        
-
-        # TODO at real values
 
         self.prediction_values_all = self.pw.real_values + prediction_error
         self.prediction_values = self.pw.real_values + prediction_error
