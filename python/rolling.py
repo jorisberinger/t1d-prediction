@@ -32,7 +32,7 @@ def rolling(db: TinyDB, user_data: UserData):
     # create random iterator over valid items without a result
     # elements = db.search(where('result').exists() & (where('valid') == True))
     #elements = db.search((where('valid') == True) & where('lstm-test-result').exists() & where('error-arima-result').exists())
-    elements = db.search((where('valid') == True) & where('error-arima-result').exists())
+    elements = db.search((where('valid') == True) & where('error-lstm-result').exists())
     # elements = db.search((where('valid') == True))
 
     # filter elements by day of month, relevant for db with one patient

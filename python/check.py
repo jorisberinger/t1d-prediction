@@ -46,9 +46,9 @@ def check_and_plot(pw: PredictionWindow, item):
                     #SameValue(pw),
                     #LastNDelta(pw, 30), 
                     #LastNDelta(pw, 15),
-                    LSTM_predictor(pw),
+                    #LSTM_predictor(pw),
                     #Mean_predictor(pw),
-                    #Error_predictor(pw)
+                    Error_predictor(pw)
                     ]
 
     if 'result' in item:

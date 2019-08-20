@@ -57,8 +57,10 @@ class DataObject:
         cp.start_time = cp.start_time.isoformat()
         cp.end_time = cp.end_time.isoformat()
         cp.data = cp.data.to_json()
+        
         cp.data_long = cp.data_long.to_json()
-        cp.features_90 = cp['features-90']
+        if hasattr(cp, 'features-90'):
+            cp.features_90 = cp['features-90']
         for key in ['carb', 'bolus', 'basal']:
             if hasattr(self, key):
                 cp.__setattr__(key, cp.__getattribute__(key).to_json())
@@ -76,7 +78,7 @@ class DataObject:
         else:
             data_object.lstm_result = None
         if 'error-arima-result' in di:
-            data_object.error_result = di['error-arima-result']
+            data_object.error_result = di['error-lstm-result']
         else:
             data_object.error_result = None
 

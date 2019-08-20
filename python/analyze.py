@@ -65,7 +65,7 @@ def getResults(db: TinyDB, query):
 
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 7, results)) 
+    results = list(filter(lambda x: len(x) == 8, results)) 
 
 
     return results
