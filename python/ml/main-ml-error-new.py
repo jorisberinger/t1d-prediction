@@ -18,9 +18,10 @@ coloredlogs.install(level = logging.INFO, fmt = '%(asctime)s %(filename)s[%(line
 path = os.getenv('T1DPATH', '../')
 
 #db_path = path + 'data/tinydb/dbtest2.json'
-db_path = path + 'data/tinydb/db3p.json'
+# db_path = path + 'data/tinydb/db3p.json'
+db_path = path + 'data/tinydb/dbtest2.json'
 
-patient = '3p'
+patient = '1p'
 
 # model_path = path+'models/'+patient+ '-err-gpu-2000-1l-cgm, insulin, carbs, optimized, tod.h5'
 #model_path = "{}models/{}-error-best-model".format(path,patient)
@@ -46,7 +47,7 @@ def main():
     db = TinyDB(db_path, storage = CachingMiddleware(JSONStorage))
     logging.info("database loaded with {} entries".format(len(db)))
     # convert db items into features and labels
-    features, labels, doc_ids = load_data_with_result(db, cache=True)
+    features, labels, doc_ids = load_data_with_result(db, cache=False)
     
     #features, labels, doc_ids = features[:100], labels[:100], doc_ids[:100]
     features = normalize(features)
@@ -98,17 +99,17 @@ def learn_errors(x_train, x_test, y_train, y_test , db: TinyDB, cache: bool):
 def get_new_prediction(item, db):
     logging.debug(item)
     db_item = db.get(doc_id=item['doc_id'])
-    lstm_results = list(filter(lambda x: 'LSTM' in x['predictor'] and '5000' not in x['predictor'], db_item['result']))[0]['errors']
+    # lstm_results = list(filter(lambda x: 'LSTM' in x['predictor'] and '5000' not in x['predictor'], db_item['result']))[0]['errors']
+    old_prediction = list(filter(lambda x: 'Arima' in x['predictor'], db_item['result']))[0]['errors']
     predicted_error = item['predictions']
-    logging.debug(lstm_results)
+    logging.debug(old_prediction)
     logging.debug(predicted_error)
-    new_prediction = lstm_results - predicted_error
-    arima_err = sum(map(abs,lstm_results))
+    new_prediction = old_prediction - predicted_error
+    old_err = sum(map(abs,old_prediction))
     new_err = sum(map(abs,new_prediction))
     logging.debug("new Prediction error:\n{}".format(new_prediction))
-    logging.debug("old: {}\tnew: {}".format(arima_err, new_err))
-    logging.info("{} - {}".format(arima_err - new_err, (arima_err - new_err) < 0))
-
+    logging.debug("old: {}\tnew: {}".format(old_err, new_err))
+    logging.info("{} - {}".format(old_err - new_err, (old_err - new_err) < 0))
 
     return {'predictions': new_prediction, "doc_id": item['doc_id']}
 
@@ -118,14 +119,14 @@ def get_features_for_configuration(configuration, df:pd.DataFrame):
     logging.info("Prepping for {}".format(configuration['name']))
 
     features = np.empty((len(df), 121, configuration['number_features']))
-    all_features = np.empty((len(df), 121, 9))
+    all_features = np.empty((len(df), 121, 7))
     labels = np.empty((len(df), 8))
     doc_ids = np.empty((len(df)))
     for i, item in enumerate(df):
         doc_ids[i] = item['doc_id'][0]
         item = item.drop('doc_id', axis=1)
         all_features[i] = item.values[:601:5]
-        labels[i] = item['optimizer_error'].values[:8]
+        labels[i] = item['arima_error'].values[:8]
         #labels[i] = item['cgmValue'].values[600::15]
 
 
@@ -148,13 +149,13 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             #es = EarlyStopping(monitor='val_mean_absolute_error', mode='min', verbose=1, patience=100)
             # fit model
             #history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
-            checkpointer = ModelCheckpoint(filepath="{}models/{}-error-best-model".format(path,patient), monitor='val_acc',verbose=1, save_best_only=True)
+            checkpointer = ModelCheckpoint(filepath="{}models/{}-error-arima-best-model".format(path,patient), monitor='val_acc',verbose=1, save_best_only=True)
             logging.info("Y TRAIN")
             logging.info(y_train[0:20])
             history = model.fit(x_train, y_train, epochs = 1000, batch_size = 32 , validation_data = (x_test, y_test), callbacks=[checkpointer])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/{}-err-gpu-1000-1l-{}.h5'.format(path,patient, configuration['name'])) 
-            model.save_weights('{}models/w-{}-err-gpu-1000-1l-{}.h5'.format(path, patient, configuration['name']))
+            model.save('{}models/{}-err-arima-1000-1l-{}.h5'.format(path,patient, configuration['name'])) 
+            model.save_weights('{}models/w-{}-err-arima-1000-1l-{}.h5'.format(path, patient, configuration['name']))
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
@@ -182,7 +183,7 @@ def get_lstm_model(number_features):
     model = Sequential()
     #model.add(lstm_cell(121, input_shape = (121, number_features), return_sequences= True)) 
     #model.add(Dropout(0.2))
-    model.add(lstm_cell(10, input_shape = (121, number_features))) 
+    model.add(lstm_cell(20, input_shape = (121, number_features))) 
     #model.add(Dropout(0.5))
     #model.add(lstm_cell(40, return_sequences=True))
     #model.add(Dropout(0.5))
@@ -241,9 +242,9 @@ def check_time_train(time):
 def load_data_with_result(db: TinyDB, cache: bool):
     logging.info("Start getting data..")
     if cache:
-        features = np.fromfile(path+'models/npe-opti-'+patient+ '-all-features')
-        labels = np.fromfile(path+'models/npe-opti-'+patient+ '-all-labels')
-        doc_ids = np.fromfile(path+'models/npe-opti-'+patient+ '-all-docids')
+        features = np.fromfile(path+'models/npe-arima-'+patient+ '-all-features')
+        labels = np.fromfile(path+'models/npe-arima-'+patient+ '-all-labels')
+        doc_ids = np.fromfile(path+'models/npe-arima-'+patient+ '-all-docids')
         nr_items = len(doc_ids)
         features = features.reshape((nr_items, 121, 6))
         labels = labels.reshape((nr_items, 8))
@@ -263,10 +264,12 @@ def load_data_with_result(db: TinyDB, cache: bool):
             all_items = list(filter(lambda x: x['id'] == '82923830', all_items))  # TRAIN patient
         elif patient == '2p':
             all_items = list(filter(lambda x: x['id'] == '27283995', all_items))  # Test patient
+        elif patient == '1p':
+            pass
         else:
             raise Exception("Unknown patient")
 
-        all_items = list(filter(lambda x: len(x['result']) == 7, all_items))
+        #all_items = list(filter(lambda x: len(x['result']) == 7, all_items))
 
         #all_items = all_items[0:100]
         logging.info("{} items found".format(len(all_items)))
@@ -287,9 +290,9 @@ def load_data_with_result(db: TinyDB, cache: bool):
         # Get features and labels
         features, labels, doc_ids = get_features_for_configuration(configuration=configuration, df=subset)
         # # save features, labels and doc id
-        features.tofile(path+'models/npe-opti-'+patient+ '-all-features')
-        labels.tofile(path+'models/npe-opti-'+patient+ '-all-labels')
-        doc_ids.tofile(path+'models/npe-opti-'+patient+ '-all-docids')
+        features.tofile(path+'models/npe-arima-'+patient+ '-all-features')
+        labels.tofile(path+'models/npe-arima-'+patient+ '-all-labels')
+        doc_ids.tofile(path+'models/npe-arima-'+patient+ '-all-docids')
 
     return features, labels, doc_ids 
 
@@ -303,8 +306,8 @@ def get_feature_list(data_object):
         df.loc[v,'features-90'] = data_object['features-90'][i]
     df['doc_id'] = data_object['doc_id']
     df['arima_error'] = pd.Series(list(filter(lambda x: 'Arima' in x['predictor'], data_object['result']))[0]['errors'])
-    df['optimizer_error'] = pd.Series(list(filter(lambda x: 'Optimizer' in x['predictor'], data_object['result']))[0]['errors'])
-    df['lstm_error'] = pd.Series(list(filter(lambda x: 'LSTM' in x['predictor'] and '5000' not in x['predictor'], data_object['result']))[0]['errors'])
+    #df['optimizer_error'] = pd.Series(list(filter(lambda x: 'Optimizer' in x['predictor'], data_object['result']))[0]['errors'])
+    #df['lstm_error'] = pd.Series(list(filter(lambda x: 'LSTM' in x['predictor'] and '5000' not in x['predictor'], data_object['result']))[0]['errors'])
 
     return df
 
@@ -367,23 +370,23 @@ def predict_with_model(features, labels, doc_ids, model):
     return prediction_objects
 
 
-def save_predictions(db:TinyDB, predictions: {}):
-    for item in predictions:
-        logging.info("item {}".format(item['doc_id']))
-        db.update({'err-test-1-result': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
+# def save_predictions(db:TinyDB, predictions: {}):
+#     for item in predictions:
+#         logging.info("item {}".format(item['doc_id']))
+#         db.update({'err-test-1-result': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
 
-    db.storage.flush()
+#     db.storage.flush()
 
 def save_prediction(db:TinyDB, item: {}):
     logging.info("item {}".format(item['doc_id']))
-    db.update({'error-lstm-result': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
+    db.update({'error-arima-result': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
     return True
 
-def save_predictions_lstm(db:TinyDB, item: {}):
-    logging.info("item {}".format(item['doc_id']))
-    db.update({'lstm-test-result': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
+# def save_predictions_lstm(db:TinyDB, item: {}):
+#     logging.info("item {}".format(item['doc_id']))
+#     db.update({'lstm-test-result': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
 
-    return True
+#     return True
 
 def train_test_split_custom(features, labels, doc_ids, db):
     logging.info("Split data into training and test")
@@ -393,11 +396,12 @@ def train_test_split_custom(features, labels, doc_ids, db):
         
         start_time = pd.Timestamp(list(filter(lambda x: x.doc_id == doc_id, all_items))[0]['start_time'])
         
-        if start_time.day in [4,5,6]:
+        if check_time_train(start_time):
             x_train.append(feature), y_train.append(label), doc_ids_train.append(doc_id)
-        if start_time.day in [11,12,13]:
+        if check_time_test(start_time):
             x_test.append(feature), y_test.append(label), doc_ids_test.append(doc_id)
 
+    logging.info("training length: {}\ttest length: {}".format(len(x_train), len(x_test)))
     return np.array(x_train), np.array(x_test), np.array(y_train), np.array(y_test), np.array(doc_ids_train), np.array(doc_ids_test)
 
 
