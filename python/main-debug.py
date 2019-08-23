@@ -5,6 +5,7 @@ import time
 
 import coloredlogs
 import pandas as pd
+import numpy as np
 from tinydb import TinyDB, JSONStorage, where 
 from tinydb.middlewares import CachingMiddleware
 from tinydb.operations import delete
@@ -26,13 +27,13 @@ logger = logging.getLogger(__name__)
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
-filename = path + "data/csv/csv_4.csv"
-db_path = path + 'data/tinydb/db3p.json'
-
-# filename = path + "data/csv/dbtest2.csv"
+#filename = path + "data/csv/csv_4.csv"
+# db_path = path + 'data/tinydb/db4p.json'
+db_path = path + 'data/tinydb/dbtest2.json'
 
 def main():
-    logger.info("Start Main!")
+    logger.info("Start debugging!")
+    logger.info("db: {}".format(db_path.split('/')[-1]))
     create_plots: bool = False  # Select True if you want a plot for every prediction window
 
     # SET USER DATA
@@ -48,9 +49,25 @@ def main():
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
+    
+    
+    with_result = db.search(where('result').exists())
+    get_predictor_count(with_result)
+    exit()
+    all_items = list(filter(lambda x: x['id'] == '29032313', with_result)) # Train - 3p
+    get_predictor_count(all_items)
+
+    exit()
+    get_predictor_count(with_result)
+    cleaned = list(map(lambda x: clean_result(x, 'Mean'), with_result))
+    get_predictor_count(cleaned)
+    cleaned = list(map(lambda x: clean_result(x, 'LSTM'), with_result))
+    get_predictor_count(cleaned)
+    cleaned = list(map(lambda x: clean_result(x, '[15, 30,'), with_result))
+    get_predictor_count(cleaned)
 
 
-    # exit()
+    exit()
     with_result = db.search(where('result').exists())
     all_items = list(filter(lambda x: x['id'] == '82923830', with_result)) # Train - 3p
     # all_items = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient - 2p
@@ -252,5 +269,17 @@ def clean_result(item, string):
     item['result'] = list(filter(lambda x: string not in x['predictor'], item['result']))
     logging.debug("results after: {}".format(list(map(lambda x: x['predictor'], item['result']))))
     return item
+
+
+def get_predictor_count(all_items: []):
+    r = list(map(lambda x: x['result'], all_items))
+    predictors = []
+    for item in r:
+        for pred in item:
+            predictors.append(pred['predictor'])
+    preds = pd.Series(predictors)
+    logging.info(preds.value_counts())
+
+
 if __name__ == "__main__":
     main()

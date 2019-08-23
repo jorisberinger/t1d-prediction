@@ -78,7 +78,7 @@ class DataObject:
         else:
             data_object.lstm_result = None
         if 'error-arima-result' in di:
-            data_object.error_result = di['error-lstm-result']
+            data_object.error_result = di['error-arima-result']
         else:
             data_object.error_result = None
 

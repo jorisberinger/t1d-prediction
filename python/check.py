@@ -66,7 +66,7 @@ def check_and_plot(pw: PredictionWindow, item):
     
     # Get arima order
     
-    arm = list(filter(lambda x: 'Arima' in x.name, predictors))
+    arm = list(filter(lambda x: 'Arima Predictor' in x.name, predictors))
     if len(arm):
         order = arm[0].order
     else:
@@ -78,7 +78,7 @@ def check_and_plot(pw: PredictionWindow, item):
         features = opt[0].get_features()
     else:
         features = None
-    features = None
+    #features = None
     
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))

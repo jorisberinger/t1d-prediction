@@ -20,7 +20,7 @@ path = os.getenv('T1DPATH', '../')
 logger = logging.getLogger(__name__)
 
 class Error_predictor(Predictor):
-    name: str = "Error Predictor"
+    name: str = "Error Predictor Arima"
     pw: PredictionWindow
     prediction_values: [float]
     prediction_values_all: [float]

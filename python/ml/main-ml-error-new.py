@@ -269,7 +269,7 @@ def load_data_with_result(db: TinyDB, cache: bool):
         else:
             raise Exception("Unknown patient")
 
-        #all_items = list(filter(lambda x: len(x['result']) == 7, all_items))
+        all_items = list(filter(lambda x: len(x['result']) >=5, all_items))
 
         #all_items = all_items[0:100]
         logging.info("{} items found".format(len(all_items)))

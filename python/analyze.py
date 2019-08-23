@@ -53,14 +53,13 @@ def plot(means, data, filename):
         plt.ylim(-400, 400)
         values.boxplot()
 
-    plt.savefig("{}results/3p-err-rmse-{}.png".format(path, filename), dpi = 600)
+    plt.savefig("{}results/1p-rmse-all-{}.png".format(path, filename), dpi = 600)
 
 def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
-    #with_result = db.search((where('result').exists()))
 
     # with_result = list(filter(check_time_test, with_result))
-    with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
+    # with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
     # with_result = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient
 
 
@@ -73,7 +72,7 @@ def getResults(db: TinyDB, query):
 def getSummary(db: TinyDB, query):
     logger.debug("in get Summary")
     res = getResults(db, query)
-    res = list(filter(lambda item: len(list(filter(lambda x: '5000' in x['predictor'],item))), res))
+    #res = list(filter(lambda item: len(list(filter(lambda x: '5000' in x['predictor'],item))), res))
     logging.info("Number of results for query {}: {}".format(query, len(res)))
     if len(res) == 0:
         logging.warning("no result")

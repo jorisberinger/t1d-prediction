@@ -44,13 +44,13 @@ def main():
     logging.info("Valid items: {}".format(len(db.search(where('valid') == True))))
 
     # Load data from csv into database
-    prep.main(db, filepath)
-    exit()
+    #prep.main(db, filepath)
+
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediction")
     prediction_result = rolling.rolling(db, user_data)
     logger.info("Finished prediction")
-
+    #exit()
     # CREATE PLOTS FOR ANALYSE SUMMARY
     logger.info("creating error plots..")
     analyze.createErrorPlots(db)
