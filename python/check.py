@@ -29,6 +29,7 @@ path = os.getenv('T1DPATH', '../')
 
 
 error_times = np.array([15, 30, 45, 60, 90, 120, 150, 180])
+colors = ['#005AA9','#0083CC','#009D81','#99C000','#C9D400','#FDCA00','#F5A300','#EC6500','#E6001A','#A60084','#721085']
 
 
 def check_and_plot(pw: PredictionWindow, item):
@@ -40,8 +41,9 @@ def check_and_plot(pw: PredictionWindow, item):
 
     # Select with predictors should run
     predictors =   [
-                    #Optimizer(pw, [15, 30, 60, 90, 120, 240]),
-                    Optimizer(pw,[90]),
+                    # Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                    Optimizer(pw, [90, 120, 240]),
+                    #Optimizer(pw,[90]),
                     #Arima(pw), 
                     #SameValue(pw),
                     #LastNDelta(pw, 30), 
@@ -74,13 +76,14 @@ def check_and_plot(pw: PredictionWindow, item):
 
     # Get features created by optimizer
     opt = list(filter(lambda x: 'Optimizer' in x.name, predictors))
-    if len(opt):
-        features = opt[0].get_features()
-    else:
-        features = None
-    #features = None
+    # if len(opt):
+    #     features = opt[0].get_features()
+    # else:
+    #     features = None
+    features = None
     
     if pw.plot:
+
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
         plot_graphs(pw, graphs, errors, predictors)
 
@@ -90,11 +93,12 @@ def check_and_plot(pw: PredictionWindow, item):
 def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     # set figure size
     fig = plt.figure(figsize = (20, 16))
-    gs = gridspec.GridSpec(5, 1, height_ratios = [3, 1, 1, 3, 3])
+    gs = gridspec.GridSpec(3, 1, height_ratios = [3, 1, 1])
     subplot_iterator = iter(gs)
 
     # Set Title to day of week and starting time
-    fig.suptitle(get_header(pw))
+    # fig.suptitle(get_header(pw))
+    #fig.suptitle("Optimized Carb Events")
     # BLOOD GLUCOSE PREDICTION
     plot_bg_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
 
@@ -102,16 +106,16 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_events(plt.subplot(next(subplot_iterator)), pw)
 
     # EVENTS OPTIMIZED
-    #plot_events_optimized(plt.subplot(next(subplot_iterator)), pw, predictors)
+    plot_events_optimized(plt.subplot(next(subplot_iterator)), pw, predictors)
 
     # IOB / COB
-    plot_iob_cob(plt.subplot(next(subplot_iterator)), pw, predictors)
+    # plot_iob_cob(plt.subplot(next(subplot_iterator)), pw, predictors)
 
-    # PREDICTION PLOT
-    plot_graph_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
+    # # PREDICTION PLOT
+    # plot_graph_prediction(plt.subplot(next(subplot_iterator)), pw, graphs)
 
-    # ERRORS
-    plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
+    # # ERRORS
+    # plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
     plt.savefig(path + "results/plots/graphs-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
@@ -143,6 +147,7 @@ def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int, short: bool 
 
     plt.tick_params(axis = 'both', which = 'both', bottom = False, top = False, left = False)
     plt.box(False)
+    plt.rc('font', size=14)
 
 
 def calculate_errors(predictors: [], pw: PredictionWindow) -> []:
@@ -156,8 +161,9 @@ def calculate_errors(predictors: [], pw: PredictionWindow) -> []:
 
 def plotLegend():
     # Plot Legend
-    plt.legend(loc = 'center left', bbox_to_anchor = (1, 0.5))
+    #plt.legend(loc = 'center left', bbox_to_anchor = (1, 0.5))
     plt.tight_layout(pad = 6)
+    plt.legend(loc='upper right')
 
 
 def get_header(pw: PredictionWindow):
@@ -168,26 +174,32 @@ def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
     setupPlot(ax, pw, 400, 50)
     plt.title("Blood Glucose Level Prediction")
     # Plot real blood glucose readings
-    plt.plot(pw.cgmY, alpha = 0.8, label = "real BG")
+    colors_iter = iter([colors[1], colors[7], colors[6]])
+    plt.plot(pw.cgmY, color=next(colors_iter), alpha = 0.8, label = "Real BG")
     for graph in graphs:
-        plt.plot(graph['values'], label = graph['label'])
+        plt.plot(graph['values'], color=next(colors_iter), alpha = 0.8, label = 'Simulated BG with optimized carbs')
+
+
+    values, iob, cob = predict.calculateBG(pw.events, pw.userData)
+    plt.plot(values[5], color=next(colors_iter), alpha = 0.8, label = 'Simulated BG with recorded carbs')
     plotLegend()
-
+    plt.ylabel("Blood Glucose level [mg/dL]")
+    plt.xlabel("Time [minutes]")
     # plot second x-Axis
-    ax2 = ax.twiny()
+    # ax2 = ax.twiny()
 
-    ax2.xaxis.set_ticks_position('top')  # set the position of the second x-axis to bottom
-    ax2.xaxis.set_label_position('top')  # set the position of the second x-axis to bottom
-    ax2.spines['top'].set_position(('outward', 36))
-    labels = list(map(lambda p: p.strftime('%H:%M'), pd.period_range(pw.startTime, pw.endTime, freq='h')))
-    ax2.set_xticks(ax.get_xticks())
-    ax2.set_xticklabels(labels)
-    ax2.set_xlim(ax.get_xlim())
+    # ax2.xaxis.set_ticks_position('top')  # set the position of the second x-axis to bottom
+    # ax2.xaxis.set_label_position('top')  # set the position of the second x-axis to bottom
+    # ax2.spines['top'].set_position(('outward', 36))
+    # labels = list(map(lambda p: p.strftime('%H:%M'), pd.period_range(pw.startTime, pw.endTime, freq='h')))
+    # ax2.set_xticks(ax.get_xticks())
+    # ax2.set_xticklabels(labels)
+    # ax2.set_xlim(ax.get_xlim())
 
 
 def plot_events(ax, pw: PredictionWindow):
-    setupPlot(ax, pw, 10, 2)
-    plt.title("Events")
+    setupPlot(ax, pw, 50, 10)
+    plt.title("Recorded insulin and carb values")
     # get events
     basalValues = pw.events[pw.events.etype == 'tempbasal']
     carbValues = pw.events[pw.events.etype == 'carb']
@@ -198,10 +210,12 @@ def plot_events(ax, pw: PredictionWindow):
         plt.bar(basalValues.time, basalValues.dbdt, 5, alpha = 0.8, label = "basal event")
     # logger.debug(carbValues)
     if not carbValues.empty:
-        plt.bar(carbValues.time, carbValues.grams, 5, alpha = 0.8, label = "carb event")
+        plt.bar(carbValues.time, carbValues.grams, 5, color=colors[3], alpha = 0.8, label = "Carb event")
     if not bolusValues.empty:
-        plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
+        plt.bar(bolusValues.time, bolusValues.units, 5, color=colors[9], alpha = 0.8, label = "Bolus event")
     plotLegend()
+    plt.ylabel("Carbs [gram], Bolus [insulin units]")
+    plt.xlabel("Time [minutes]")
 
 
 def plot_events_optimized(ax, pw, predictors):
@@ -212,29 +226,34 @@ def plot_events_optimized(ax, pw, predictors):
             break
     if not opt:
         return
-    setupPlot(ax, pw, 10, 2)
-    plt.title("Events Optimized")
+    setupPlot(ax, pw, 15, 2)
+    plt.title("Optimized Carb Values")
     basalValues = opt.all_events[opt.all_events.etype == 'tempbasal']
     carbValues = opt.all_events[opt.all_events.etype == 'carb']
     bolusValues = opt.all_events[opt.all_events.etype == 'bolus']
     # Plot Events
     # logger.debug(basalValues.values[0])
     if not basalValues.empty:
-        plt.bar(basalValues.time, basalValues.dbdt, 5, alpha = 0.8, label = "basal event")
+        # plt.bar(basalValues.time, basalValues.dbdt, 5, alpha = 0.8, label = "basal event")
+        pass
     # logger.debug(carbValues)
     if not carbValues.empty:
         ctypes = carbValues.ctype.unique()
-        colors = iter(cm.hsv(np.linspace(0, 1, ctypes.size + 1)))
-        positions = iter([-5.5, -3, 0, 3, 5.5])
+        colors_iter = iter([colors[5], colors[8], colors[10]])
+
+        positions = iter([-4, 0, 4])
         for ctype in ctypes:
             events = carbValues[carbValues.ctype == ctype]
-            color = next(colors)
+            color = next(colors_iter)
             position = next(positions)
-            plt.bar(events.time + position, events.grams, 2, alpha = 0.8,
-                    label = "optimized carb event mixed: {}".format(ctype), color = color)
+            plt.bar(events.time + position, events.grams, 3, alpha = 0.8,
+                    label = "Carb duration: {}".format(ctype), color = color)
     if not bolusValues.empty:
-        plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
+        # plt.bar(bolusValues.time, bolusValues.units, 5, alpha = 0.8, label = "bolus event")
+        pass
     plotLegend()
+    plt.ylabel("Bolus [insulin units]")
+    plt.xlabel("Time [minutes]")
 
 
 def plot_iob_cob(ax, pw, predictors: [Predictor]):

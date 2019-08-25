@@ -6,6 +6,7 @@ WORKDIR /t1d
 COPY python/ml/requirements.txt /
 # Install requirements
 RUN pip install -r /requirements.txt
+RUN apt-get install graphviz -y
 # Set t1d path, can be used for relative paths
 ENV T1DPATH=/t1d/
 # Execute main-ml.py when running container

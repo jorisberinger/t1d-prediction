@@ -41,6 +41,13 @@ configurations = [      #{'name':'cgm', 'columns':[0]},
 
 def main():
 
+    path = os.getenv('T1DPATH', '../')
+    model_path = path+'models/mp-err-arima-1000-1l-cgm, insulin, carbs, optimized, tod.h5'
+    model = keras.models.load_model(model_path)
+    keras.utils.plot_model(model, to_file='model.png')
+    exit()
+
+
     logging.info("Starting machine learning main")
     logging.info("Load Database")
     db = TinyDB(db_path, storage = CachingMiddleware(JSONStorage))
