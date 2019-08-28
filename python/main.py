@@ -50,7 +50,8 @@ def main():
     logger.info("Start Prediction")
     prediction_result = rolling.rolling(db, user_data)
     logger.info("Finished prediction")
-    #exit()
+    
+ 
     # CREATE PLOTS FOR ANALYSE SUMMARY
     logger.info("creating error plots..")
     analyze.createErrorPlots(db)

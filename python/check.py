@@ -40,8 +40,8 @@ def check_and_plot(pw: PredictionWindow, item):
 
     # Select with predictors should run
     predictors =   [
-                    #Optimizer(pw, [15, 30, 60, 90, 120, 240]),
-                    Optimizer(pw,[90]),
+                    Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                    #Optimizer(pw,[90]),
                     #Arima(pw), 
                     #SameValue(pw),
                     #LastNDelta(pw, 30), 
@@ -78,7 +78,7 @@ def check_and_plot(pw: PredictionWindow, item):
         features = opt[0].get_features()
     else:
         features = None
-    #features = None
+    features = None
     
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))

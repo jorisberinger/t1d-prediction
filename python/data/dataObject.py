@@ -73,12 +73,12 @@ class DataObject:
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
-        if 'lstm-test-result' in di:
-            data_object.lstm_result = di['lstm-test-result']
+        if 'lstm-result-100' in di:
+            data_object.lstm_result = di['lstm-result-100']
         else:
             data_object.lstm_result = None
-        if 'error-arima-result' in di:
-            data_object.error_result = di['error-arima-result']
+        if 'arima-error-prediction' in di:
+            data_object.error_result = di['arima-error-prediction']
         else:
             data_object.error_result = None
 

@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 path = os.getenv('T1DPATH', '../')
 
+id = '1'
 
 def analyzeFile(filename):
     file = open(filename)
@@ -27,44 +28,63 @@ def createErrorPlots(db):
                {'q': where('result').exists() & (where('valid') == True) & (where('gradient-s') < 10), "fn": "gradient-under-10"}
                ]
     for query in queries:
-        means, data =  getSummary(db, query)
-        if len(means):
-            plot(means, data, query['fn'])
+        (means_mae, means_rmse), data =  getSummary(db, query)
+        if len(means_mae):
+            plot(means_mae, means_rmse, data, query['fn'])
 
 
 
 
 
-def plot(means, data, filename):
-    fig = plt.figure(figsize = (10, len(data) * 4 + 4))
-    gs = gridspec.GridSpec(1 + len(data), 1, height_ratios = [2] + [1] * len(data))
-    subplot_iterator = iter(gs)
+def plot(means_mae, means_rmse, data, filename):
 
-    plt.subplot(next(subplot_iterator))
-    plt.title("MEAN Absolute Error")
-    for name, values in means.iterrows():
-        values.plot(label = name)
-    plt.legend(loc = 'upper center', bbox_to_anchor = (0.5, 1.1),
-               fancybox = True, shadow = True, ncol = 2)
+    logging.info("Get overall plot")
+    for means, label in zip([means_mae, means_rmse], ['Mean Absolute Error', 'Rooted Mean Squared Error']):
+        logging.info("Plot for {}".format(label))
+
+        fig = plt.figure(figsize = (10, len(data) * 4 + 4))
+        gs = gridspec.GridSpec(1 + len(data), 1, height_ratios = [2] + [1] * len(data))
+        subplot_iterator = iter(gs)
+
+        plt.subplot(next(subplot_iterator))
+        plt.title(label)
+        for name, values in means.iterrows():
+            values.plot(label = name)
+        plt.legend(loc = 'upper center', bbox_to_anchor = (0.5, 1.1),
+                fancybox = True, shadow = True, ncol = 2)
+
+        for name, values in data.items():
+            plt.subplot(next(subplot_iterator))
+            plt.title(name)
+            plt.ylim(-400, 400)
+            values.boxplot()
+
+        plt.savefig("{}results-tex/{}-{}-{}.png".format(path, id, label, filename), dpi = 600)
+        plt.close()
+
+    logging.info("Get individual plots")
 
     for name, values in data.items():
-        plt.subplot(next(subplot_iterator))
-        plt.title(name)
-        plt.ylim(-400, 400)
+        plt.title("{} - Error".format(name))
+        plt.ylim(-400,400)
         values.boxplot()
+        plt.savefig("{}results-tex/{}-BOX-{}-{}".format(path, id, name.replace(" ",""), filename),  dpi = 300) 
+        plt.close()   
 
-    plt.savefig("{}results/1p-rmse-all-{}.png".format(path, filename), dpi = 600)
+    
+
 
 def getResults(db: TinyDB, query):
     with_result = db.search(query['q'])
 
     # with_result = list(filter(check_time_test, with_result))
-    # with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
+    #with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
     # with_result = list(filter(lambda x: x['id'] == '27283995', with_result))  # Test patient
-
+    if id == '82':
+        with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 8, results)) 
+    results = list(filter(lambda x: len(x) == 10, results)) 
 
 
     return results
@@ -79,7 +99,9 @@ def getSummary(db: TinyDB, query):
         return [],[]
     setNumber = 1  # for debug
     #all_results = pandas.DataFrame(res)
-    summary = pandas.DataFrame()
+    summary_mae = pandas.DataFrame()
+    summary_rmse = pandas.DataFrame()
+
     all_data = {}
     # get labels for predictors
     labels = list(map(lambda x: x['predictor'], res[0]))
@@ -95,22 +117,28 @@ def getSummary(db: TinyDB, query):
         all_results.append(predictor_errors)
         logger.debug("Predictor Results {}".format(predictor_errors))
         result_matrix = predictor_errors.apply(set_index)
-        # result_mean = abs(result_matrix).mean() ### MEAN ABSOLUTE ERROR
 
-        result_mean = result_matrix.pow(2).mean().pow(0.5)  ### ROOT MEAN SQUARED ERROR
+        result_mae = abs(result_matrix).mean() ### MEAN ABSOLUTE ERROR
+        result_mae.name = label
 
-        result_mean.name = label
+        result_rmse = result_matrix.pow(2).mean().pow(0.5)  ### ROOT MEAN SQUARED ERROR
+        result_rmse.name = label
+        
 
-        summary = summary.append(result_mean)
+        summary_mae = summary_mae.append(result_mae)
+        summary_rmse = summary_rmse.append(result_rmse)
         
 
         result_matrix.name = label
         all_data[result_matrix.name] = result_matrix
 
-    logger.debug("summary {}".format(summary))
-    with open(path + "results/result-summary-" + query['fn'] + str(setNumber) + ".json", 'w') as file:
-        file.write(summary.to_json())
-    return summary, all_data
+    logger.debug("summary mae {}".format(summary_mae))
+    logger.debug("summary rmse {}".format(summary_rmse))
+    with open(path + "results-tex/" + id + "-result-summary-mae" + query['fn'] + str(setNumber) + ".json", 'w') as file:
+        file.write(summary_mae.to_json())
+    with open(path + "results-tex/" + id + "-result-summary-rmse" + query['fn'] + str(setNumber) + ".json", 'w') as file:
+        file.write(summary_rmse.to_json())
+    return (summary_mae, summary_rmse), all_data
 
 
 def plotTable(js):

@@ -53,16 +53,32 @@ def main():
     
     with_result = db.search(where('result').exists())
     get_predictor_count(with_result)
-    exit()
-    all_items = list(filter(lambda x: x['id'] == '29032313', with_result)) # Train - 3p
+    #all_items = list(filter(lambda x: x['id'] == '29032313', with_result)) # 4p
+    #all_items = list(filter(lambda x: x['id'] == '82923830', with_result)) # Train - 3p
+    all_items = with_result
+
+    train_items = list(filter(lambda x: check_time_train(pd.Timestamp(x['start_time'])), all_items))
+    test_items = list(filter(lambda x: check_time_test(pd.Timestamp(x['start_time'])), all_items))
+
+    logging.info("Training items: {}".format(len(train_items)))
+    logging.info("Test items: {}".format(len(test_items)))
+
     get_predictor_count(all_items)
+
+    
+    cleaned = list(map(lambda x: clean_result(x, '[15, 30, 60, 90, 120, 240]'), all_items))
+
+    get_predictor_count(cleaned)
+
+    db.write_back(cleaned)
+    db.storage.flush()
 
     exit()
     get_predictor_count(with_result)
     cleaned = list(map(lambda x: clean_result(x, 'Mean'), with_result))
+    cleaned = list(map(lambda x: clean_result(x, 'Error Predictor Arima'), all_items))
     get_predictor_count(cleaned)
-    cleaned = list(map(lambda x: clean_result(x, 'LSTM'), with_result))
-    get_predictor_count(cleaned)
+
     cleaned = list(map(lambda x: clean_result(x, '[15, 30,'), with_result))
     get_predictor_count(cleaned)
 
@@ -75,8 +91,7 @@ def main():
     logging.info("error res {}".format(len(p_result)))
     p_cleaned = list(map(lambda x: clean_result(x, '5000'), p_result))
 
-    db.write_back(p_cleaned)
-    db.storage.flush()
+
 
     exit()
     aa = db.search(where('lstm-test-result').exists())
@@ -280,6 +295,17 @@ def get_predictor_count(all_items: []):
     preds = pd.Series(predictors)
     logging.info(preds.value_counts())
 
+def check_time_test(time):
+    if time.day in [5,12]:
+        return True
+    if time.day in [4,11] and time.hour > 10:
+        return True
+    if time.day in [6,13] and time.hour < 14:
+        return True
+    return False
+
+def check_time_train(time):
+    return time.day not in [4,5,6,11,12,13]
 
 if __name__ == "__main__":
     main()
