@@ -9,6 +9,8 @@ from matplotlib import gridspec, pyplot as plt
 from data.convertData import interpolate_cgm, convert
 from data.readData import read_data
 import pandas as pd
+from ann_visualizer.visualize import ann_viz;
+
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
@@ -55,19 +57,23 @@ def calculate_arima(number_of_samples):
     result.to_csv(path + 'results/arima_comparison-{}.csv'.format(len(random_checkpoints)))
     logging.info("Result {}".format(result))
 
-
+colors = ['#005AA9','#0083CC','#009D81','#99C000','#C9D400','#FDCA00','#F5A300','#EC6500','#E6001A','#A60084','#721085']
 def main():
     logging.info("Start Main")
     # Load File and get cgm Values
     number_of_samples = 100
-    calculate_arima(number_of_samples)
-    result = pd.DataFrame.from_csv(path + 'results/arima_comparison-{}.csv'.format(number_of_samples))
-    result.T.plot(legend=True)
-    plt.savefig(path + 'results/arima_comparison-plot-{}.png'.format(number_of_samples))
+    #calculate_arima(number_of_samples)
+    result = pd.read_csv(path + 'results-old/arima_comparison-{}.csv'.format(number_of_samples), index_col=0)
+    result.T.plot(legend=True, colors=[colors[0],colors[3],colors[7],colors[9]])
+    plt.xlabel("Time [minutes]")
+    plt.ylabel("Absolute Error [mg/dL]")
+    plt.title("Comparison of ARIMA models with different training lengths")
+    plt.savefig(path + 'results/arima_comparison-plot-new-{}.png'.format(number_of_samples))
 
     logging.info("Done")
 
 
+def lstm_mode():
 
 
 if __name__ == '__main__':

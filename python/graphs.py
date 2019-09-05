@@ -9,21 +9,21 @@ from matplotlib import pyplot as plt
 import predictors.predict as diabetes
 from Classes import Event, UserData
 coloredlogs.install(level = logging.INFO , fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
-path = os.getenv('T1DPATH', './')
+path = os.getenv('T1DPATH', '../')
 path = path + 'graphs/'
 
 colors = ['#005AA9','#0083CC','#009D81','#99C000','#C9D400','#FDCA00','#F5A300','#EC6500','#E6001A','#A60084','#721085']
 
 def main():
     logging.info("Start making awesome graphs...")
-    #diabetes_graphs()
-    time_series_graphs()
+    diabetes_graphs()
+    # time_series_graphs()
 
 def diabetes_graphs():
     logging.info("Diabetes Graphs...")
     carbs_insulin_together()
-    insulin_on_board()
-    carbs_on_board()
+    # insulin_on_board()
+    # carbs_on_board()
 
 def time_series_graphs():
     logging.info("Time Series Graphs...")
@@ -35,6 +35,7 @@ def insulin_on_board():
     insulin_duration = 3    # Three hours
     time_steps = range(0,3 * 60)
     iob = list(map(lambda x: diabetes.iob(x, insulin_duration), time_steps))
+    logging.info(iob)
     plt.plot(iob, linewidth=2, color=colors[3])
     plt.xlabel("Time in minutes")
     plt.xlim(0, 180)
@@ -69,18 +70,25 @@ def carbs_insulin_together():
     events = pd.DataFrame([vars(e) for e in events])
     user_data = UserData(100, 1, 3, None, 1, 7, None, 0)
     [simbg_res, simbgc, simbgi, x, simbgi_adv, simbg_adv], iob_vals , cob_vals = diabetes.calculateBG(events, user_data)
-    plt.plot(simbg_res, linewidth=2, color=colors[2])
-    plt.plot(simbgc + user_data.bginitial, linewidth=1, linestyle='dashed', color=colors[7])
-    plt.plot(simbgi + user_data.bginitial, linewidth=1, linestyle='dashed', color=colors[3])
+    plt.plot(simbg_res, linewidth=2, color=colors[2], label="Simulated BGL")
+    plt.plot(simbgc + user_data.bginitial, linewidth=1, linestyle='dashed', color=colors[7], label="Carbohydrate effects")
+    plt.plot(simbgi + user_data.bginitial, linewidth=1, linestyle='dashed', color=colors[3], label="Insulin effects")
     
-    list(map(lambda e: plt.bar(e[0],e[4] / 10, width=5), filter(lambda x: x[1] == 'carb', events.values)))
-    list(map(lambda e: plt.bar(e[0],-e[3] / 10, width=5), filter(lambda x: x[1] == 'bolus', events.values)))
+    logging.info(events.values)
+    logging.info(type(events))
 
+    plt.bar(x=[40,230], height=[120,60], width=8, color=colors[3], label="Bolus events")
+    # list(map(lambda e: plt.bar(e[0],e[4] / 10, width=5, color=colors[7], label="Carb event"), filter(lambda x: x[1] == 'carb', events.values)))
+    # list(map(lambda e: plt.bar(e[0],-e[2] / 10, width=5, color=colors[3], label="Bolus event"), filter(lambda x: x[1] == 'bolus', events.values)))
+    plt.bar(events[events['etype'] == 'carb']['time'], events[events['etype'] == 'carb']['grams'] , width=8, color=colors[7], label="Carb events")
+    # plt.bar(events[events['etype'] == 'bolus']['time'], events[events['etype'] == 'bolus']['units'] /10, width=8, color=colors[3], label="Bolus events")
+    
     plt.xlabel("Time in minutes")
     #plt.xlim(0, 180)
     #plt.ylim(0,105)
     plt.ylabel("Blood glucose level in mg/dL")
     plt.title("Blood glucose level")
+    plt.legend()
     plt.savefig(path+'carbs_insulin_together')
     plt.close()
 
