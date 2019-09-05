@@ -84,7 +84,7 @@ def getResults(db: TinyDB, query):
         with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 10, results)) 
+    results = list(filter(lambda x: len(x) == 11, results)) 
 
 
     return results

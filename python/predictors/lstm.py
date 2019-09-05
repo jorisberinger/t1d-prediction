@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 model_path = path+'models/1p-cpu-2000-3l-cgm.h5'
 
 class LSTM_predictor(Predictor):
-    name: str = "LSTM Predictor 100"
+    name: str = "LSTM Predictor"
     pw: PredictionWindow
     prediction_values: [float]
     prediction_values_all: [float]

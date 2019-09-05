@@ -77,8 +77,8 @@ class DataObject:
             data_object.lstm_result = di['lstm-result-100']
         else:
             data_object.lstm_result = None
-        if 'arima-error-prediction' in di:
-            data_object.error_result = di['arima-error-prediction']
+        if 'optimizer-error-prediction-1000' in di:
+            data_object.error_result = di['optimizer-error-prediction-1000']
         else:
             data_object.error_result = None
 

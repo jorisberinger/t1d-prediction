@@ -17,11 +17,11 @@ coloredlogs.install(level = logging.INFO, fmt = '%(asctime)s %(filename)s[%(line
 
 path = os.getenv('T1DPATH', '../')
 
-db_path = path + 'data/tinydb/dbtest2.json'
-# db_path = path + 'data/tinydb/db4p.json'
+# db_path = path + 'data/tinydb/dbtest2.json'
+db_path = path + 'data/tinydb/db4p.json'
 # db_path = path + 'data/tinydb/dbtest2.json'
 
-patient = '1p'
+patient = '3p'
 
 # model_path = path+'models/'+patient+ '-err-gpu-2000-1l-cgm, insulin, carbs, optimized, tod.h5'
 #model_path = "{}models/{}-error-best-model".format(path,patient)

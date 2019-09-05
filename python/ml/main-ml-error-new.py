@@ -18,11 +18,12 @@ coloredlogs.install(level = logging.INFO, fmt = '%(asctime)s %(filename)s[%(line
 path = os.getenv('T1DPATH', '../')
 
 #db_path = path + 'data/tinydb/dbtest2.json'
-db_path = path + 'data/tinydb/db4p.json'
-# db_path = path + 'data/tinydb/dbtest2.json'
+# db_path = path + 'data/tinydb/db4p.json'
+db_path = path + 'data/tinydb/dbtest2.json'
 
 # patient = 'mp'
-patient = '3p'
+# patient = '3p'
+patient = '1p'
 
 # model_path = path+'models/'+patient+ '-err-gpu-2000-1l-cgm, insulin, carbs, optimized, tod.h5'
 #model_path = "{}models/{}-error-best-model".format(path,patient)
@@ -102,7 +103,8 @@ def get_new_prediction(item, db):
     logging.debug(item)
     db_item = db.get(doc_id=item['doc_id'])
     #lstm_results = list(filter(lambda x: 'LSTM' in x['predictor'] and '5000' not in x['predictor'], db_item['result']))[0]['errors']
-    old_prediction = list(filter(lambda x: 'Arima' in x['predictor'], db_item['result']))[0]['errors']
+    # old_prediction = list(filter(lambda x: 'Arima' in x['predictor'], db_item['result']))[0]['errors']
+    old_prediction = list(filter(lambda x: 'Optimizer' in x['predictor'] and '15' not in x['predictor'], db_item['result']))[0]['errors']
     predicted_error = item['predictions']
     logging.debug(old_prediction)
     logging.debug(predicted_error)
@@ -128,7 +130,8 @@ def get_features_for_configuration(configuration, df:pd.DataFrame):
         doc_ids[i] = item['doc_id'][0]
         item = item.drop('doc_id', axis=1)
         all_features[i] = item.values[:601:5]
-        labels[i] = item['arima_error'].values[:8]
+        labels[i] = item['optimizer_error'].values[:8]
+        # labels[i] = item['arima_error'].values[:8]
         #labels[i] = item['cgmValue'].values[600::15]
 
 
@@ -151,13 +154,13 @@ def train_model_for_configuration(x_train, x_test, y_train, y_test, configuratio
             #es = EarlyStopping(monitor='val_mean_absolute_error', mode='min', verbose=1, patience=100)
             # fit model
             #history = model.fit(x_train, y_train, epochs = 2000, batch_size = 256 , validation_data = (x_test, y_test), callbacks=[es])
-            checkpointer = ModelCheckpoint(filepath="{}models/{}-arima-best-model".format(path,patient), monitor='val_acc',verbose=1, save_best_only=True)
+            checkpointer = ModelCheckpoint(filepath="{}models/{}-opti-best-model".format(path,patient), monitor='val_acc',verbose=1, save_best_only=True)
             logging.info("Y TRAIN")
             logging.info(y_train[0:20])
-            history = model.fit(x_train, y_train, epochs = 100, batch_size = 128 , validation_data = (x_test, y_test), callbacks=[checkpointer])
+            history = model.fit(x_train, y_train, epochs = 1000, batch_size = 128 , validation_data = (x_test, y_test), callbacks=[checkpointer])
             test_acc = model.evaluate(x_test, y_test)
-            model.save('{}models/{}-arima-error-100-1l-{}.h5'.format(path,patient, configuration['name'])) 
-            model.save_weights('{}models/w-{}-arima-error-100-1l-{}.h5'.format(path, patient, configuration['name']))
+            model.save('{}models/{}-opti-error-100-1l-{}.h5'.format(path,patient, configuration['name'])) 
+            model.save_weights('{}models/w-{}-opti-error-100-1l-{}.h5'.format(path, patient, configuration['name']))
             logging.info('Test mae: {}'.format(test_acc[2]))
             configuration['mae'] = test_acc[2]
 
@@ -309,8 +312,8 @@ def get_feature_list(data_object):
     for i, v in enumerate(range(0,600,15)):
         df.loc[v,'features-90'] = data_object['features-90'][i]
     df['doc_id'] = data_object['doc_id']
-    df['arima_error'] = pd.Series(list(filter(lambda x: 'Arima' in x['predictor'], data_object['result']))[0]['errors'])
-    #df['optimizer_error'] = pd.Series(list(filter(lambda x: 'Optimizer' in x['predictor'], data_object['result']))[0]['errors'])
+    # df['arima_error'] = pd.Series(list(filter(lambda x: 'Arima' in x['predictor'], data_object['result']))[0]['errors'])
+    df['optimizer_error'] = pd.Series(list(filter(lambda x: 'Optimizer' in x['predictor'] and '15' not in x['predictor'], data_object['result']))[0]['errors'])
     #df['lstm_error'] = pd.Series(list(filter(lambda x: 'LSTM' in x['predictor'] and '1000' not in x['predictor'], data_object['result']))[0]['errors'])
 
     return df
@@ -383,7 +386,7 @@ def predict_with_model(features, labels, doc_ids, model):
 
 def save_prediction(db:TinyDB, item: {}):
     logging.info("item {}".format(item['doc_id']))
-    db.update({'arima-error-prediction': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
+    db.update({'optimizer-error-prediction-1000': item['predictions'].tolist()}, doc_ids=[item['doc_id']])
     return True
 
 def save_predictions_lstm(db:TinyDB, item: {}):

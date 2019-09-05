@@ -40,9 +40,9 @@ def check_and_plot(pw: PredictionWindow, item):
 
     # Select with predictors should run
     predictors =   [
-                    Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                    # Optimizer(pw, [15, 30, 60, 90, 120, 240]),
                     #Optimizer(pw,[90]),
-                    #Arima(pw), 
+                    Arima(pw), 
                     #SameValue(pw),
                     #LastNDelta(pw, 30), 
                     #LastNDelta(pw, 15),
@@ -114,7 +114,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/graphs-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results-tex/examples/example-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 

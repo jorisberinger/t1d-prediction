@@ -7,6 +7,9 @@ COPY python/ml/requirements.txt /
 # Install requirements
 RUN pip install -r /requirements.txt
 # Set t1d path, can be used for relative paths
+RUN apt-get update
+RUN apt install graphviz -y
+RUN apt install xdg-utils -y
 ENV T1DPATH=/t1d/
 # Execute main-ml.py when running container
 CMD python python/ml/main-ml.py
