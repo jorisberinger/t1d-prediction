@@ -5,5 +5,4 @@ pandas
 numpy
 sklearn
 matplotlib
-ann_visualizer
-graphviz
+pydot

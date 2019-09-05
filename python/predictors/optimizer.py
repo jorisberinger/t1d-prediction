@@ -28,7 +28,7 @@ filename = path + "data/csv/data.csv"
 resultPath = path + "results/"
 
 # use example User data
-udata = UserData(bginitial = 100.0, cratio = 1, idur = 4, inputeeffect = None, sensf = 1, simlength = 11,
+udata = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 11,
                  predictionlength = 60,
                  stats = None)
 
@@ -74,7 +74,7 @@ class Optimizer(Predictor):
         vals[self.pw.userData.train_length():] = vals[self.pw.userData.train_length():] - offset
         return {'label': self.name, 'values': vals}
 
-    def optimize_mix(self):
+    def optimize_mix(self) -> (int, pandas.DataFrame, pandas.DataFrame):
         # Set time steps where to calculate the error between real_values and prediction
         # Every 15 minutes including start and end
         t_error = get_error_time_steps(self.pw, 5)
@@ -135,11 +135,6 @@ class Optimizer(Predictor):
         insulin_events = self.pw.events[self.pw.events.etype != 'carb']
         allEvents = pandas.concat([insulin_events, carb_events])
         self.all_events = allEvents
-        return carb_events
-
-    def get_features(self):
-        #carb_events = get_carb_events(self.carb_values, self.carb_types, self.t_carb_events)
-
         return self.carb_values
 
 

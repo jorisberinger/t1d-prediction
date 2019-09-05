@@ -18,11 +18,12 @@ from tinydb.operations import delete
 # from data import readData, convertData
 # from data.dataPrep import add_gradient
 # from data.dataObject import DataObject
-import numpy as np
+
 from matplotlib import gridspec, pyplot as plt
 from collections import Counter
+
 import keras
-from ann_visualizer.visualize import ann_viz;
+
 logger = logging.getLogger(__name__)
 
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
@@ -32,14 +33,13 @@ path = os.getenv('T1DPATH', '../')
 # db_path = path + 'data/tinydb/db4p.json'
 db_path = path + 'data/tinydb/dbtest2.json'
 
-def main():
+
+
     logger.info("Start debugging!")
     logger.info("db: {}".format(db_path.split('/')[-1]))
-    # create_plots: bool = False  # Select True if you want a plot for every prediction window
+    create_plots = False  # Select True if you want a plot for every prediction window
 
 
-    lstm_model()
-    exit(0)
 
 def get_lstm_model(number_features):
     
@@ -63,8 +63,6 @@ def get_lstm_model(number_features):
 
     return model
 
-def lstm_model():
-    logging.info("LSTM MODEL")
 
     logging.info(path)
     logging.info(os.listdir(path))
@@ -74,11 +72,6 @@ def lstm_model():
 
     #model.add(keras.layers.LSTM(5, input_shape=(4,)))
     
-    ann_viz(model, title="Artificial Neural network - Model Visualization")
-
-#     # SET USER DATA
-#     user_data = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 13,
-#                          predictionlength = 180, stats = None)
 
 #     # Get Database
 #     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
@@ -92,54 +85,21 @@ def lstm_model():
     
     
 #     with_result = db.search(where('result').exists())
-
-#     with_result = list(filter(lambda x: len(x['result']) == 11, with_result))
-
-
 #     get_predictor_count(with_result)
 
-#     get_ids(with_result)
 
-#     exit(0)
-#     #all_items = list(filter(lambda x: x['id'] == '29032313', with_result)) # 4p
-#     # all_items = list(filter(lambda x: x['id'] == '82923830', with_result)) # Train - 3p
-#     all_items = with_result
-
-#     train_items = list(filter(lambda x: check_time_train(pd.Timestamp(x['start_time'])), all_items))
-#     test_items = list(filter(lambda x: check_time_test(pd.Timestamp(x['start_time'])), all_items))
-
-#     logging.info("Training items: {}".format(len(train_items)))
-#     logging.info("Test items: {}".format(len(test_items)))
-
-#     get_predictor_count(all_items)
-
-#     lengths = pd.Series(list(map(lambda x: len(x['result']), with_result)))
-#     logging.info("unique values: \n{}".format(lengths.value_counts()))
-
-#     # cleaned = list(map(lambda x: change_error_name(x), with_result))
-#     # get_predictor_count(cleaned)
-#     # cleaned = list(map(lambda x: clean_result(x, 'remove'), all_items))
-#     # get_predictor_count(cleaned)
-#     # cleaned = list(map(lambda x: change_lstm_name(x), with_result))
-#     #cleaned = list(map(lambda x: change_error_name(x), with_result))
-
-#     #get_predictor_count(cleaned)
 
 
 #     exit()
-#     cleaned = list(map(lambda x: clean_result(x, '[15, 30, 60, 90, 120, 240]'), all_items))
-
-#     get_predictor_count(cleaned)
-
-#     db.write_back(cleaned)
-#     db.storage.flush()
+#     all_items = list(filter(lambda x: x['id'] == '29032313', with_result)) # Train - 3p
+#     get_predictor_count(all_items)
 
 #     exit()
 #     get_predictor_count(with_result)
 #     cleaned = list(map(lambda x: clean_result(x, 'Mean'), with_result))
-#     cleaned = list(map(lambda x: clean_result(x, 'Error Predictor Arima'), all_items))
 #     get_predictor_count(cleaned)
-
+#     cleaned = list(map(lambda x: clean_result(x, 'LSTM'), with_result))
+#     get_predictor_count(cleaned)
 #     cleaned = list(map(lambda x: clean_result(x, '[15, 30,'), with_result))
 #     get_predictor_count(cleaned)
 
@@ -152,7 +112,8 @@ def lstm_model():
 #     logging.info("error res {}".format(len(p_result)))
 #     p_cleaned = list(map(lambda x: clean_result(x, '5000'), p_result))
 
-
+#     db.write_back(p_cleaned)
+#     db.storage.flush()
 
 #     exit()
 #     aa = db.search(where('lstm-test-result').exists())
@@ -352,8 +313,14 @@ def lstm_model():
 #         if pred['predictor'] == 'LSTM Predictor':
 #             item['result'][index]['predictor'] = 'LSTM Predictor - pre-trained'
 
-#     logging.debug("results after: {}".format(list(map(lambda x: x['predictor'], item['result']))))
-#     return item
+# def get_predictor_count(all_items: []):
+#     r = list(map(lambda x: x['result'], all_items))
+#     predictors = []
+#     for item in r:
+#         for pred in item:
+#             predictors.append(pred['predictor'])
+#     preds = pd.Series(predictors)
+#     logging.info(preds.value_counts())
 
 # def change_error_name(item):
 #     logging.debug("results before: {}".format(list(map(lambda x: x['predictor'], item['result']))))
