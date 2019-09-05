@@ -57,8 +57,10 @@ class DataObject:
         cp.start_time = cp.start_time.isoformat()
         cp.end_time = cp.end_time.isoformat()
         cp.data = cp.data.to_json()
+        
         cp.data_long = cp.data_long.to_json()
-        cp.features_90 = cp['features-90']
+        if hasattr(cp, 'features-90'):
+            cp.features_90 = cp['features-90']
         for key in ['carb', 'bolus', 'basal']:
             if hasattr(self, key):
                 cp.__setattr__(key, cp.__getattribute__(key).to_json())
@@ -71,12 +73,12 @@ class DataObject:
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))
         data_object.set_data_long(pd.DataFrame(json.loads(di['data_long'])))
-        if 'lstm-test-result' in di:
-            data_object.lstm_result = di['lstm-test-result']
+        if 'lstm-result-100' in di:
+            data_object.lstm_result = di['lstm-result-100']
         else:
             data_object.lstm_result = None
-        if 'error-arima-result' in di:
-            data_object.error_result = di['error-arima-result']
+        if 'optimizer-error-prediction-1000' in di:
+            data_object.error_result = di['optimizer-error-prediction-1000']
         else:
             data_object.error_result = None
 

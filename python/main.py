@@ -31,7 +31,7 @@ def main():
     logger.info("Start Main!")
 
     # SET USER DATA
-    user_data = UserData(bginitial = 100.0, cratio = 1, idur = 3, inputeeffect = None, sensf = 1, simlength = 13,
+    user_data = UserData(bginitial = 100.0, cratio = 1, idur = 4, inputeeffect = None, sensf = 1, simlength = 13,
                          predictionlength = 180, stats = None)
 
     # Calculate Insulin Sensitivity factor and Carbohydrate Ratio with autotune
@@ -50,7 +50,9 @@ def main():
     logger.info("Start Prediction")
     prediction_result = rolling.rolling(db, user_data)
     logger.info("Finished prediction")
-
+    
+    exit(0)
+ 
     # CREATE PLOTS FOR ANALYSE SUMMARY
     logger.info("creating error plots..")
     analyze.createErrorPlots(db)

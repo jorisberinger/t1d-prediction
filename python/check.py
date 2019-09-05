@@ -40,20 +40,20 @@ def check_and_plot(pw: PredictionWindow, item):
 
     # Select with predictors should run
     predictors =   [
-                    #Optimizer(pw, [15, 30, 60, 90, 120, 240]),
+                    # Optimizer(pw, [15, 30, 60, 90, 120, 240]),
                     #Optimizer(pw,[90]),
-                    #Arima(pw), 
+                    Arima(pw), 
                     #SameValue(pw),
                     #LastNDelta(pw, 30), 
                     #LastNDelta(pw, 15),
-                    LSTM_predictor(pw),
+                    #LSTM_predictor(pw),
                     #Mean_predictor(pw),
                     #Error_predictor(pw)
                     ]
 
     if 'result' in item:
          calculated_predictors = list(map(lambda x: x['predictor'], item['result']))
-         predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
+         #predictors = list(filter(lambda x: x.name not in calculated_predictors, predictors))
     logging.info("Predictors: {}".format(list(map(lambda x: x.name, predictors))))
     # Make prediction for every predictor
     success = list(map(lambda predictor: predictor.calc_predictions(error_times), predictors))
@@ -66,7 +66,7 @@ def check_and_plot(pw: PredictionWindow, item):
     
     # Get arima order
     
-    arm = list(filter(lambda x: 'Arima' in x.name, predictors))
+    arm = list(filter(lambda x: 'Arima Predictor' in x.name, predictors))
     if len(arm):
         order = arm[0].order
     else:
@@ -114,7 +114,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results/plots/result-outlier-over-70-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results-tex/examples/example-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 

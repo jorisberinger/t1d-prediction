@@ -28,7 +28,7 @@ filename = path + "data/csv/data.csv"
 resultPath = path + "results/"
 
 # use example User data
-udata = UserData(bginitial = 100.0, cratio = 5, idur = 4, inputeeffect = None, sensf = 41, simlength = 11,
+udata = UserData(bginitial = 100.0, cratio = 1, idur = 4, inputeeffect = None, sensf = 1, simlength = 11,
                  predictionlength = 60,
                  stats = None)
 

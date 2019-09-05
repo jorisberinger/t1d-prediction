@@ -32,7 +32,7 @@ def rolling(db: TinyDB, user_data: UserData):
     # create random iterator over valid items without a result
     # elements = db.search(where('result').exists() & (where('valid') == True))
     #elements = db.search((where('valid') == True) & where('lstm-test-result').exists() & where('error-arima-result').exists())
-    elements = db.search((where('valid') == True) & where('error-arima-result').exists())
+    #elements = db.search((where('valid') == True) & where('optimizer-error-prediction-1000').exists())
     # elements = db.search((where('valid') == True))
 
     # filter elements by day of month, relevant for db with one patient
@@ -40,10 +40,11 @@ def rolling(db: TinyDB, user_data: UserData):
     #elements = list(filter(check_time_test, elements))
 
     # filter elements by patient id, relevant for db with more than 1 patient
-    elements = list(filter(lambda x: x['id'] == '82923830', elements))  # TRAIN patient
+    # elements = list(filter(lambda x: x['id'] == '82923830', elements))  # TRAIN patient
     # elements = list(filter(lambda x: x['id'] == '27283995', elements))  # Test patient
+    # elements = list(filter(lambda x: x['id'] == '29032313', elements))  # Third patient
 
-
+    elements = [db.get(doc_id=28524)]
 
     #elements = list(filter(lambda x: any(list(map(lambda y: abs(y['errors'][0]) > 70, x['result']))), elements))
 
@@ -102,7 +103,7 @@ def rolling(db: TinyDB, user_data: UserData):
         if len(results) > 200 + last_save:
             last_save = len(results)
             #db.storage.flush()       
-    db.storage.flush()
+    #db.storage.flush()
     logger.info("length of result {}".format(len(results)))
     # save all prediction carb optimized values to a json file
     to_file(prediction_carb_optimized)
