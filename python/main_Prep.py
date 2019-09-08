@@ -11,10 +11,9 @@ from dataPreperation.dataLoader import DataLoader
 
 
 path = os.getenv('T1DPATH', '../')
-data_csv_path = path + 'data/csv/data.csv'
 
 # This method reads in data from a csv file and converts it into sliding windows which are saved into a TinyDB json file. 
-def main(db: TinyDB, filepath=data_csv_path):
+def main(db: TinyDB, filepath):
     logging.info("Start import from csv to database...")
     logging.debug("{} items in db".format(len(db)))
     logging.debug("Init data loader")

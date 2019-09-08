@@ -59,7 +59,7 @@ def plot(means_mae, means_rmse, data, filename):
             plt.ylim(-400, 400)
             values.boxplot()
 
-        plt.savefig("{}results-tex/{}-{}-{}.png".format(path, id, label, filename), dpi = 600)
+        plt.savefig("{}results/{}-{}-{}.png".format(path, id, label, filename), dpi = 600)
         plt.close()
 
     logging.info("Get individual plots")
@@ -68,7 +68,7 @@ def plot(means_mae, means_rmse, data, filename):
         plt.title("{} - Error".format(name))
         plt.ylim(-400,400)
         values.boxplot()
-        plt.savefig("{}results-tex/{}-BOX-{}-{}".format(path, id, name.replace(" ",""), filename),  dpi = 300) 
+        plt.savefig("{}results/{}-BOX-{}-{}".format(path, id, name.replace(" ",""), filename),  dpi = 300) 
         plt.close()   
 
     
@@ -84,7 +84,7 @@ def getResults(db: TinyDB, query):
         with_result = list(filter(lambda x: x['id'] == '82923830', with_result))  # TRAIN patient
 
     results = list(map(lambda x: x['result'], with_result))
-    results = list(filter(lambda x: len(x) == 11, results)) 
+    results = list(filter(lambda x: len(x) == 4, results)) 
 
 
     return results
@@ -134,9 +134,9 @@ def getSummary(db: TinyDB, query):
 
     logger.debug("summary mae {}".format(summary_mae))
     logger.debug("summary rmse {}".format(summary_rmse))
-    with open(path + "results-tex/" + id + "-result-summary-mae" + query['fn'] + str(setNumber) + ".json", 'w') as file:
+    with open(path + "results/" + id + "-result-summary-mae" + query['fn'] + str(setNumber) + ".json", 'w') as file:
         file.write(summary_mae.to_json())
-    with open(path + "results-tex/" + id + "-result-summary-rmse" + query['fn'] + str(setNumber) + ".json", 'w') as file:
+    with open(path + "results/" + id + "-result-summary-rmse" + query['fn'] + str(setNumber) + ".json", 'w') as file:
         file.write(summary_rmse.to_json())
     return (summary_mae, summary_rmse), all_data
 

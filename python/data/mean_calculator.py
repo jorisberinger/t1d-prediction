@@ -6,7 +6,7 @@ coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:
 
 path = os.getenv('T1DPATH', '../')
 filename = path + 'data/csv/data_16.csv'
-filename = path + 'data/csv/csv_82923830.csv'
+filename = path + 'data/csv/csv_27283995.csv'
 
 def get_mean_from_csv():
     logging.info("Start getting mean")

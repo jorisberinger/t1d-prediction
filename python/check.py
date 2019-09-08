@@ -43,12 +43,12 @@ def check_and_plot(pw: PredictionWindow, item):
     predictors =   [
                     # Optimizer(pw, [15, 30, 60, 90, 120, 240]),
                     #Optimizer(pw,[90]),
-                    Arima(pw), 
-                    #SameValue(pw),
-                    #LastNDelta(pw, 30), 
-                    #LastNDelta(pw, 15),
+                    # Arima(pw), 
+                    SameValue(pw),
+                    LastNDelta(pw, 30), 
+                    LastNDelta(pw, 15),
                     #LSTM_predictor(pw),
-                    #Mean_predictor(pw),
+                    Mean_predictor(pw),
                     #Error_predictor(pw)
                     ]
 
@@ -117,7 +117,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
     # plot_errors(plt.subplot(next(subplot_iterator)), pw, errors)
 
     # SAVE PLOT TO FILE
-    plt.savefig(path + "results-tex/examples/example-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.savefig(path + "results/plots/example-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
     plt.close()
 
 
@@ -173,7 +173,7 @@ def plot_bg_prediction(ax, pw: PredictionWindow, graphs: []):
     setupPlot(ax, pw, 400, 50)
     plt.title("Blood Glucose Level Prediction")
     # Plot real blood glucose readings
-    colors_iter = iter([colors[1], colors[7], colors[6]])
+    colors_iter = iter([colors[1], colors[7], colors[6], colors[2], colors[10], colors[4]])
     plt.plot(pw.cgmY, color=next(colors_iter), alpha = 0.8, label = "Real BG")
     for graph in graphs:
         plt.plot(graph['values'], color=next(colors_iter), alpha = 0.8, label = 'Simulated BG with optimized carbs')

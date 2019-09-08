@@ -44,14 +44,14 @@ def main():
     logging.info("Valid items: {}".format(len(db.search(where('valid') == True))))
 
     # Load data from csv into database
-    #prep.main(db, filepath)
+    # prep.main(db, filepath)
 
+    # exit(0)
     # MAKE A ROLLING PREDICTION
     logger.info("Start Prediction")
     prediction_result = rolling.rolling(db, user_data)
     logger.info("Finished prediction")
     
-    exit(0)
  
     # CREATE PLOTS FOR ANALYSE SUMMARY
     logger.info("creating error plots..")
@@ -62,7 +62,7 @@ def main():
 
 if __name__ == '__main__':
     start_time = time.process_time()
-    profile = False
+    profile = True
     if profile:
         pr = cProfile.Profile()
         pr.enable()

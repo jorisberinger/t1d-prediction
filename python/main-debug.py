@@ -24,66 +24,43 @@ from collections import Counter
 
 import keras
 
-logger = logging.getLogger(__name__)
+#logger = logging.getLogger(__name__)
 
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
 #filename = path + "data/csv/csv_4.csv"
 # db_path = path + 'data/tinydb/db4p.json'
-db_path = path + 'data/tinydb/dbtest2.json'
+db_path = path + 'data/tinydb/dbpresentation.json'
 
+def main():
 
-
-    logger.info("Start debugging!")
-    logger.info("db: {}".format(db_path.split('/')[-1]))
-    create_plots = False  # Select True if you want a plot for every prediction window
-
-
-
-def get_lstm_model(number_features):
-    
-    if False and tf.test.is_gpu_available():
-        lstm_cell = CuDNNLSTM
-    else:
-        lstm_cell = keras.layers.LSTM
-    
-    model = keras.models.Sequential()
-    #model.add(lstm_cell(121, input_shape = (121, number_features), return_sequences= True)) 
-    #model.add(Dropout(0.2))
-    model.add(lstm_cell(40, input_shape = (121, number_features))) 
-    #model.add(Dropout(0.5))
-    #model.add(lstm_cell(40, return_sequences=True))
-    #model.add(Dropout(0.5))
-    #model.add(lstm_cell(40))
-    # model.add(Dense(30))
-    model.add(keras.layers.Dense(13, activation='relu'))
-    model.compile(optimizer = 'adam', loss = 'mse', metrics=['accuracy', 'mae'])
-    model.summary()
-
-    return model
-
-
-    logging.info(path)
-    logging.info(os.listdir(path))
-    model_path = path+'models/1p-opti-error-100-1l-cgm, insulin, carbs, optimized, tod.h5'
-
-    model = get_lstm_model(6)
-
-    #model.add(keras.layers.LSTM(5, input_shape=(4,)))
+    logging.info("Start debugging!")
+    logging.info("db: {}".format(db_path.split('/')[-1]))
     
 
-#     # Get Database
-#     db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
+    # Get Database
+    db = TinyDB(db_path, storage=CachingMiddleware(JSONStorage))
 
 
 
-#     logging.info("length of db: {}".format(len(db)))
-#     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
-#     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
+    logging.info("length of db: {}".format(len(db)))
+    logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
+    logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
+    invalid = db.search(where('valid') == False)
+
+    invalid_doc_ids = list(map(lambda x: x.doc_id, invalid))
+
+    logging.info("doc ids invalid: {}".format(len(invalid_doc_ids)))
+
+    assert len(invalid_doc_ids) == len(db) - len(db.search(where('valid') == True))
+
+    db.remove(doc_ids=invalid_doc_ids)
+
+    db.storage.flush()
     
-    
+    exit(0)
 #     with_result = db.search(where('result').exists())
 #     get_predictor_count(with_result)
 

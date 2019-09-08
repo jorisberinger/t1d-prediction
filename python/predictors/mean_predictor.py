@@ -20,7 +20,7 @@ class Mean_predictor(Predictor):
     def __init__(self, pw: PredictionWindow):
         super().__init__()
         self.pw = pw
-        self.mean_value = 129.18711973769572
+        self.mean_value = 111.7890048358361
 
     def calc_predictions(self, error_times: [int]) -> bool:
         self.prediction_values = pd.Series([self.mean_value] * len(error_times),

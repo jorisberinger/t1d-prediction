@@ -15,7 +15,8 @@ from data.dataObject import DataObject
 from data.readData import read_data
 
 from dataPreperation.profile_reader import Profile_reader
-
+import sys
+from hurry.filesize import size
 path = os.getenv('T1DPATH', '../../')
 
 window_length = 13
@@ -25,6 +26,7 @@ delta_length = 15
 
 
 def prepare_data(data_original: pd.DataFrame) -> pd.DataFrame:
+    logging.info("Size before: {}".format(size(sys.getsizeof(data_original))))
     # convert index to time index
     data = convert(data_original)
     # Copy CgmValue column to save original values
@@ -33,7 +35,7 @@ def prepare_data(data_original: pd.DataFrame) -> pd.DataFrame:
     data = interpolate_cgm(data)
     # add timestamp as int(to recover date if lost when converting to json)
     data = add_timestamps(data)
-
+    logging.info("Size after: {}".format(size(sys.getsizeof(data))))
     return data
 
 
@@ -71,8 +73,8 @@ def add_to_db(data: pd.DataFrame, db: TinyDB, profile: Profile_reader) -> [pd.Da
             data_object.set_data_long(subset_long)
             db.insert(data_object.to_dict())
             counter += 1
-            #if counter >= 2:
-            #    break
+            # if counter >= 50:
+            #     break
             print('Processing [%d]\r'%counter, end="")
         start_time += timedelta(minutes = delta_length)
     db.storage.flush()
