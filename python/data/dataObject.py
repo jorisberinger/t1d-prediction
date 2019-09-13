@@ -24,6 +24,7 @@ class DataObject:
     features: [float]
     lstm_result: [float]
     error_result: [float]
+    doc_id: int
 
 
     def __init__(self):
@@ -69,6 +70,7 @@ class DataObject:
     @classmethod
     def from_dict(cls, di):
         data_object = DataObject()
+        data_object.doc_id = di.doc_id
         data_object.set_start_time(pd.datetime.fromisoformat(di['start_time']))
         data_object.set_end_time(pd.datetime.fromisoformat(di['end_time']))
         data_object.set_data_short(pd.DataFrame(json.loads(di['data'])))

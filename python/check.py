@@ -82,9 +82,9 @@ def check_and_plot(pw: PredictionWindow, item):
     features = None
     
     if pw.plot:
-
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
-        plot_graphs(pw, graphs, errors, predictors)
+        # plot_graphs(pw, graphs, errors, predictors)
+        plot_baseline(pw, graphs)
 
     return errors, order, features
 
@@ -124,7 +124,7 @@ def plot_graphs(pw: PredictionWindow, graphs, errors, predictors: [Predictor]):
 def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int, short: bool = False, negative: bool = False):
     x_start = 0
     if short:
-        x_start = pw.userData.train_length()
+        x_start = pw.userData.train_length() - 60
     x_end = pw.userData.simlength * 60 + 1.
     y_start = 0
     if negative:
@@ -314,5 +314,93 @@ def convertTimes(event, start):
         event.t2 = eventTime
     return event
 
+# create plot for presentation
+# make incremental plots for each predictor
+def plot_baseline(pw: PredictionWindow, graphs: []):
+    
+    logging.info('graphs: {}'.format(graphs))
+    
+    colors_iter = iter([colors[1], colors[7], colors[6], colors[2], colors[10], colors[4]])
+    count = iter(range(100))
+
+    def plot_arrows(values):
+        for t in error_times:
+            t += 600
+            ax.arrow(t, pw.cgmY[t], 0, values[t] - pw.cgmY[t] , head_width=3, head_length=6, fc=colors[8], ec=colors[8], length_includes_head=True)
+
+    def get_values(label):
+        return list(filter(lambda x: label in x['label'], graphs))[0]['values']
+
+    def pre_plot():
+        fig, ax = plt.subplots(figsize=(15, 10))
+        setupPlot(ax, pw, 400, 50, True, False)
+        return ax
+
+    def post_plot():
+        plotLegend()
+        plt.savefig(path + "results/baseline/"+ str(next(count)) + "-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+        plt.close()
+
+
+    # Plot Baseline Full overview and smaller
+    fig, ax = plt.subplots(figsize=(15, 10))
+    setupPlot(ax, pw, 400, 50, False, False)
+    plt.plot(pw.cgmY, color=colors[1], alpha = 1, label = "Real BG")
+    plotLegend()
+    plt.savefig(path + "results/baseline/"+ str(next(count)) + "-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+    plt.close()
+
+    pre_plot()
+    plt.plot(pw.cgmY, color=colors[1], alpha = 1, label = "Real BG")
+    post_plot()
+
+    # for each in graph
+    ax = pre_plot()
+    plt.plot(pw.cgmY, color=colors[1], alpha = 0.6, label = "Real BG")
+    values = get_values("Same")
+    plt.plot(values , color=colors[7], alpha = 1, label = "Same Value Predictor")
+    plot_arrows(values)
+    post_plot()
+
+    ax = pre_plot()
+    plt.plot(pw.cgmY, color=colors[1], alpha = 0.6, label = "Real BG")
+    # plt.plot(get_values("Same"), color=colors[7], alpha = 0.6, label = "Same Value Predictor")
+    values = get_values("30")
+    plt.plot(values, color=colors[4], alpha = 1, label = "30 Minute Trend")
+    plt.plot(pw.cgmY[[570,600]], linestyle='dashed', color=colors[4], alpha = 1, label='_nolegend_')
+    plot_arrows(values)
+    post_plot()
+
+    ax = pre_plot()
+    plt.plot(pw.cgmY, color=colors[1], alpha = 0.6, label = "Real BG")
+    values = get_values("15")
+    plt.plot(values, color=colors[10], alpha = 1, label = "15 Minute Trend")
+    plt.plot(pw.cgmY[[585,600]], linestyle='dashed', color=colors[10], alpha = 1, label='_nolegend_')
+    plot_arrows(values)
+    post_plot()
+
+    ax = pre_plot()
+    plt.plot(pw.cgmY, color=colors[1], alpha = 0.6, label = "Real BG")
+    values = get_values("Mean")
+    plt.plot(values, color=colors[2], alpha = 1, label = "Mean Value Predictor")
+    plot_arrows(values)
+    post_plot()
+
+    ax = pre_plot()
+    plt.plot(pw.cgmY, color=colors[1], alpha = 0.6, label = "Real BG")
+    
+    plt.plot(get_values("Same") , color=colors[7], alpha = 0.8, label = "Same Value Predictor")
+    plt.plot(get_values("30"), color=colors[4], alpha = 0.8, label = "30 Minute Trend")
+    plt.plot(get_values("15"), color=colors[10], alpha = 0.8, label = "15 Minute Trend")
+    plt.plot(get_values("Mean"), color=colors[2], alpha = 0.8, label = "Mean Value Predictor")
+    post_plot()
+
+    # already existings graphs in transperent
+    # plot important points
+    # plot prediction
+    # plot error lines at steps
+
+   
+    exit(0)
 
 

@@ -16,7 +16,7 @@ from data.readData import read_data
 
 from dataPreperation.profile_reader import Profile_reader
 import sys
-from hurry.filesize import size
+#from hurry.filesize import size
 path = os.getenv('T1DPATH', '../../')
 
 window_length = 13

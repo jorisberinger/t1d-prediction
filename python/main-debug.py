@@ -9,6 +9,7 @@ import numpy as np
 from tinydb import TinyDB, JSONStorage, where 
 from tinydb.middlewares import CachingMiddleware
 from tinydb.operations import delete
+from data.dataObject import DataObject
 
 # import analyze
 # import gifmaker
@@ -29,9 +30,8 @@ import keras
 coloredlogs.install(level = 'INFO', fmt = '%(asctime)s %(filename)s[%(lineno)d]:%(funcName)s %(levelname)s %(message)s')
 
 path = os.getenv('T1DPATH', '../')
-#filename = path + "data/csv/csv_4.csv"
-# db_path = path + 'data/tinydb/db4p.json'
-db_path = path + 'data/tinydb/dbpresentation.json'
+
+db_path = path + 'data/tinydb/db4p_small.json'
 
 def main():
 
@@ -48,19 +48,44 @@ def main():
     logging.info("Valid examples: {}".format(len(db.search(where('valid') == True))))
     logging.info("With result: {}".format(len(db.search(where('result').exists()))))
 
-    invalid = db.search(where('valid') == False)
 
-    invalid_doc_ids = list(map(lambda x: x.doc_id, invalid))
+    with_result = db.search(where('result').exists())
+    # Filter out items with all 11 predictor methods
+    all_result = list(filter(lambda x: len(x['result']) is 11, with_result))
 
-    logging.info("doc ids invalid: {}".format(len(invalid_doc_ids)))
+    logging.info("All results: {}".format(len(all_result)))
 
-    assert len(invalid_doc_ids) == len(db) - len(db.search(where('valid') == True))
+    data_objects = list(map(DataObject.from_dict, all_result))
 
-    db.remove(doc_ids=invalid_doc_ids)
+    list(map(plot_item, data_objects))
 
-    db.storage.flush()
-    
     exit(0)
+
+
+error_times = np.array([0, 15, 30, 45, 60, 90, 120, 150, 180]) + 600
+
+def plot_item(item):
+    plt.figure(figsize=(20,12))
+    logging.info("Plotting item: {}".format(item.doc_id))
+    # Plot cgmValues
+    item.data['cgmValue'].plot(label = "BGL")
+
+    real_values = item.data['cgmValue'][error_times]
+
+    for result in item.result:
+        result['errors'].insert(0,0)
+        prediction_values = real_values + result['errors']
+        plt.plot(prediction_values, label=result['predictor'])
+
+    
+    plt.title("{} - {}".format(item.doc_id, item.start_time))
+    plt.ylim(0,300)
+    plt.legend()
+    plt.savefig(path + "results/plots/quick-{}".format(item.doc_id))
+    plt.close()
+    return False
+
+
 #     with_result = db.search(where('result').exists())
 #     get_predictor_count(with_result)
 

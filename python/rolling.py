@@ -35,7 +35,7 @@ def rolling(db: TinyDB, user_data: UserData):
     #elements = db.search((where('valid') == True) & where('optimizer-error-prediction-1000').exists())
     # elements = db.search((where('valid') == True))
     #elements = [db.get(doc_id=52)]
-    elements = db.search((where('valid') == True))
+    # elements = db.search((where('valid') == True))
 
     # filter elements by day of month, relevant for db with one patient
     #elements = list(filter(check_time_train, elements))
@@ -46,7 +46,7 @@ def rolling(db: TinyDB, user_data: UserData):
     # elements = list(filter(lambda x: x['id'] == '27283995', elements))  # Test patient
     # elements = list(filter(lambda x: x['id'] == '29032313', elements))  # Third patient
 
-    #elements = [db.get(doc_id=28524)]
+    elements = [db.get(doc_id=12727)]
 
     #elements = list(filter(lambda x: any(list(map(lambda y: abs(y['errors'][0]) > 70, x['result']))), elements))
 
