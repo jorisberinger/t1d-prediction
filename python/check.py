@@ -43,12 +43,12 @@ def check_and_plot(pw: PredictionWindow, item):
     predictors =   [
                     # Optimizer(pw, [15, 30, 60, 90, 120, 240]),
                     #Optimizer(pw,[90]),
-                    # Arima(pw), 
-                    SameValue(pw),
-                    LastNDelta(pw, 30), 
-                    LastNDelta(pw, 15),
+                    Arima(pw), 
+                    # SameValue(pw),
+                    # LastNDelta(pw, 30), 
+                    # LastNDelta(pw, 15),
                     #LSTM_predictor(pw),
-                    Mean_predictor(pw),
+                    # Mean_predictor(pw),
                     #Error_predictor(pw)
                     ]
 
@@ -84,8 +84,8 @@ def check_and_plot(pw: PredictionWindow, item):
     if pw.plot:
         graphs = list(map(lambda predictor: predictor.get_graph(), predictors))
         # plot_graphs(pw, graphs, errors, predictors)
-        plot_baseline(pw, graphs)
-
+        # plot_baseline(pw, graphs)
+        
     return errors, order, features
 
 
@@ -401,6 +401,6 @@ def plot_baseline(pw: PredictionWindow, graphs: []):
     # plot error lines at steps
 
    
-    exit(0)
+
 
 

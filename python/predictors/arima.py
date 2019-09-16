@@ -10,8 +10,6 @@ from statsmodels.tsa.arima_model import ARIMAResults
 
 from PredictionWindow import PredictionWindow
 from predictors.predictor import Predictor
-
-
 from statsmodels.tsa.arima_model import ARIMA
 
 
@@ -39,41 +37,54 @@ class Arima(Predictor):
         self.index_train = pd.timedelta_range(start = '0 hour',
                                               end = '{} hours'.format(train_hours),
                                               freq = str(sampleTime) + 'min')
+
         self.index_test = pd.timedelta_range(start = '{} minutes'.format(train_hours * 60 + self.sample_time),
                                              end = '{} hours'.format(total_hours),
                                              freq = str(sampleTime) + 'min')
+
         logging.debug("done init arima")
 
     def calc_predictions(self, error_times: [int]) -> bool:
+        p_short = pd.read_csv('short', header=None)
+        p_long = pd.read_csv('long', header=None)
+        p_short = p_short.drop(p_short.columns[0],axis=1)
+        p_long = p_long.drop(p_long.columns[0], axis=1)
+
+        # self.plot_arima(p_short, p_long)
+
+        # exit(0)
         train = self.window[:len(self.index_train)-1]
+
         train.index = pd.to_datetime(self.index_train)
 
         test = self.window[len(self.index_train):]
         test.index = pd.to_datetime(self.index_test)
 
+        stepwise_fit_short = auto_arima(train[3000:], seasonal = False, start_p = 3, start_d =1, start_q = 2,
+                                  trace = True,
+                                  error_action = 'ignore', suppress_warnings = False, stepwise = True)
+
+
+
         stepwise_fit = auto_arima(train, seasonal = False, start_p = 3, start_d =1, start_q = 2,
                                   trace = True,
                                   error_action = 'ignore', suppress_warnings = False, stepwise = True)
 
+        
+
         if sum(stepwise_fit.order):
             self.order = stepwise_fit.order
             preds, conf_int = stepwise_fit.predict(n_periods = len(test), return_conf_int = True)
-            prediction = pd.Series(preds, index = test.index)
-            model = ARIMA(train, order=stepwise_fit.order).fit(disp=0)
-            if stepwise_fit.order[1] == 0:
-                #train_compare = model.predict()
-                data = model.predict(end = 3600 +180)
-            else:
-                #train_compare = model.predict(typ='levels')
-                data = model.predict(typ='levels', end = 3600 +180)
-            
 
-            # train.plot(label='Training data')
-            # plt.plot(prediction, label='auto prediction')
-            # plt.plot(train_compare, label='train compare')
-            # plt.plot(data, label='prediction')
-            # plt.legend()
-            # plt.savefig(path+'results/test')
+            prediction = pd.Series(preds, index = test.index)
+
+            preds_short, conf_int = stepwise_fit_short.predict(n_periods = len(test), return_conf_int = True)
+
+            prediction_short = pd.Series(preds_short, index = test.index)
+           
+
+            self.plot_arima(prediction_short,prediction)
+
 
             index = np.arange(self.pw.userData.train_length() + sampleTime, self.pw.userData.simlength * 60 + 1,
                               self.sample_time)
@@ -89,7 +100,109 @@ class Arima(Predictor):
 
         return {'label': self.name, 'values': self.prediction_values_all}
 
+    def plot_arima(self, p_short, p_long):
+        error_times = np.array([15, 30, 45, 60, 90, 120, 150, 180])
+        colors = ['#005AA9','#0083CC','#009D81','#99C000','#C9D400','#FDCA00','#F5A300','#EC6500','#E6001A','#A60084','#721085']
 
+        count = iter(range(20))
+        pw = self.pw
+        def pre_plot():
+            fig, ax = plt.subplots(figsize=(15, 10))
+            setupPlot(ax, pw, 400, 50, True, False)
+            return ax
+
+        def post_plot():
+            plotLegend()
+            plt.savefig(path + "results/arima/"+ str(next(count)) + "-" + pw.startTime.strftime('%Y-%m-%d-%H-%M') + ".png", dpi = 300)
+            plt.close()
+        
+        def plot_arrows(values):
+            for t in error_times:
+                t += 3600
+                ax.arrow(t, pw.data_long['cgmValue'][t], 0, values.values[t-3601] - pw.data_long['cgmValue'][t] , head_width=3, head_length=6, fc=colors[8], ec=colors[8], length_includes_head=True)
+
+        
+        # Plot Original BG for long data set
+        fig, ax = plt.subplots(figsize=(15, 10))
+        setupPlot(ax, pw, 400, 50, False, False, True)
+        plt.plot(pw.data_long['cgmValue'], color=colors[1], alpha = 1, label = "Real BG")
+        post_plot()
+
+        # plot Orignal BG and ARIMA fit
+        # arima_fit = pd.read_csv('long_train', header=None, index_col=0)
+        # fig, ax = plt.subplots(figsize=(15, 10))
+        # setupPlot(ax, pw, 400, 50, False, False, True)
+        # plt.plot(pw.data_long['cgmValue'], color=colors[1], alpha = 1, label = "Real BG")
+        # plt.plot(arima_fit,color=colors[6], alpha=1, label='ARIMA')
+        # post_plot()
+
+
+        # plot Original BG, ARIMA fit and ARIMA prediction
+        fig, ax = plt.subplots(figsize=(15, 10))
+        setupPlot(ax, pw, 400, 50, False, False, True)
+        plt.plot(pw.data_long['cgmValue'], color=colors[1], alpha = 1, label = "Real BG")
+        plt.plot(range(3600,3780),p_long,color=colors[6], alpha=1, label='ARIMA')
+        post_plot()
+
+
+        # plot only Prediction horizon with error arrows
+        fig, ax = plt.subplots(figsize=(15, 10))
+        setupPlot(ax, pw, 400, 50, True, False, True)
+        plt.plot(pw.data_long['cgmValue'], color=colors[1], alpha = 1, label = "Real BG")
+        plt.plot(range(3600,3780),p_long,color=colors[6], alpha=1, label='ARIMA')
+        plot_arrows(p_long)
+        post_plot()
+
+        # plot bg, short, and long
+
+
+        # self.pw.cgmY[600:].plot(label='real')
+        # plt.plot(range(600,780), prediction.values, label='long')
+        # plt.plot(range(600,780), prediction_short.values, label='short')
+        # plt.legend()
+        # plt.savefig('s_vs_l')
+
+
+def setupPlot(ax, pw: PredictionWindow, y_height: int, y_step: int, short: bool = False, negative: bool = False, longer:bool = False):
+    x_start = 0
+    if short:
+        x_start = pw.userData.train_length() - 60
+    if short and longer:
+        x_start = 3540
+
+    x_end = pw.userData.simlength * 60 + 1.
+    if longer:
+        x_end = 3781
+    y_start = 0
+    if negative:
+        y_start = - y_height - 1
+    y_end = y_height + 1
+    plt.xlim(x_start, x_end)
+    plt.ylim(y_start, y_height)
+    plt.grid(color = "#cfd8dc")
+    major_ticks_x = np.arange(x_start, x_end, 60)
+    minor_ticks_x = np.arange(x_start, x_end, 15)
+    major_ticks_y = np.arange(y_start, y_end, y_step)
+    if longer and not short:
+        major_ticks_x = np.arange(x_start, x_end, 60 * 6)
+        minor_ticks_x = np.arange(x_start, x_end, 60)
+    ax.set_xticks(major_ticks_x)
+    ax.set_xticks(minor_ticks_x, minor = True)
+    ax.set_yticks(major_ticks_y)
+    ax.grid(which = 'minor', alpha = 0.2)
+    ax.grid(which = 'major', alpha = 0.5)
+    # Plot Line when prediction starts
+    plt.axvline(x = 3600, color = "black")
+
+    plt.tick_params(axis = 'both', which = 'both', bottom = False, top = False, left = False)
+    plt.box(False)
+    plt.rc('font', size=14)
+
+def plotLegend():
+    # Plot Legend
+    #plt.legend(loc = 'center left', bbox_to_anchor = (1, 0.5))
+    plt.tight_layout(pad = 6)
+    plt.legend(loc='upper right')
 
 
 

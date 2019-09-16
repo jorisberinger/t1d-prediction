@@ -46,7 +46,10 @@ def rolling(db: TinyDB, user_data: UserData):
     # elements = list(filter(lambda x: x['id'] == '27283995', elements))  # Test patient
     # elements = list(filter(lambda x: x['id'] == '29032313', elements))  # Third patient
 
-    elements = [db.get(doc_id=12727)]
+    elements = [db.get(doc_id=26750)]
+    elements = db.search((where('valid') == True))
+    random.shuffle(elements)
+    elements = elements[:10]
 
     #elements = list(filter(lambda x: any(list(map(lambda y: abs(y['errors'][0]) > 70, x['result']))), elements))
 
