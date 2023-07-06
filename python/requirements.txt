@@ -10,4 +10,4 @@ tinydb
 statsmodels
 tensorflow
 keras
-scipy==1.2.1
+scipy==1.10.0
